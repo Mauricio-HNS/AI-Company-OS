@@ -1,6 +1,6 @@
 # AI Company OS
 
-> Uma empresa onde os funcionários são agentes de IA.
+> AI Operating System for Autonomous Business Operations.
 
 AI Company OS is an autonomous-company operating system. The goal is not to make another chatbot dashboard, but a system where AI agents receive objectives, plan work, use tools, produce measurable results and learn from outcomes.
 

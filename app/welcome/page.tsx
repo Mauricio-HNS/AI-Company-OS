@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { ArrowRight, BrainCircuit, Building2, ChevronRight, Layers3, ShieldCheck, Sparkles } from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import './welcome.css';
 
 const slides = [
@@ -27,7 +28,7 @@ export default function Welcome() {
     <header className="welcomeNav"><div className="welcomeBrand"><span>AI</span><div><b>AI Company OS</b><small>AUTONOMOUS COMPANY</small></div></div><div className="welcomeNavRight"><span>SIMULATION CORE</span><i/><span>ONLINE</span></div></header>
     <section className="welcomeStage">
       <div className="stageVisual"><div className="orbOuter"><div className="orbMiddle"><div className="orbCore"><Icon size={42}/></div></div></div><div className="orbit orbitA"/><div className="orbit orbitB"/><div className="visualLabel"><span>COMPANY INTELLIGENCE</span><b>READY TO OPERATE</b></div></div>
-      <div className="stageCopy" key={slide}><div className="slideCount">0{slide + 1} <span>/ 03</span></div><div className="eyebrow">{current.eyebrow}</div><h1>{current.title}</h1><p>{current.text}</p><div className="welcomeActions"><button onClick={() => { setStarted(true); window.location.href = '/login'; }}>Enter AI Company OS <ArrowRight size={17}/></button><button className="ghost" onClick={() => { setStarted(true); setSlide((slide + 1) % 3); }}>Next experience <ChevronRight size={16}/></button></div></div>
+      <div className="stageCopy" key={slide}><div className="slideCount">0{slide + 1} <span>/ 03</span></div><div className="eyebrow">{current.eyebrow}</div><h1>{current.title}</h1><p>{current.text}</p><div className="welcomeActions"><Link className="primaryWelcome" href="/login" onClick={() => setStarted(true)}>Enter AI Company OS <ArrowRight size={17}/></Link><button className="ghost" onClick={() => { setStarted(true); setSlide((slide + 1) % 3); }}>Next experience <ChevronRight size={16}/></button></div></div>
     </section>
     <footer className="welcomeFooter"><div className="slideDots">{slides.map((_, i) => <button key={i} aria-label={`Slide ${i + 1}`} className={i === slide ? 'active' : ''} onClick={() => { setStarted(true); setSlide(i); }}/>)}</div><div className="footerPills"><span><Layers3 size={13}/> Portfolio OS</span><span><Sparkles size={13}/> AI-native</span><span>Permission-gated</span></div></footer>
   </main>;

@@ -21,9 +21,9 @@
 
 ## Current Status
 
-> **Phase 2 — Agent Engine: COMPLETED**
+> **Phase 3 — Company Engine: COMPLETED**
 >
-> The project now has a complete simulation-first agent operating layer. The company workspace can run autonomous cycles, coordinate agents, manage dependent tasks, use a simulated tool registry, publish decision summaries, update memory, score performance and protect external actions behind permissions.
+> The project now includes the complete multi-company operating foundation: Master Control Center, tenant registry, company provisioning, tenant dashboards, company modules, client portal, AI workforce views, missions, tasks, finance, knowledge, operations, security and settings. The current platform remains simulation-first, with browser-local persistence for provisioned tenants and no live external business side effects.
 
 ### Phase 1 — Interface & Simulation · COMPLETED
 
@@ -33,7 +33,7 @@
 - [x] Company dashboards
 - [x] Multi-company structure
 - [x] Responsive premium command-center UI
-- [x] Persistent simulation company creation
+- [x] Persistent-in-session simulation company creation
 - [x] Simulated authentication session
 - [x] GitHub Pages deployment configuration
 
@@ -56,30 +56,51 @@
 - [x] Knowledge learning cycles
 - [x] Security and approval gates
 - [x] Real-money action protection
+- [x] Agent detail screens
+- [x] Mission detail screens
+- [x] Task detail screens
 
-### Phase 3 — Company Engine · NEXT
+### Phase 3 — Company Engine · COMPLETED
 
-- [ ] Persistent company data model
-- [ ] Objectives and strategy engine
-- [ ] Budgets and financial ledger
-- [ ] Products and pricing model
-- [ ] Customer model
-- [ ] KPI engine
-- [ ] Risk model
-- [ ] Company-wide persistence
+- [x] Master Control Center / Portfolio Dashboard
+- [x] Multi-company tenant registry
+- [x] Company provisioning flow
+- [x] Provisioned tenant persistence in browser localStorage
+- [x] Provisioned tenant dashboard
+- [x] Tenant module navigation
+- [x] AI Workforce module
+- [x] Missions module
+- [x] Tasks module
+- [x] Products module
+- [x] Customers module
+- [x] Finance module
+- [x] Intelligence module
+- [x] Knowledge & Memory module
+- [x] Operations module
+- [x] Security module
+- [x] Settings module
+- [x] Company-specific module detail screens
+- [x] Client Portal
+- [x] Master view of provisioned companies
+- [x] Company health, revenue, profit, agents and mission metrics
+- [x] Company objectives and strategic direction UI
+- [x] Risk and permission visibility
+- [x] GitHub Pages-compatible static/export-safe routing
+- [x] Premium responsive command-center experience
 
-### Phase 4 — Autonomous Operations
+### Phase 4 — Autonomous Operations · NEXT
 
 - [ ] Production planning engine
-- [ ] Mission generation
-- [ ] Real task delegation
+- [ ] Real mission generation
+- [ ] Real task delegation and orchestration
 - [ ] Opportunity detection
 - [ ] Experiment management
-- [ ] Result evaluation
-- [ ] Continuous learning
+- [ ] Result evaluation engine
+- [ ] Continuous learning with durable operational state
 - [ ] Next-plan generation
+- [ ] Human approval workflow for autonomous actions
 
-### Phase 5 — Real AI & Business Integrations
+### Phase 5 — Real AI & Business Integrations · FUTURE
 
 - [ ] LLM providers
 - [ ] RAG / vector knowledge systems
@@ -88,6 +109,7 @@
 - [ ] Financial integrations
 - [ ] Communication channels
 - [ ] Controlled external actions
+- [ ] Production-grade business integrations
 
 ---
 
@@ -122,7 +144,60 @@ Humans define direction, constraints, permissions and risk boundaries. The AI wo
 
 ---
 
-## Phase 2 Agent Engine
+## Current Product Surface
+
+### Master Control Center
+
+The portfolio layer provides:
+
+- Multiple companies
+- Company health
+- Revenue and profit
+- AI workforce totals
+- Active missions
+- Portfolio-level visibility
+- Company provisioning
+- Navigation into each company environment
+
+### Company Control Center
+
+Every company has its own operating environment:
+
+- Command Center
+- Agents
+- Missions
+- Tasks
+- Products
+- Customers
+- Finance
+- Intelligence
+- Knowledge & Memory
+- Operations
+- Security
+- Settings
+
+### Provisioned Tenant Dashboard
+
+New companies can be initialized from the Master Control Center with:
+
+- Company identity
+- Sector and market
+- Operating model
+- Strategic objective
+- Core AI workforce
+- Company modules
+- Client portal entry point
+- Company health and operating metrics
+
+Provisioned tenants currently persist in browser localStorage because the application is deployed as a static GitHub Pages experience. A server-side database is not yet connected.
+
+### Client Portal
+
+Each provisioned company can expose a separate client-facing portal surface for viewing its operational environment without using the Master Control Center.
+
+---
+
+## Agent Engine
 
 The current simulation represents the company as a coordinated workforce.
 
@@ -167,7 +242,7 @@ BACKLOG → PLANNING → EXECUTING → OBSERVING → COMPLETED
 
 ### Tool registry
 
-The simulated company currently exposes permission-aware capabilities for planning, knowledge retrieval, research, CRM, analytics, finance and external actions. Financial and external side effects remain gated.
+The simulated company exposes permission-aware capabilities for planning, knowledge retrieval, research, CRM, analytics, finance and external actions. Financial and external side effects remain gated.
 
 ### Agent communication
 
@@ -188,44 +263,11 @@ Learning cycles add validated patterns and runtime observations to the simulated
 
 ---
 
-## Product Surface
-
-### Master Dashboard
-
-The portfolio layer provides:
-
-- Multiple companies
-- Revenue and profit
-- AI workforce
-- Active missions
-- Company health
-- Portfolio intelligence
-- Company creation and simulation
-
-### Company Dashboard
-
-Every company has its own operating environment:
-
-- Command Center
-- Agents
-- Missions
-- Tasks
-- Products
-- Customers
-- Finance
-- Intelligence
-- Knowledge & Memory
-- Operations
-- Security
-- Settings
-
----
-
 ## Safety Model
 
 The current project is intentionally **simulation-first**.
 
-Real-world side effects are not connected to the Phase 2 engine. The interface already models the controls that will protect future execution:
+Real-world side effects are not connected to the current engine. The interface already models the controls that will protect future execution:
 
 - Human approval gates
 - Permission-aware tools
@@ -272,16 +314,29 @@ Real-world side effects are not connected to the Phase 2 engine. The interface a
 ```text
 AI-Company-OS/
 ├── app/
-│   ├── welcome/
-│   ├── login/
-│   ├── recovery/
-│   ├── portfolio/
-│   └── company/
-│       └── [companyId]/
-│           ├── page.tsx
-│           ├── CompanyWorkspace.tsx
-│           ├── company.css
-│           └── phase2.css
+│   ├── master/
+│   │   ├── page.tsx
+│   │   ├── new/
+│   │   └── tenant/
+│   ├── portal/
+│   ├── company/
+│   │   └── [companyId]/
+│   │       ├── page.tsx
+│   │       ├── CompanyWorkspace.tsx
+│   │       ├── agents/[agentId]/
+│   │       ├── missions/[missionId]/
+│   │       ├── tasks/[taskId]/
+│   │       ├── products/[productId]/
+│   │       ├── customers/[customerId]/
+│   │       ├── finance/[financeId]/
+│   │       ├── intelligence/[insightId]/
+│   │       ├── knowledge/[knowledgeId]/
+│   │       ├── operations/[operationId]/
+│   │       ├── security/[securityId]/
+│   │       └── settings/[settingId]/
+│   └── ...
+├── lib/
+│   └── tenant-registry.ts
 ├── public/
 ├── .github/workflows/
 ├── next.config.mjs
@@ -317,26 +372,33 @@ Permissions, budgets, approvals and risk controls remain part of the architectur
 ## Roadmap
 
 ```text
-INTERFACE & SIMULATION  ✓
+INTERFACE & SIMULATION  ✓ COMPLETED
           │
           ▼
-AGENT ENGINE             ✓  CURRENTLY COMPLETE
+AGENT ENGINE             ✓ COMPLETED
           │
           ▼
-COMPANY ENGINE           ← NEXT
+COMPANY ENGINE           ✓ COMPLETED
           │
           ▼
-AUTONOMOUS OPERATIONS
+AUTONOMOUS OPERATIONS    ← NEXT
           │
           ▼
-REAL AI MODELS
-          │
-          ▼
-BUSINESS INTEGRATIONS
+REAL AI & BUSINESS INTEGRATIONS
           │
           ▼
 AUTONOMOUS COMPANIES
 ```
+
+### Phase status
+
+| Phase | Status | Focus |
+|---|---|---|
+| Phase 1 | COMPLETED | Interface, simulation and platform foundation |
+| Phase 2 | COMPLETED | Agent Engine and autonomous-cycle simulation |
+| Phase 3 | COMPLETED | Company Engine, multi-company control and client portal |
+| Phase 4 | NEXT | Real autonomous operations and orchestration |
+| Phase 5 | FUTURE | Real AI models and business integrations |
 
 ---
 

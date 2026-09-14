@@ -1,16 +1,16 @@
-'use client';
-
 import Link from 'next/link';
-import { use } from 'react';
 import { Activity, ArrowLeft, BrainCircuit, ChevronRight, CircleDollarSign, Clock3, Cpu, ShieldCheck, Target, Wrench, Zap } from 'lucide-react';
 import { getCompanyAgents, getCompanyTasks } from '@/lib/operations-engine';
 import '../company.css';
 import './agents.css';
 
+const companies = ['alpha','beta','gamma'];
+export function generateStaticParams(){return companies.map(companyId=>({companyId}));}
+
 const nav = ['Command Center','Agents','Missions','Tasks','Products','Customers','Finance','Intelligence','Knowledge','Operations','Security','Settings'];
 
-export default function AgentsPage({ params }: { params: Promise<{ companyId: string }> }) {
-  const { companyId } = use(params);
+export default function AgentsPage({ params }: { params: { companyId: string } }) {
+  const { companyId } = params;
   const agents = getCompanyAgents(companyId);
   const tasks = getCompanyTasks(companyId);
   const [selected] = agents;

@@ -1,170 +1,425 @@
 # AI Company OS
 
-> AI Operating System for Autonomous Business Operations.
+<div align="center">
 
-AI Company OS is an autonomous-company operating system. The goal is not to make another chatbot dashboard, but a system where AI agents receive objectives, plan work, use tools, produce measurable results and learn from outcomes.
+## The Operating System for Autonomous Companies
 
-## The idea in one example: a coffee shop
+AI Company OS is a platform for building companies operated by coordinated AI agents.
 
-Imagine a coffee shop with five human employees. The owner connects the business to AI Company OS and gives it one objective:
+**Observe → Decide → Execute → Measure → Learn → Repeat**
 
-> **Increase the coffee shop's profit by 20%.**
+[Open the Demo](https://mauricio-hns.github.io/AI-Company-OS/) · [GitHub Repository](https://github.com/Mauricio-HNS/AI-Company-OS)
 
-The AI does not replace the people making coffee or serving customers. Instead, it becomes a digital worker responsible for observing the business, finding opportunities, taking authorized actions and measuring the results.
+</div>
 
-### Step 1 — Observe
+---
 
-The system connects to authorized business data such as sales, inventory, suppliers, schedules, delivery and marketing channels.
+## What is AI Company OS?
 
-It learns things like:
+AI Company OS is designed to turn a business objective into a continuous operating cycle.
+
+Instead of building another chatbot, the platform models an entire company: its objectives, departments, agents, missions, tasks, tools, finances, customers, knowledge and performance.
+
+The long-term goal is simple:
+
+> **Give the company an objective and let its AI workforce continuously find opportunities, execute authorized work, measure outcomes and improve the next decision.**
+
+---
+
+## The Core Loop
+
+```text
+                    COMPANY OBJECTIVE
+                           │
+                           ▼
+                         CEO AI
+                           │
+                           ▼
+                         PLAN
+                           │
+                           ▼
+                       MISSIONS
+                           │
+                           ▼
+                         TASKS
+                           │
+                           ▼
+                         AGENTS
+                           │
+                           ▼
+                          TOOLS
+                           │
+                           ▼
+                        RESULTS
+                           │
+                           ▼
+                       EVALUATION
+                           │
+                           ▼
+                        LEARNING
+                           │
+                           └──────────► NEXT PLAN
+```
+
+This creates a company that does not simply wait for prompts. It continuously operates toward measurable business outcomes.
+
+---
+
+## A Simple Example
+
+Imagine a coffee shop with one objective:
+
+> **Increase profit by 20%.**
+
+AI Company OS could coordinate a digital workforce around that objective.
+
+### 01 — Observe
+
+The system analyzes authorized business data:
+
+- Sales
+- Inventory
+- Suppliers
+- Schedules
+- Delivery
+- Marketing
+- Customers
+- Costs
+
+It may discover:
 
 - Coffee is the most frequently sold product.
 - Croissants have a strong margin.
 - Sales are weak between 14:00 and 16:00.
 - Fridays generate significantly more revenue.
-- The business is buying more milk than it needs.
+- Milk purchasing is higher than necessary.
 
-### Step 2 — Find an opportunity
+### 02 — Find an Opportunity
 
-The AI notices that the shop has unused capacity between 14:00 and 16:00.
+The system identifies unused capacity and proposes an experiment:
 
-It proposes:
+> **Coffee + cake for €4.50, Monday–Friday, 14:00–16:00, for 14 days.**
 
-> **Coffee + cake for €4.50, Monday to Friday, 14:00–16:00, for 14 days.**
+Before execution, it estimates expected revenue, cost and margin.
 
-It estimates the expected margin and potential revenue before starting the experiment.
+### 03 — Execute
 
-### Step 3 — Execute
+After authorization, the appropriate agents can coordinate:
 
-After authorization, the AI can prepare the campaign, create marketing material, monitor sales and track the experiment using the connected tools.
+- Campaign creation
+- Pricing
+- Marketing content
+- Customer communication
+- Experiment tracking
+- Performance monitoring
 
-The human employees continue running the physical shop. The AI handles the digital and analytical work around the operation.
-
-### Step 4 — Measure
-
-After the experiment, the system reports something like:
+### 04 — Measure
 
 ```text
 EXPERIMENT #27
 
-Additional sales       +382
-Additional revenue     +€1,719
-Additional cost          €612
-Additional profit      +€1,107
+Additional sales        +382
+Additional revenue      +€1,719
+Additional cost           €612
+Additional profit       +€1,107
 
 RESULT: APPROVED
 ```
 
-The AI can then recommend keeping the promotion and look for the next opportunity.
+### 05 — Learn
 
-### Step 5 — Learn and continue
+The company keeps what worked and feeds the result into future decisions.
 
-The system may discover another problem:
+It may then identify another opportunity:
 
-> "Milk waste is higher than necessary. Reduce the weekly order from 120 L to 100 L. Estimated saving: €280/month."
+> **Reduce the weekly milk order from 120 L to 100 L. Estimated saving: €280/month.**
 
-Then it continues searching for the next improvement.
+Then the cycle starts again.
 
-### The complete cycle
+---
+
+# Company Architecture
 
 ```text
-OWNER
-  ↓
-OBJECTIVE
-"Increase profit by 20%"
-  ↓
-AI OBSERVES THE BUSINESS
-  ↓
-FINDS AN OPPORTUNITY
-  ↓
-PROPOSES AN ACTION
-  ↓
-EXECUTES AUTHORIZED WORK
-  ↓
-MEASURES THE RESULT
-  ↓
-LEARNS
-  ↓
-FINDS THE NEXT OPPORTUNITY
-  ↺
+┌─────────────────────────────────────────────────────────────┐
+│                     AI COMPANY OS                           │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  CEO / ORCHESTRATOR                                         │
+│          │                                                  │
+│          ├── Strategy                                       │
+│          ├── Research                                       │
+│          ├── Product                                        │
+│          ├── Marketing                                      │
+│          ├── Sales                                          │
+│          ├── Finance                                        │
+│          ├── Operations                                     │
+│          └── Intelligence                                   │
+│                                                             │
+│  Every department can contain specialized AI agents.       │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│ Objectives · Missions · Tasks · Agents · Tools · Results   │
+├─────────────────────────────────────────────────────────────┤
+│ Memory · Knowledge · KPIs · Finance · Risk · Learning      │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-This is the core idea of AI Company OS: **not an AI that waits for questions, but an AI system that behaves like a digital employee working toward a business objective.**
+---
 
-## Current milestone — Company Command Center
+## Product Interface
 
-The first version focuses on the interface and company model before connecting real AI providers.
+The platform is being built around a premium command-center experience rather than a conventional admin panel.
 
-- Premium dark command-center interface
-- Company floor with departments and agents
-- CEO / Strategy as the top-level orchestrator
-- Live activity stream
-- Cash, revenue, agents, tasks and company health KPIs
-- Execution pipeline
-- Autonomous loop visualization
-- Simulation mode as the initial safe execution environment
+### Master Dashboard
 
-## Architecture roadmap
+A global control layer for the operator:
 
-### 1. Company World — current
-
-Visual company environment, departments, agents, tasks, activity and KPIs.
-
-### 2. Agent Engine
-
-Every agent gets:
-
-- Role
-- Goal
-- Memory
-- Tools
-- Tasks
-- Communication
-- Decision history
-- Performance metrics
-
-### 3. Company Engine
-
-The company will manage:
-
-- Objectives
-- Budget
+- All companies
 - Revenue
+- Profit
 - Costs
-- Projects
-- KPIs
-- Strategy
-- Risk
+- AI workforce
+- Missions
+- Company health
+- Portfolio performance
+- Global activity
 
-### 4. Autonomous Loop
+### Company Dashboard
+
+Each company gets its own operating environment:
+
+- Command Center
+- Agents
+- Missions
+- Tasks
+- Products
+- Customers
+- Finance
+- Intelligence
+- Knowledge
+- Operations
+- Security
+- Settings
+
+### Multi-Company Model
 
 ```text
-GOAL
-  ↓
-CEO
-  ↓
-PLAN
-  ↓
-TASKS
-  ↓
-AGENTS
-  ↓
-TOOLS
-  ↓
-RESULTS
-  ↓
-EVALUATION
-  ↓
-LEARNING
-  ↓
-NEW PLAN
-  ↺
+MASTER OS
+   │
+   ├── COMPANY ALPHA
+   │    ├── CEO AI
+   │    ├── Departments
+   │    └── AI Agents
+   │
+   ├── COMPANY BETA
+   │    ├── CEO AI
+   │    ├── Departments
+   │    └── AI Agents
+   │
+   └── COMPANY GAMMA
+        ├── CEO AI
+        ├── Departments
+        └── AI Agents
 ```
 
-### 5. Real integrations
+Every company can operate independently while the master layer provides portfolio-level visibility.
 
-After simulation is stable, connect model providers and controlled business tools. Real-money actions should remain behind explicit permissions and safety controls.
+---
 
-## Product principle
+# Current Status
 
-The important asset is the company operating system, not a specific model. Models can be replaced as they improve. The company, memory, workflows, tools, metrics and accumulated learning remain.
+### Phase 1 — Interface & Simulation
+
+**In progress**
+
+- [x] Company Command Center
+- [x] Master / Portfolio Dashboard
+- [x] Company dashboards
+- [x] AI workforce visualization
+- [x] Missions and execution pipeline
+- [x] KPI visualization
+- [x] Live activity simulation
+- [x] Autonomous loop visualization
+- [x] GitHub Pages deployment pipeline
+- [x] Multi-company structure
+- [ ] Functional dashboard modules
+- [ ] Persistent company creation
+- [ ] Authentication backend
+
+### Phase 2 — Agent Engine
+
+- [ ] Agent roles and goals
+- [ ] Agent memory
+- [ ] Tool registry
+- [ ] Task execution
+- [ ] Agent communication
+- [ ] Decision history
+- [ ] Performance evaluation
+
+### Phase 3 — Company Engine
+
+- [ ] Objectives
+- [ ] Strategy
+- [ ] Budgets
+- [ ] Revenue
+- [ ] Costs
+- [ ] Customers
+- [ ] Products
+- [ ] KPIs
+- [ ] Risk management
+
+### Phase 4 — Autonomous Operations
+
+- [ ] Planning engine
+- [ ] Mission generation
+- [ ] Task delegation
+- [ ] Opportunity detection
+- [ ] Experiment management
+- [ ] Result evaluation
+- [ ] Continuous learning
+- [ ] Next-plan generation
+
+### Phase 5 — Real AI & Business Integrations
+
+- [ ] LLM providers
+- [ ] RAG / knowledge systems
+- [ ] Business APIs
+- [ ] CRM integrations
+- [ ] Marketing integrations
+- [ ] Financial integrations
+- [ ] Communication channels
+- [ ] Controlled external actions
+
+Real-money and irreversible actions will remain protected by explicit permissions, limits and safety controls.
+
+---
+
+# Technology Direction
+
+The architecture is being designed to remain model-independent.
+
+Potential components include:
+
+- **Frontend:** Next.js / React / TypeScript
+- **AI Services:** Python / FastAPI
+- **LLM Layer:** Multiple interchangeable model providers
+- **Knowledge:** RAG + vector search
+- **Infrastructure:** Cloud-native services
+- **Containers:** Docker
+- **Data:** Relational + vector storage
+- **Observability:** Metrics, traces and execution history
+
+The exact production stack can evolve without changing the core company model.
+
+---
+
+# Design Principles
+
+### 1. The company is the product
+
+The valuable asset is not a single AI model. It is the combination of company structure, memory, workflows, tools, metrics and accumulated learning.
+
+### 2. Agents have responsibilities
+
+An agent is not simply a chat window. It has a role, objective, context, tools, tasks and measurable performance.
+
+### 3. Everything becomes measurable
+
+Missions should lead to tasks. Tasks should produce results. Results should be evaluated against objectives.
+
+### 4. Simulation before autonomy
+
+The system is being developed in a safe simulated environment before real business actions are connected.
+
+### 5. Human control where it matters
+
+Authorization boundaries, budgets, permissions and risk controls remain part of the architecture.
+
+---
+
+# Roadmap
+
+```text
+INTERFACE
+    │
+    ▼
+SIMULATION
+    │
+    ▼
+AGENT ENGINE
+    │
+    ▼
+COMPANY ENGINE
+    │
+    ▼
+AUTONOMOUS LOOP
+    │
+    ▼
+REAL AI MODELS
+    │
+    ▼
+BUSINESS INTEGRATIONS
+    │
+    ▼
+AUTONOMOUS COMPANIES
+```
+
+The project is intentionally being built from the interface and operating model downward. The objective is to make the company understandable and observable before connecting real-world execution.
+
+---
+
+# Project Structure
+
+```text
+AI-Company-OS/
+│
+├── app/
+│   ├── welcome/
+│   ├── login/
+│   ├── recovery/
+│   ├── portfolio/
+│   └── company/
+│       └── [companyId]/
+│
+├── components/
+├── public/
+├── .github/
+│   └── workflows/
+│
+├── next.config.mjs
+└── README.md
+```
+
+---
+
+# Demo
+
+The current project is available as a GitHub Pages prototype.
+
+**Live prototype:**
+
+https://mauricio-hns.github.io/AI-Company-OS/
+
+**Repository:**
+
+https://github.com/Mauricio-HNS/AI-Company-OS
+
+---
+
+# Vision
+
+AI Company OS is being built around a larger idea:
+
+> **The next generation of software will not only help people operate companies. It will help companies operate themselves.**
+
+The long-term objective is an environment where humans define the direction, constraints and permissions — while an AI workforce continuously observes the business, discovers opportunities, executes authorized work, measures outcomes and learns what to do next.
+
+---
+
+<div align="center">
+
+**AI Company OS**  
+*Observe. Decide. Execute. Learn.*
+
+</div>

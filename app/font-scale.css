@@ -1,0 +1,73 @@
+/* Global typography scale: larger and easier to read */
+html,body{font-size:16px!important}
+.nav button{font-size:14px!important}
+.brandName{font-size:17px!important}
+.brandSub{font-size:12px!important}
+.status{font-size:13px!important}
+.eyebrow{font-size:13px!important}
+.title{font-size:30px!important}
+.pill,.iconBtn{font-size:14px!important;padding:11px 14px!important}
+.statLabel{font-size:13px!important}
+.statValue{font-size:27px!important}
+.trend,.positive{font-size:13px!important}
+.sectionTitle{font-size:16px!important}
+.sectionMeta{font-size:13px!important}
+.roomName{font-size:12px!important}
+.roomLead{font-size:15px!important}
+.agent{width:38px!important;height:38px!important;font-size:12px!important}
+.activityText{font-size:14px!important}
+.time{font-size:12px!important}
+.stageName{font-size:12px!important}
+.stageCount{font-size:24px!important}
+.loopLine{font-size:13px!important}
+.decisionTitle{font-size:18px!important}
+.decision button{font-size:14px!important;padding:11px 15px!important}
+.panelTitle h1{font-size:31px!important}
+.panelTitle p{font-size:14px!important}
+.metricCard small,.metricCard span{font-size:13px!important}
+.metricCard strong{font-size:25px!important}
+.agentCard{padding:19px!important}
+.agentAvatar{width:48px!important;height:48px!important;font-size:12px!important}
+.agentInfo span,.agentInfo p{font-size:12px!important}
+.agentCard>b{font-size:12px!important}
+.taskCard{padding:14px!important}
+.taskCard small,.taskCard span{font-size:11px!important}
+.taskCard strong{font-size:14px!important}
+.colHead{font-size:13px!important}
+.projectTop{font-size:12px!important}
+.projectCard h2{font-size:21px!important}
+.projectStats span{font-size:12px!important}
+.projectStats strong{font-size:17px!important}
+.bigMoney{font-size:42px!important}
+.alloc{font-size:13px!important;padding:13px!important}
+.strategyMain h2{font-size:26px!important}
+.step>b{font-size:12px!important}
+.step span{font-size:13px!important}
+.priority>span,.priority>b{font-size:13px!important}
+.memoryItem strong{font-size:15px!important}
+.memoryItem p{font-size:14px!important}
+.memoryItem small{font-size:11px!important}
+.drawer h2{font-size:27px!important}
+.drawerStatus{font-size:13px!important}
+.drawerBlock p{font-size:14px!important}
+.setting{font-size:14px!important;padding:20px!important}
+.field{font-size:13px!important}
+.field input{font-size:15px!important;padding:13px!important}
+.objectiveBox strong{font-size:14px!important}
+.objectiveBox span{font-size:12px!important}
+.modeRow button{font-size:12px!important;padding:11px 5px!important}
+.toggleRow,.limitRow,.permissionRow{font-size:13px!important}
+.limitRow b,.permissionRow b{font-size:12px!important}
+.ruleRow strong{font-size:13px!important}
+.ruleRow span{font-size:12px!important}
+.ruleRow button{font-size:11px!important}
+.addRule{font-size:12px!important}
+.agentLiveCard p,.agentTask{font-size:14px!important}
+.agentMeta b,.agentMeta span{font-size:13px!important}
+.toolChips span{font-size:12px!important}
+.taskItem em{font-size:11px!important}
+.missionFlow{font-size:13px!important}
+.memoryRow span,.memoryRow b{font-size:13px!important}
+.moduleAction{font-size:13px!important;padding:11px 14px!important}
+@media (max-width:1100px){.title{font-size:27px!important}.panelTitle h1{font-size:28px!important}}
+@media (max-width:700px){html,body{font-size:15px!important}.title{font-size:24px!important}.panelTitle h1{font-size:25px!important}}

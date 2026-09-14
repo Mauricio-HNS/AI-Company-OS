@@ -25,7 +25,7 @@ export default function Welcome() {
 
   return <main className="welcomeShell">
     <div className="welcomeGlow glowOne"/><div className="welcomeGlow glowTwo"/>
-    <header className="welcomeNav"><div className="welcomeBrand"><span>AI</span><div><b>AI Company OS</b><small>AUTONOMOUS COMPANY</small></div></div><div className="welcomeNavRight"><span>SIMULATION CORE</span><i/><span>ONLINE</span></div></header>
+    <header className="welcomeNav"><div className="welcomeBrand"><img src="./ai-company-os-logo.svg" alt="AI Company OS"/><div><b>AI Company OS</b><small>AUTONOMOUS COMPANY</small></div></div><div className="welcomeNavRight"><span>SIMULATION CORE</span><i/><span>ONLINE</span></div></header>
     <section className="welcomeStage">
       <div className="stageVisual"><div className="orbOuter"><div className="orbMiddle"><div className="orbCore"><Icon size={42}/></div></div></div><div className="orbit orbitA"/><div className="orbit orbitB"/><div className="visualLabel"><span>COMPANY INTELLIGENCE</span><b>READY TO OPERATE</b></div></div>
       <div className="stageCopy" key={slide}><div className="slideCount">0{slide + 1} <span>/ 03</span></div><div className="eyebrow">{current.eyebrow}</div><h1>{current.title}</h1><p>{current.text}</p><div className="welcomeActions"><Link className="primaryWelcome" href="/login" onClick={() => setStarted(true)}>Enter AI Company OS <ArrowRight size={17}/></Link><button className="ghost" onClick={() => { setStarted(true); setSlide((slide + 1) % 3); }}>Next experience <ChevronRight size={16}/></button></div></div>

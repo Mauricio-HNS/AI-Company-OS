@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { Activity, ArrowLeft, Bot, BrainCircuit, CheckCircle2, CircleDollarSign, Gauge, ShieldCheck, Target, Wrench, Zap } from 'lucide-react';
+import { Activity, ArrowLeft, Bot, BrainCircuit, CheckCircle2, CircleDollarSign, Gauge, ShieldCheck, Target, Wrench } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import '../../company.css';
+import './agent-detail.css';
 
 const agents: Record<string,{name:string;role:string;goal:string;state:string;efficiency:number;memory:number;tasks:number;completed:number;cost:string;tools:string[]}> = {
   ceo:{name:'CEO Agent',role:'Strategy & Capital',goal:'Maximize company growth within risk limits',state:'PLANNING',efficiency:98,memory:96,tasks:24,completed:21,cost:'€184',tools:['Planner','Finance','Intelligence']},

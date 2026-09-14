@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
 import { Activity, ArrowUpRight, Building2, CircleDollarSign, Gauge, Plus, ShieldCheck, Users, Zap } from 'lucide-react';
 import './master.css';
 
-const companies = [
+const seedCompanies = [
   { id: 'alpha', name: 'Company Alpha', type: 'AI SaaS Platform', revenue: '€38,420', profit: '€12,840', health: 94, agents: 18, missions: 4, status: 'Operational', objective: 'Launch the next recurring-revenue product' },
   { id: 'beta', name: 'Company Beta', type: 'AI Commerce', revenue: '€21,830', profit: '€7,420', health: 91, agents: 11, missions: 3, status: 'Operational', objective: 'Increase conversion and customer lifetime value' },
   { id: 'gamma', name: 'Company Gamma', type: 'AI Automation', revenue: '€4,280', profit: '€920', health: 87, agents: 7, missions: 2, status: 'Building', objective: 'Validate the first enterprise automation offer' },
@@ -17,7 +18,28 @@ const activity = [
   ['Portfolio OS', 'rebalanced simulated capital allocation', '€64,530', '41m'],
 ] as const;
 
+type ProvisionedTenant = {
+  id: string; name: string; sector: string; health: number; agents: string[]; objective: string; status: string;
+};
+
 export default function MasterPage() {
+  const [provisioned, setProvisioned] = useState<ProvisionedTenant[]>([]);
+
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('ai-company-os-tenants') || '[]');
+      if (Array.isArray(stored)) setProvisioned(stored);
+    } catch { setProvisioned([]); }
+  }, []);
+
+  const companies = useMemo(() => [
+    ...seedCompanies,
+    ...provisioned.map(t => ({
+      id: t.id, name: t.name, type: t.sector, revenue: '€0', profit: '€0', health: t.health || 100,
+      agents: t.agents?.length || 5, missions: 0, status: t.status === 'operational' ? 'Operational' : 'Building', objective: t.objective,
+    })),
+  ], [provisioned]);
+
   const totalRevenue = '€64,530';
   const totalProfit = '€21,180';
   const totalAgents = companies.reduce((n, c) => n + c.agents, 0);
@@ -46,7 +68,7 @@ export default function MasterPage() {
         <section className="portfolioStats">
           <Stat icon={<CircleDollarSign size={18} />} label="Portfolio revenue" value={totalRevenue} detail="+17.2% this cycle" />
           <Stat icon={<Zap size={18} />} label="Portfolio profit" value={totalProfit} detail="+€4,180 this cycle" />
-          <Stat icon={<Users size={18} />} label="AI workforce" value={`${totalAgents} agents`} detail="Across 3 companies" />
+          <Stat icon={<Users size={18} />} label="AI workforce" value={`${totalAgents} agents`} detail={`Across ${companies.length} companies`} />
           <Stat icon={<Activity size={18} />} label="Portfolio health" value={`${avgHealth}%`} detail="No critical alerts" />
         </section>
 

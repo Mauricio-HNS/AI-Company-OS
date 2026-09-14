@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Activity, ArrowLeft, Bot, CheckCircle2, GitBranch, ShieldCheck, Target, Timer, Zap } from 'lucide-react';
-import '../../../company.css';
+import '../../company.css';
 import './task-detail.css';
 
 export function generateStaticParams(){return ['alpha','beta','gamma'].flatMap(companyId=>['T-1041','T-1042','T-1043','T-1044','T-1045','T-1046'].map(taskId=>({companyId,taskId})))}

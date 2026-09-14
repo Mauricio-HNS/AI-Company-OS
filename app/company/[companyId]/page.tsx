@@ -1,6 +1,5 @@
 'use client';
 
-import { use } from 'react';
 import { ArrowLeft, Bot, BrainCircuit, ChartNoAxesCombined, CircleDollarSign, Gauge, LayoutDashboard, Network, Settings, ShieldCheck, Target, Users, Zap } from 'lucide-react';
 import Link from 'next/link';
 import './company.css';
@@ -11,19 +10,16 @@ const companies: Record<string, {name:string; type:string; revenue:string; profi
   gamma: {name:'Company Gamma', type:'AI Automation', revenue:'€4,280', profit:'€920', health:'87%', agents:7, missions:2, objective:'Validate the first enterprise automation offer'},
 };
 
-const nav = [
-  [LayoutDashboard,'Command Center'], [Bot,'Agents'], [Target,'Missions'], [Zap,'Tasks'],
-  [Gauge,'Products'], [Users,'Customers'], [CircleDollarSign,'Finance'], [ChartNoAxesCombined,'Intelligence'],
-  [BrainCircuit,'Knowledge'], [Network,'Operations'], [ShieldCheck,'Security'], [Settings,'Settings']
-] as const;
+export function generateStaticParams() { return Object.keys(companies).map(companyId => ({ companyId })); }
 
-export default function CompanyPage({params}:{params:Promise<{companyId:string}>}) {
-  const {companyId} = use(params);
-  const company = companies[companyId] ?? companies.alpha;
+const nav = [[LayoutDashboard,'Command Center'],[Bot,'Agents'],[Target,'Missions'],[Zap,'Tasks'],[Gauge,'Products'],[Users,'Customers'],[CircleDollarSign,'Finance'],[ChartNoAxesCombined,'Intelligence'],[BrainCircuit,'Knowledge'],[Network,'Operations'],[ShieldCheck,'Security'],[Settings,'Settings']] as const;
+
+export default function CompanyPage({params}:{params:{companyId:string}}) {
+  const company = companies[params.companyId] ?? companies.alpha;
   return <main className="companyOS">
     <aside className="companySide">
       <div className="companyBrand"><div className="companyMark">AI</div><div><b>AI Company OS</b><small>COMPANY OPERATING SYSTEM</small></div></div>
-      <Link className="portfolioBack" href="/"><ArrowLeft size={15}/> Portfolio</Link>
+      <Link className="portfolioBack" href="/portfolio"><ArrowLeft size={15}/> Portfolio</Link>
       <div className="companyIdentity"><span>COMPANY</span><strong>{company.name}</strong><small>{company.type}</small><i><em/> Operational</i></div>
       <nav>{nav.map(([Icon,label])=><button key={label} className={label==='Command Center'?'active':''}><Icon size={16}/><span>{label}</span></button>)}</nav>
       <div className="companySafety"><ShieldCheck size={15}/><span>Simulation mode<br/><b>Real money OFF</b></span></div>

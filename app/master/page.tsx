@@ -40,7 +40,7 @@ export default function MasterPage() {
       <section className="masterMain">
         <header className="masterHeader">
           <div><div className="masterEyebrow">Master command center</div><h1>Company Portfolio</h1><p>One control layer for every autonomous company you operate.</p></div>
-          <div className="masterHeaderActions"><span className="simulationPill"><i />Simulation mode</span><button className="masterAction"><Plus size={16} />New company</button></div>
+          <div className="masterHeaderActions"><span className="simulationPill"><i />Simulation mode</span><Link className="masterAction" href="/master/new"><Plus size={16} />New company</Link></div>
         </header>
 
         <section className="portfolioStats">
@@ -62,7 +62,7 @@ export default function MasterPage() {
               <span className="openCompany">Open company workspace <ArrowUpRight size={16} /></span>
             </Link>
           ))}
-          <button className="newCompanyCard"><div className="newCompanyIcon"><Plus size={22} /></div><strong>Create another company</strong><span>Start a new autonomous business workspace</span></button>
+          <Link href="/master/new" className="newCompanyCard"><div className="newCompanyIcon"><Plus size={22} /></div><strong>Create another company</strong><span>Start a new autonomous business workspace</span></Link>
         </section>
 
         <section className="masterBottomGrid">

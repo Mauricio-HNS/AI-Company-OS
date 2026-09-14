@@ -6,4 +6,4 @@ const companies: Record<string, {name:string;type:string;revenue:string;profit:s
   gamma:{name:'Company Gamma',type:'AI Automation',revenue:'€4,280',profit:'€920',health:'87%',agents:7,missions:2,objective:'Validate the first enterprise automation offer'}
 };
 export function generateStaticParams(){return Object.keys(companies).map(companyId=>({companyId}));}
-export default function CompanyPage({params,searchParams}:{params:{companyId:string};searchParams?:{view?:string}}){const company=companies[params.companyId]??companies.alpha;const raw=searchParams?.view??'command-center';const initialView=raw.split('-').map(x=>x.charAt(0).toUpperCase()+x.slice(1)).join(' ');return <CompanyWorkspace company={company} companyId={params.companyId} initialView={initialView}/>}
+export default function CompanyPage({params}:{params:{companyId:string}}){const company=companies[params.companyId]??companies.alpha;return <CompanyWorkspace company={company} companyId={params.companyId} initialView="Command Center"/>}

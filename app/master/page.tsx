@@ -54,13 +54,13 @@ export default function MasterPage() {
 
         <section className="companyGrid">
           {companies.map(company => (
-            <article className="masterCompanyCard" key={company.id}>
+            <Link href={`/company/${company.id}`} className="masterCompanyCard companyCardLink" key={company.id} aria-label={`Open details for ${company.name}`}>
               <div className="companyCardTop"><div className="companyIdentity"><div className="companyLogo">{company.name.split(' ').pop()?.[0]}</div><div><h3>{company.name}</h3><span>{company.type}</span></div></div><span className={company.status === 'Operational' ? 'statusBadge' : 'statusBadge building'}><i />{company.status}</span></div>
               <div className="companyObjective"><small>Current objective</small><strong>{company.objective}</strong></div>
               <div className="companyMetrics"><Metric label="Revenue" value={company.revenue} /><Metric label="Profit" value={company.profit} /><Metric label="Agents" value={String(company.agents)} /><Metric label="Missions" value={String(company.missions)} /></div>
               <div className="healthRow"><span>Company health</span><b>{company.health}%</b></div><div className="healthBar"><i style={{ width: `${company.health}%` }} /></div>
-              <Link href={`/company/${company.id}`} className="openCompany">Open company workspace <ArrowUpRight size={16} /></Link>
-            </article>
+              <span className="openCompany">Open company workspace <ArrowUpRight size={16} /></span>
+            </Link>
           ))}
           <button className="newCompanyCard"><div className="newCompanyIcon"><Plus size={22} /></div><strong>Create another company</strong><span>Start a new autonomous business workspace</span></button>
         </section>

@@ -19,15 +19,20 @@ body{color:var(--os-cream)!important}
 .sideBottom{border-top-color:rgba(65,90,119,.45)!important}.status{color:rgba(244,241,222,.68)!important}.dot{background:var(--os-sage)!important;box-shadow:0 0 10px rgba(119,141,122,.8)!important}
 .pill,.iconBtn{border-color:rgba(65,90,119,.65)!important;background:var(--os-blue)!important;color:var(--os-cream)!important}
 
-/* Premium cream embossed depth */
+/* Premium glassmorphism + subtle cream relief */
 .card,.agentCard,.projectCard,.financeHero,.strategyMain,.priorities,.settingsPanel,.pipeline,.loop,.floor,.live,.companyWide,.decisionHistory,.memoryPanel,.missionRegistry{
   position:relative!important;
-  border-color:rgba(212,196,168,.38)!important;
+  overflow:hidden!important;
+  border:1px solid rgba(244,241,222,.18)!important;
+  border-radius:24px!important;
+  background:linear-gradient(135deg,rgba(244,241,222,.075),rgba(65,90,119,.12) 45%,rgba(13,27,42,.38))!important;
+  backdrop-filter:blur(24px)!important;
+  -webkit-backdrop-filter:blur(24px)!important;
   box-shadow:
-    0 18px 42px rgba(0,0,0,.34),
+    0 20px 50px rgba(0,0,0,.38),
     inset 0 1px 0 rgba(244,241,222,.16),
-    inset 0 0 0 1px rgba(212,196,168,.07),
-    0 0 0 1px rgba(212,196,168,.08)!important;
+    inset 0 -1px 0 rgba(13,27,42,.25)!important;
+  isolation:isolate!important;
 }
 .card::before,.agentCard::before,.projectCard::before,.financeHero::before,.strategyMain::before,.priorities::before,.settingsPanel::before,.pipeline::before,.loop::before,.floor::before,.live::before,.companyWide::before,.decisionHistory::before,.memoryPanel::before,.missionRegistry::before{
   content:""!important;
@@ -35,11 +40,36 @@ body{color:var(--os-cream)!important}
   inset:0!important;
   border-radius:inherit!important;
   pointer-events:none!important;
-  background:linear-gradient(135deg,rgba(244,241,222,.09),transparent 28%,transparent 72%,rgba(13,27,42,.18))!important;
+  background:linear-gradient(135deg,rgba(244,241,222,.16),transparent 25%,transparent 70%,rgba(212,196,168,.06))!important;
+  opacity:.82!important;
+  z-index:-1!important;
 }
-.card,.agentCard{background:linear-gradient(180deg,#17263a,var(--os-blue))!important}
-.projectCard{background:linear-gradient(180deg,#17263a,#1b2b42)!important}
-.financeHero,.strategyMain,.priorities,.settingsPanel{background:linear-gradient(145deg,#17263a,#1b2b42)!important}
+.card::after,.agentCard::after,.projectCard::after,.financeHero::after,.strategyMain::after,.priorities::after,.settingsPanel::after,.pipeline::after,.loop::after,.floor::after,.live::after,.companyWide::after,.decisionHistory::after,.memoryPanel::after,.missionRegistry::after{
+  content:""!important;
+  position:absolute!important;
+  width:180px!important;
+  height:180px!important;
+  top:-105px!important;
+  left:-75px!important;
+  border-radius:50%!important;
+  background:rgba(244,241,222,.055)!important;
+  filter:blur(58px)!important;
+  pointer-events:none!important;
+  z-index:-1!important;
+}
+.card,.agentCard{background:linear-gradient(135deg,rgba(244,241,222,.075),rgba(65,90,119,.13) 45%,rgba(13,27,42,.40))!important}
+.projectCard{background:linear-gradient(135deg,rgba(244,241,222,.065),rgba(65,90,119,.14) 48%,rgba(13,27,42,.42))!important}
+.financeHero,.strategyMain,.priorities,.settingsPanel{background:linear-gradient(145deg,rgba(244,241,222,.08),rgba(65,90,119,.14) 46%,rgba(13,27,42,.40))!important}
+.card:hover,.agentCard:hover,.projectCard:hover,.financeHero:hover,.strategyMain:hover,.priorities:hover,.settingsPanel:hover,.pipeline:hover,.loop:hover,.floor:hover,.live:hover,.companyWide:hover,.decisionHistory:hover,.memoryPanel:hover,.missionRegistry:hover{
+  transform:translateY(-3px)!important;
+  border-color:rgba(244,241,222,.28)!important;
+  box-shadow:
+    0 28px 60px rgba(0,0,0,.45),
+    inset 0 1px 0 rgba(244,241,222,.22),
+    0 0 30px rgba(212,196,168,.045)!important;
+  transition:transform 220ms ease,box-shadow 220ms ease,border-color 220ms ease!important;
+}
+
 .statValue,.title,.sectionTitle,.panelTitle h1,.roomLead,.projectCard h2,.bigMoney,.strategyMain h2,.step strong,.memoryItem strong,.drawer h2,.setting b,.colHead b{color:var(--os-cream)!important}
 .trend,.positive,.agentCard>b,.limitRow b,.permissionRow b,.drawerStatus{color:var(--os-sage)!important}
 .companyFloor{border-color:rgba(65,90,119,.72)!important;background:radial-gradient(circle at 50% 45%,rgba(119,141,122,.13),transparent 34%),linear-gradient(145deg,#152438,#203149)!important}
@@ -48,7 +78,7 @@ body{color:var(--os-cream)!important}
 .agent{background:#263750!important;border-color:rgba(65,90,119,.9)!important;color:var(--os-cream)!important}.agent:hover{border-color:var(--os-sand)!important}.agent.working{border-color:var(--os-sage)!important;box-shadow:0 0 14px rgba(119,141,122,.25)!important}.room.ceo .agent{background:#35465a!important}
 .activityItem,.step,.setting,.ruleRow,.toggleRow,.limitRow,.permissionRow,.subHeading,.memoryRow{border-color:rgba(65,90,119,.42)!important}.activityIcon,.agentAvatar{background:#263750!important;color:var(--os-cream)!important;border-color:rgba(65,90,119,.82)!important}.activityText{color:rgba(244,241,222,.76)!important}.activityText strong{color:var(--os-cream)!important}.bottom,.dashboard{color:var(--os-cream)}
 .stage,.taskCol,.alloc,.toolChips span{background:#132337!important;border-color:rgba(65,90,119,.62)!important}.stageName,.colHead,.taskCard small,.taskCard span,.loopLine,.agentInfo span,.agentInfo p{color:rgba(244,241,222,.52)!important}.stageCount,.loopLine b,.taskCard strong{color:var(--os-cream)!important}.bar{background:#263750!important}.bar i{background:var(--os-sage)!important}
-.decision{background:linear-gradient(135deg,var(--os-blue),#24364c)!important;border:1px solid rgba(212,196,168,.4)!important}.decision button{border-color:rgba(212,196,168,.65)!important;background:#35465a!important;color:var(--os-cream)!important}.metricCard{color:var(--os-cream)!important}.agentCard:hover{border-color:var(--os-sand)!important}.taskCard{background:#18283d!important;border-color:rgba(65,90,119,.72)!important}
+.decision{background:linear-gradient(135deg,var(--os-blue),#24364c)!important;border:1px solid rgba(212,196,168,.4)!important}.decision button{border-color:rgba(212,196,168,.65)!important;background:#35465a!important;color:var(--os-cream)!important}.metricCard{color:var(--os-cream)!important}.taskCard{background:#18283d!important;border-color:rgba(65,90,119,.72)!important}
 .drawerBackdrop{background:rgba(5,12,20,.68)!important}.drawer{background:var(--os-blue)!important;border-left-color:rgba(65,90,119,.8)!important}.close{color:rgba(244,241,222,.58)!important}.drawerBlock{border-top-color:rgba(65,90,119,.48)!important}.drawerBlock p{color:rgba(244,241,222,.78)!important}.settingsList{border-color:rgba(65,90,119,.65)!important}.setting{background:#16263b!important}.setting b:nth-child(2){color:var(--os-sand)!important}.field input{background:#0f2032!important;border-color:rgba(65,90,119,.8)!important;color:var(--os-cream)!important}.field input:focus{border-color:var(--os-sand)!important}.objectiveBox{border-color:rgba(212,196,168,.5)!important;background:#182a3f!important;color:var(--os-sand)!important}.objectiveBox strong{color:var(--os-cream)!important}.objectiveBox span{color:rgba(244,241,222,.55)!important}.modeRow button{border-color:rgba(65,90,119,.7)!important;background:#122236!important;color:rgba(244,241,222,.55)!important}.modeRow button.selected{background:#3a4650!important;border-color:var(--os-sand)!important;color:var(--os-cream)!important}.toggle{border-color:rgba(65,90,119,.85)!important;background:#16283d!important}.toggle i{background:#65778b!important}.activeToggle{background:#53675a!important;border-color:var(--os-sage)!important}.activeToggle i{background:var(--os-cream)!important}.dangerText{color:var(--os-sand)!important}.ruleOn{border-color:rgba(119,141,122,.75)!important;background:#263a31!important;color:var(--os-sage)!important}.ruleOff{border-color:rgba(65,90,119,.72)!important;background:#17273b!important;color:rgba(244,241,222,.55)!important}.addRule{border-color:rgba(212,196,168,.55)!important;color:var(--os-sand)!important}.approvalMatrix{color:var(--os-sand)!important}
 .agentLiveCard p,.agentTask{color:rgba(244,241,222,.7)!important}.agentMeta b,.agentMeta span{color:var(--os-sage)!important}.agentMeta span{color:rgba(244,241,222,.5)!important}.toolChips span{color:rgba(244,241,222,.56)!important}.taskItem em{color:rgba(244,241,222,.56)!important;border-color:rgba(65,90,119,.7)!important}.missionRegistry>div:first-child>span{color:var(--os-sand)!important}.missionRegistry>b{color:var(--os-sage)!important}.missionFlow{color:rgba(244,241,222,.58)!important}.missionFlow svg{color:var(--os-sand)!important}.memoryRow svg{color:var(--os-sand)!important}.memoryRow span{color:rgba(244,241,222,.7)!important}.memoryRow b{color:var(--os-sage)!important}.moduleAction{border-color:rgba(212,196,168,.7)!important;background:#40546a!important;color:var(--os-cream)!important}
-button:hover{color:var(--os-cream)}::selection{background:var(--os-slate);color:var(--os-cream)}
+button:hover{color:var(--os-cream)}::selection{background:var(--os-slate);color:var(--os-cream)!important}

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import './company/[companyId]/phase2.css';
 import './palette.css';
+import './font-scale.css';
 
 export const metadata: Metadata = {
   title: 'AI Company OS',

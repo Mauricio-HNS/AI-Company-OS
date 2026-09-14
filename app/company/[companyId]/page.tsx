@@ -1,5 +1,3 @@
-'use client';
-
 import { ArrowLeft, Bot, BrainCircuit, ChartNoAxesCombined, CircleDollarSign, Gauge, LayoutDashboard, Network, Settings, ShieldCheck, Target, Users, Zap } from 'lucide-react';
 import Link from 'next/link';
 import './company.css';

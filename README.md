@@ -1,14 +1,19 @@
-# AI Company OS
-
 <div align="center">
 
-## The Operating System for Autonomous Companies
+# AI Company OS
 
-AI Company OS is a platform for building companies operated by coordinated AI agents.
+### The Operating System for Autonomous Companies
+
+**AI agents that plan, execute, measure, learn and operate businesses.**
+
+[![Deploy to GitHub Pages](https://github.com/Mauricio-HNS/AI-Company-OS/actions/workflows/deploy.yml/badge.svg)](https://github.com/Mauricio-HNS/AI-Company-OS/actions/workflows/deploy.yml)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-orange)](https://mauricio-hns.github.io/AI-Company-OS/)
+[![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-React-blue)](https://www.typescriptlang.org/)
 
 **Observe → Decide → Execute → Measure → Learn → Repeat**
 
-[Open the Demo](https://mauricio-hns.github.io/AI-Company-OS/) · [GitHub Repository](https://github.com/Mauricio-HNS/AI-Company-OS)
+[Open the Demo](https://mauricio-hns.github.io/AI-Company-OS/) · [View the Repository](https://github.com/Mauricio-HNS/AI-Company-OS)
 
 </div>
 
@@ -16,17 +21,26 @@ AI Company OS is a platform for building companies operated by coordinated AI ag
 
 ## What is AI Company OS?
 
-AI Company OS is designed to turn a business objective into a continuous operating cycle.
+AI Company OS is a platform for building **companies operated by coordinated AI agents**.
 
-Instead of building another chatbot, the platform models an entire company: its objectives, departments, agents, missions, tasks, tools, finances, customers, knowledge and performance.
+Instead of creating another chatbot, the system models an entire company: objectives, departments, agents, missions, tasks, tools, finances, customers, knowledge and performance.
 
-The long-term goal is simple:
+The long-term goal is to give a company an objective and let its AI workforce continuously:
 
-> **Give the company an objective and let its AI workforce continuously find opportunities, execute authorized work, measure outcomes and improve the next decision.**
+- Observe the business
+- Discover opportunities
+- Plan missions
+- Delegate tasks
+- Execute authorized actions
+- Measure results
+- Learn from outcomes
+- Generate the next plan
+
+> **Humans define direction, constraints and permissions. The AI workforce operates the company within those boundaries.**
 
 ---
 
-## The Core Loop
+## The Autonomous Company Loop
 
 ```text
                     COMPANY OBJECTIVE
@@ -61,133 +75,27 @@ The long-term goal is simple:
                            └──────────► NEXT PLAN
 ```
 
-This creates a company that does not simply wait for prompts. It continuously operates toward measurable business outcomes.
+This is the core idea: **the company does not simply wait for prompts. It continuously operates toward measurable outcomes.**
 
 ---
 
-## A Simple Example
+# Product
 
-Imagine a coffee shop with one objective:
+## Master Dashboard
 
-> **Increase profit by 20%.**
+The global control layer for the operator.
 
-AI Company OS could coordinate a digital workforce around that objective.
-
-### 01 — Observe
-
-The system analyzes authorized business data:
-
-- Sales
-- Inventory
-- Suppliers
-- Schedules
-- Delivery
-- Marketing
-- Customers
-- Costs
-
-It may discover:
-
-- Coffee is the most frequently sold product.
-- Croissants have a strong margin.
-- Sales are weak between 14:00 and 16:00.
-- Fridays generate significantly more revenue.
-- Milk purchasing is higher than necessary.
-
-### 02 — Find an Opportunity
-
-The system identifies unused capacity and proposes an experiment:
-
-> **Coffee + cake for €4.50, Monday–Friday, 14:00–16:00, for 14 days.**
-
-Before execution, it estimates expected revenue, cost and margin.
-
-### 03 — Execute
-
-After authorization, the appropriate agents can coordinate:
-
-- Campaign creation
-- Pricing
-- Marketing content
-- Customer communication
-- Experiment tracking
-- Performance monitoring
-
-### 04 — Measure
-
-```text
-EXPERIMENT #27
-
-Additional sales        +382
-Additional revenue      +€1,719
-Additional cost           €612
-Additional profit       +€1,107
-
-RESULT: APPROVED
-```
-
-### 05 — Learn
-
-The company keeps what worked and feeds the result into future decisions.
-
-It may then identify another opportunity:
-
-> **Reduce the weekly milk order from 120 L to 100 L. Estimated saving: €280/month.**
-
-Then the cycle starts again.
-
----
-
-# Company Architecture
-
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                     AI COMPANY OS                           │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  CEO / ORCHESTRATOR                                         │
-│          │                                                  │
-│          ├── Strategy                                       │
-│          ├── Research                                       │
-│          ├── Product                                        │
-│          ├── Marketing                                      │
-│          ├── Sales                                          │
-│          ├── Finance                                        │
-│          ├── Operations                                     │
-│          └── Intelligence                                   │
-│                                                             │
-│  Every department can contain specialized AI agents.       │
-│                                                             │
-├─────────────────────────────────────────────────────────────┤
-│ Objectives · Missions · Tasks · Agents · Tools · Results   │
-├─────────────────────────────────────────────────────────────┤
-│ Memory · Knowledge · KPIs · Finance · Risk · Learning      │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Product Interface
-
-The platform is being built around a premium command-center experience rather than a conventional admin panel.
-
-### Master Dashboard
-
-A global control layer for the operator:
-
-- All companies
-- Revenue
-- Profit
-- Costs
+- Multi-company portfolio
+- Revenue and profit
+- Costs and performance
 - AI workforce
-- Missions
+- Missions and activity
 - Company health
-- Portfolio performance
-- Global activity
+- Portfolio-level intelligence
 
-### Company Dashboard
+## Company Dashboard
 
-Each company gets its own operating environment:
+Every company receives its own operating environment.
 
 - Command Center
 - Agents
@@ -202,7 +110,7 @@ Each company gets its own operating environment:
 - Security
 - Settings
 
-### Multi-Company Model
+## Multi-Company Architecture
 
 ```text
 MASTER OS
@@ -223,7 +131,37 @@ MASTER OS
         └── AI Agents
 ```
 
-Every company can operate independently while the master layer provides portfolio-level visibility.
+Each company can operate independently while the master layer provides portfolio-wide visibility.
+
+---
+
+# Interface Philosophy
+
+The product is being built as a **premium AI command center**, not a conventional administration panel.
+
+The interface is designed to make an autonomous company understandable at a glance:
+
+```text
+OBJECTIVES
+    ↓
+MISSIONS
+    ↓
+TASKS
+    ↓
+AI WORKFORCE
+    ↓
+TOOLS
+    ↓
+RESULTS
+    ↓
+KPIs
+    ↓
+LEARNING
+    ↓
+NEXT PLAN
+```
+
+The first development priority is the operating experience and simulation layer. Real execution comes later, behind permissions and controls.
 
 ---
 
@@ -233,16 +171,17 @@ Every company can operate independently while the master layer provides portfoli
 
 **In progress**
 
-- [x] Company Command Center
+- [x] Welcome / presentation experience
+- [x] Login and recovery interface
 - [x] Master / Portfolio Dashboard
 - [x] Company dashboards
+- [x] Multi-company structure
 - [x] AI workforce visualization
-- [x] Missions and execution pipeline
+- [x] Mission and execution pipeline
 - [x] KPI visualization
 - [x] Live activity simulation
 - [x] Autonomous loop visualization
-- [x] GitHub Pages deployment pipeline
-- [x] Multi-company structure
+- [x] GitHub Pages deployment
 - [ ] Functional dashboard modules
 - [ ] Persistent company creation
 - [ ] Authentication backend
@@ -291,26 +230,76 @@ Every company can operate independently while the master layer provides portfoli
 - [ ] Communication channels
 - [ ] Controlled external actions
 
-Real-money and irreversible actions will remain protected by explicit permissions, limits and safety controls.
+Real-money and irreversible actions remain protected by explicit permissions, limits and safety controls.
 
 ---
 
-# Technology Direction
+# Example
 
-The architecture is being designed to remain model-independent.
+Imagine a coffee shop with one objective:
 
-Potential components include:
+> **Increase profit by 20%.**
+
+The AI workforce could observe sales, inventory, suppliers, schedules, marketing, customers and costs.
+
+It might discover that sales are weak between 14:00 and 16:00 and propose:
+
+> **Coffee + cake for €4.50, Monday–Friday, 14:00–16:00, for 14 days.**
+
+After authorization, specialized agents can coordinate the campaign, monitor the experiment and evaluate the result.
+
+```text
+EXPERIMENT #27
+
+Additional sales        +382
+Additional revenue      +€1,719
+Additional cost           €612
+Additional profit       +€1,107
+
+RESULT: APPROVED
+```
+
+The result becomes knowledge for the next decision.
+
+---
+
+# Architecture Direction
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                     AI COMPANY OS                           │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  CEO / ORCHESTRATOR                                         │
+│          │                                                  │
+│          ├── Strategy                                       │
+│          ├── Research                                       │
+│          ├── Product                                        │
+│          ├── Marketing                                      │
+│          ├── Sales                                          │
+│          ├── Finance                                        │
+│          ├── Operations                                     │
+│          └── Intelligence                                   │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│ Objectives · Missions · Tasks · Agents · Tools · Results   │
+├─────────────────────────────────────────────────────────────┤
+│ Memory · Knowledge · KPIs · Finance · Risk · Learning      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Technology Direction
 
 - **Frontend:** Next.js / React / TypeScript
 - **AI Services:** Python / FastAPI
-- **LLM Layer:** Multiple interchangeable model providers
+- **LLM Layer:** Model-independent provider architecture
 - **Knowledge:** RAG + vector search
 - **Infrastructure:** Cloud-native services
 - **Containers:** Docker
 - **Data:** Relational + vector storage
 - **Observability:** Metrics, traces and execution history
 
-The exact production stack can evolve without changing the core company model.
+The production stack can evolve without changing the core company model.
 
 ---
 
@@ -318,19 +307,19 @@ The exact production stack can evolve without changing the core company model.
 
 ### 1. The company is the product
 
-The valuable asset is not a single AI model. It is the combination of company structure, memory, workflows, tools, metrics and accumulated learning.
+The valuable asset is the combination of company structure, memory, workflows, tools, metrics and accumulated learning.
 
 ### 2. Agents have responsibilities
 
-An agent is not simply a chat window. It has a role, objective, context, tools, tasks and measurable performance.
+An agent has a role, objective, context, tools, tasks and measurable performance.
 
 ### 3. Everything becomes measurable
 
-Missions should lead to tasks. Tasks should produce results. Results should be evaluated against objectives.
+Missions create tasks. Tasks produce results. Results are evaluated against objectives.
 
 ### 4. Simulation before autonomy
 
-The system is being developed in a safe simulated environment before real business actions are connected.
+The system is developed in a safe simulated environment before real-world execution is connected.
 
 ### 5. Human control where it matters
 
@@ -365,8 +354,6 @@ BUSINESS INTEGRATIONS
 AUTONOMOUS COMPANIES
 ```
 
-The project is intentionally being built from the interface and operating model downward. The objective is to make the company understandable and observable before connecting real-world execution.
-
 ---
 
 # Project Structure
@@ -395,31 +382,28 @@ AI-Company-OS/
 
 # Demo
 
-The current project is available as a GitHub Pages prototype.
+### Live Prototype
 
-**Live prototype:**
+**https://mauricio-hns.github.io/AI-Company-OS/**
 
-https://mauricio-hns.github.io/AI-Company-OS/
+### Repository
 
-**Repository:**
-
-https://github.com/Mauricio-HNS/AI-Company-OS
+**https://github.com/Mauricio-HNS/AI-Company-OS**
 
 ---
 
 # Vision
 
-AI Company OS is being built around a larger idea:
-
 > **The next generation of software will not only help people operate companies. It will help companies operate themselves.**
 
-The long-term objective is an environment where humans define the direction, constraints and permissions — while an AI workforce continuously observes the business, discovers opportunities, executes authorized work, measures outcomes and learns what to do next.
+AI Company OS is being built toward an environment where humans define direction, constraints and permissions while an AI workforce continuously observes the business, discovers opportunities, executes authorized work, measures outcomes and learns what to do next.
 
 ---
 
 <div align="center">
 
-**AI Company OS**  
-*Observe. Decide. Execute. Learn.*
+## AI Company OS
+
+**Observe. Decide. Execute. Learn.**
 
 </div>

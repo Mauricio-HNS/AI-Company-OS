@@ -1,6 +1,7 @@
 'use client';
 
-import { Building2, ChevronRight, CircleDollarSign, Cpu, Plus, TrendingUp, Activity, ShieldCheck } from 'lucide-react';
+import { useState } from 'react';
+import { Building2, ChevronRight, CircleDollarSign, Cpu, Plus, TrendingUp, Activity, ShieldCheck, X } from 'lucide-react';
 import Link from 'next/link';
 import './portfolio.css';
 
@@ -11,9 +12,10 @@ const companies = [
 ];
 
 export default function PortfolioPage() {
+  const [showCreate, setShowCreate] = useState(false);
   return <main className="portfolioShell">
-    <header className="portfolioTop"><div className="portfolioBrand"><span>AI</span><div><b>AI COMPANY OS</b><small>PORTFOLIO COMMAND</small></div></div><div className="portfolioUser"><span className="liveDot"/> SYSTEM ONLINE <strong>MH</strong></div></header>
-    <section className="portfolioHero"><div><div className="eyebrow">OWNER / HOLDING / LIVE</div><h1>Your companies.<br/><em>One operating system.</em></h1><p>Control every autonomous company, capital allocation and strategic mission from one command center.</p></div><button className="createCompany"><Plus size={17}/> Create company</button></section>
+    <header className="portfolioTop"><div className="portfolioBrand"><span>AI</span><div><b>AI COMPANY OS</b><small>PORTFOLIO COMMAND</small></div></div><div className="portfolioUser"><Link href="/welcome">INTRO</Link><Link href="/company/alpha">DEMO COMPANY</Link><span className="liveDot"/> SYSTEM ONLINE <strong>MH</strong></div></header>
+    <section className="portfolioHero"><div><div className="eyebrow">OWNER / HOLDING / LIVE</div><h1>Your companies.<br/><em>One operating system.</em></h1><p>Control every autonomous company, capital allocation and strategic mission from one command center.</p></div><button className="createCompany" onClick={()=>setShowCreate(true)}><Plus size={17}/> Create company</button></section>
     <section className="globalMetrics"><Metric icon={<CircleDollarSign/>} label="Portfolio value" value="€64,530" delta="+24.8%"/><Metric icon={<TrendingUp/>} label="Total profit" value="€21,180" delta="+19.4%"/><Metric icon={<Cpu/>} label="Active agents" value="36" delta="+6 this week"/><Metric icon={<Activity/>} label="Active missions" value="9" delta="3 executing"/></section>
     <div className="sectionHeading"><div><span>COMPANIES</span><h2>Operating portfolio</h2></div><div className="portfolioHealth"><ShieldCheck size={15}/> ALL SYSTEMS HEALTHY</div></div>
     <section className="companyGrid">{companies.map((company)=><article className="companyCard" key={company.name}>
@@ -25,7 +27,9 @@ export default function PortfolioPage() {
       <Link className="openCompany" href={`/company/${company.id}`}>Open company <ChevronRight size={16}/></Link>
     </article>)}</section>
     <section className="portfolioBottom"><div><span>GLOBAL INTELLIGENCE</span><h2>Capital is moving toward growth.</h2><p>The holding layer continuously compares company performance and identifies where resources can create the highest expected return.</p></div><div className="allocation"><div><span>RECOMMENDED ALLOCATION</span><b>€8,400</b><small>to Company Gamma</small></div><div className="allocationBar"><i/></div><p>Expected portfolio impact <strong>+7.2%</strong></p></div></section>
+    {showCreate&&<div className="modalBackdrop" onClick={()=>setShowCreate(false)}><div className="createModal" onClick={e=>e.stopPropagation()}><button className="modalClose" onClick={()=>setShowCreate(false)}><X size={17}/></button><div className="eyebrow">NEW AUTONOMOUS COMPANY</div><h2>Create a company shell</h2><p>Define the company here first. Agents, strategy, integrations and real execution can be connected later.</p><label>Company name<input placeholder="Company Delta"/></label><label>Business model<select defaultValue="AI SaaS"><option>AI SaaS</option><option>AI Commerce</option><option>AI Automation</option><option>AI Services</option></select></label><button className="launchCompany" onClick={()=>setShowCreate(false)}>Create simulation company <ArrowIcon/></button></div></div>}
   </main>
 }
 
 function Metric({icon,label,value,delta}:{icon:React.ReactNode;label:string;value:string;delta:string}){return <div className="metric"><div className="metricIcon">{icon}</div><div><small>{label}</small><b>{value}</b><span>{delta}</span></div></div>}
+function ArrowIcon(){return <ChevronRight size={15}/>}

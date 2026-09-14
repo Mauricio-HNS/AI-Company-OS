@@ -167,9 +167,15 @@ The first development priority is the operating experience and simulation layer.
 
 # Current Status
 
+> **Current phase: Phase 2 — Agent Engine**
+>
+> The project has moved beyond the static dashboard prototype. The company workspace now contains a simulated autonomous operating loop with agent states, mission progression, execution activity, decision summaries and runtime controls.
+>
+> **Current development mode: Simulation-first.** Real LLMs, external APIs and financial actions remain disconnected until the underlying engine and permission model are ready.
+
 ### Phase 1 — Interface & Simulation
 
-**In progress**
+**Completed**
 
 - [x] Welcome / presentation experience
 - [x] Login and recovery interface
@@ -182,21 +188,36 @@ The first development priority is the operating experience and simulation layer.
 - [x] Live activity simulation
 - [x] Autonomous loop visualization
 - [x] GitHub Pages deployment
-- [ ] Functional dashboard modules
-- [ ] Persistent company creation
-- [ ] Authentication backend
+- [x] Functional dashboard modules
+- [x] Persistent simulation company creation
+- [x] Simulated authentication session
+- [x] Responsive command-center interface
 
 ### Phase 2 — Agent Engine
 
-- [ ] Agent roles and goals
+**In progress**
+
+- [x] Agent runtime visualization
+- [x] Dynamic agent states
+- [x] Autonomous execution loop simulation
+- [x] Mission progression simulation
+- [x] Execution pipeline state changes
+- [x] Agent activity feed
+- [x] Decision summary log
+- [x] Runtime / pause controls
+- [x] Agent performance visualization
+- [ ] Agent registry
+- [ ] Structured agent goals and responsibilities
 - [ ] Agent memory
 - [ ] Tool registry
-- [ ] Task execution
-- [ ] Agent communication
-- [ ] Decision history
-- [ ] Performance evaluation
+- [ ] Task queue with dependencies
+- [ ] Agent-to-agent communication model
+- [ ] Persistent decision history
+- [ ] Evaluation and scoring engine
 
 ### Phase 3 — Company Engine
+
+**Planned**
 
 - [ ] Objectives
 - [ ] Strategy
@@ -210,6 +231,8 @@ The first development priority is the operating experience and simulation layer.
 
 ### Phase 4 — Autonomous Operations
 
+**Planned**
+
 - [ ] Planning engine
 - [ ] Mission generation
 - [ ] Task delegation
@@ -221,6 +244,8 @@ The first development priority is the operating experience and simulation layer.
 
 ### Phase 5 — Real AI & Business Integrations
 
+**Planned**
+
 - [ ] LLM providers
 - [ ] RAG / knowledge systems
 - [ ] Business APIs
@@ -231,6 +256,39 @@ The first development priority is the operating experience and simulation layer.
 - [ ] Controlled external actions
 
 Real-money and irreversible actions remain protected by explicit permissions, limits and safety controls.
+
+---
+
+# Current Autonomous Runtime
+
+The current simulated engine follows this operational cycle:
+
+```text
+OBJECTIVE
+    ↓
+PLAN
+    ↓
+DELEGATE
+    ↓
+EXECUTE
+    ↓
+OBSERVE
+    ↓
+EVALUATE
+    ↓
+LEARN
+    ↓
+REPLAN
+    └──────────────► NEXT CYCLE
+```
+
+Agents can move through runtime states such as:
+
+```text
+IDLE → PLANNING → EXECUTING → OBSERVING → LEARNING → IDLE
+```
+
+The purpose of this stage is to validate the operating model and interface before connecting real model providers and external business tools.
 
 ---
 
@@ -336,7 +394,7 @@ INTERFACE
 SIMULATION
     │
     ▼
-AGENT ENGINE
+AGENT ENGINE  ← CURRENT
     │
     ▼
 COMPANY ENGINE

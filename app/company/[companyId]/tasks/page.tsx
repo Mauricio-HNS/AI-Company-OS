@@ -1,15 +1,16 @@
-'use client';
-import { use } from 'react';
 import { ArrowLeft, Bot, CheckCircle2, Clock3, Play, Target } from 'lucide-react';
 import Link from 'next/link';
 import { getCompanyTasks, summarizeOperations, TaskStatus } from '@/lib/operations-engine';
 import '../company.css';
 
+const companies = ['alpha','beta','gamma'];
+export function generateStaticParams(){return companies.map(companyId=>({companyId}));}
+
 const columns: TaskStatus[] = ['BACKLOG','PLANNING','EXECUTING','REVIEW','COMPLETED'];
 const labels: Record<TaskStatus,string> = {BACKLOG:'Backlog',PLANNING:'Planning',EXECUTING:'Executing',REVIEW:'Review',COMPLETED:'Completed'};
 
-export default function TasksPage({params}:{params:Promise<{companyId:string}>}) {
-  const {companyId}=use(params);
+export default function TasksPage({params}:{params:{companyId:string}}) {
+  const {companyId}=params;
   const tasks=getCompanyTasks(companyId);
   const summary=summarizeOperations(companyId);
   return <main className="companyOS">

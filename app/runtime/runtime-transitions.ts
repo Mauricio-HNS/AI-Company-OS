@@ -38,7 +38,16 @@ export function canTransition(state: RuntimeContextState, to: RuntimePhase): Run
     }
   }
 
-  if (to === 'OUTCOME' && !state.action) return { allowed: false, from, to, reason: 'Outcome requires an action.' };
+  if (to === 'OUTCOME') {
+    if (!state.action) return { allowed: false, from, to, reason: 'Outcome requires an action.' };
+    if (!state.executionReceipt) {
+      return { allowed: false, from, to, reason: 'Outcome requires a recorded execution receipt.' };
+    }
+    if (state.executionReceipt.actionId !== state.action.id) {
+      return { allowed: false, from, to, reason: 'Execution receipt does not match the current action.' };
+    }
+  }
+
   if (to === 'LEARNING' && !state.outcome) return { allowed: false, from, to, reason: 'Learning requires an observed outcome.' };
   if (to === 'REPLAN' && !state.outcome) return { allowed: false, from, to, reason: 'Replan requires an observed outcome.' };
 
@@ -66,6 +75,8 @@ export const RUNTIME_TRANSITION_RULES = {
   BLOCK_STOPS_EXECUTION: 'BLOCK is terminal for the current execution attempt.',
   APPROVAL_IS_NOT_AUTOMATIC: 'APPROVAL_REQUIRED permits the approval path but never supplies owner approval itself.',
   OUTCOME_REQUIRES_ACTION: 'OUTCOME cannot precede ACTION.',
+  OUTCOME_REQUIRES_RECEIPT: 'OUTCOME cannot be recorded without proof that the execution boundary was crossed.',
+  RECEIPT_MUST_MATCH_ACTION: 'The execution receipt must reference the exact action being observed.',
   LEARNING_REQUIRES_OUTCOME: 'LEARNING cannot precede an observed OUTCOME.',
   REPLAN_RESTARTS_EVALUATION: 'REPLAN returns to PLAN and therefore forces plan evaluation and policy reevaluation.',
 } as const;

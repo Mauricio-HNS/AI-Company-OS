@@ -1,5 +1,6 @@
 import CompanyRuntimeWorkspace from './CompanyRuntimeWorkspace';
 import CompanyRuntimeProvider from './CompanyRuntimeContext';
+import CompanySessionGate from './CompanySessionGate';
 import ControlRail from './ControlRail';
 
 const companies: Record<string, {name:string;type:string;revenue:string;profit:string;health:string;agents:number;missions:number;objective:string}> = {
@@ -12,8 +13,10 @@ export function generateStaticParams(){return Object.keys(companies).map(company
 
 export default function CompanyPage({params}:{params:{companyId:string}}){
   const company=companies[params.companyId]??companies.alpha;
-  return <CompanyRuntimeProvider company={company}>
-    <ControlRail companyId={params.companyId}/>
-    <CompanyRuntimeWorkspace company={company} companyId={params.companyId} initialView="Command Center"/>
-  </CompanyRuntimeProvider>
+  return <CompanySessionGate companyId={params.companyId} companyName={company.name}>
+    <CompanyRuntimeProvider company={company}>
+      <ControlRail companyId={params.companyId}/>
+      <CompanyRuntimeWorkspace company={company} companyId={params.companyId} initialView="Command Center"/>
+    </CompanyRuntimeProvider>
+  </CompanySessionGate>
 }

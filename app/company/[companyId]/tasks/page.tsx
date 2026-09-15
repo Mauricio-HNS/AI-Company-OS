@@ -4,6 +4,7 @@ import { ArrowLeft, Bot, CheckCircle2, Clock3, Play, Search, Target } from 'luci
 import Link from 'next/link';
 import { getCompanyTasks, summarizeOperations, TaskStatus } from '@/lib/operations-engine';
 import '../company.css';
+import './tasks.css';
 
 const companies = ['alpha','beta','gamma'];
 export function generateStaticParams(){return companies.map(companyId=>({companyId}));}

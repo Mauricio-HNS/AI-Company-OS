@@ -1,0 +1,74 @@
+'use client';
+
+import Link from 'next/link';
+import { AlertTriangle, ArrowRight, CheckCircle2, Clock3, ShieldCheck, SlidersHorizontal, UserRound } from 'lucide-react';
+import './requests.css';
+
+type Priority = 'P0' | 'P1' | 'P2' | 'P3' | 'P4';
+type Status = 'DIAGNOSTIC' | 'EXECUTING' | 'WAITING_APPROVAL' | 'COMPLETED';
+
+type RequestItem = {
+  id: string;
+  client: string;
+  category: string;
+  priority: Priority;
+  impact: 'LOW' | 'MEDIUM' | 'HIGH';
+  sla: string;
+  summary: string;
+  domain: string;
+  environment: string;
+  status: Status;
+  authorized: boolean;
+  action: string;
+};
+
+const requests: RequestItem[] = [
+  { id: 'REQ-28491', client: 'Empresa Alpha', category: 'FINANCE', priority: 'P1', impact: 'HIGH', sla: '01h 42m', summary: 'Revisar divergência no pagamento mensal e identificar a causa.', domain: 'FINANCE', environment: 'FINANCIAL', status: 'WAITING_APPROVAL', authorized: false, action: 'Ajustar lançamento financeiro acima do limite permitido' },
+  { id: 'REQ-28488', client: 'Empresa Beta', category: 'SUPPORT', priority: 'P2', impact: 'MEDIUM', sla: '03h 18m', summary: 'Cliente reporta falha intermitente no fluxo de onboarding.', domain: 'SUPPORT', environment: 'CUSTOMER', status: 'EXECUTING', authorized: true, action: 'Executar diagnóstico e atualizar configuração permitida' },
+  { id: 'REQ-28473', client: 'Empresa Alpha', category: 'SYSTEM_CHANGE', priority: 'P2', impact: 'HIGH', sla: '05h 10m', summary: 'Solicitação para alterar regra de processamento.', domain: 'ENGINEERING', environment: 'STAGING', status: 'DIAGNOSTIC', authorized: false, action: 'Alterar regra de processamento em produção' },
+  { id: 'REQ-28461', client: 'Empresa Gamma', category: 'SECURITY', priority: 'P3', impact: 'HIGH', sla: '09h 40m', summary: 'Revisar alerta de acesso incomum detectado pelo monitoramento.', domain: 'SECURITY', environment: 'SECURITY', status: 'COMPLETED', authorized: true, action: 'Analisar evento e registrar evidência de auditoria' },
+];
+
+const statusLabel: Record<Status, string> = { DIAGNOSTIC: 'DIAGNÓSTICO', EXECUTING: 'EXECUTANDO', WAITING_APPROVAL: 'AGUARDANDO AUTORIZAÇÃO', COMPLETED: 'CONCLUÍDO' };
+
+export default function RequestsPage({ params }: { params: { companyId: string } }) {
+  const companyId = params.companyId;
+  const waiting = requests.filter(r => r.status === 'WAITING_APPROVAL').length;
+  const critical = requests.filter(r => r.priority === 'P0' || r.priority === 'P1').length;
+
+  return <main className="requestsOS">
+    <header className="requestsTop">
+      <div>
+        <span className="requestsEyebrow">AI COMPANY OS · CENTRAL DE SOLICITAÇÕES</span>
+        <h1>Central de Solicitações</h1>
+        <p>Triagem autônoma, contexto do cliente e execução controlada por política.</p>
+      </div>
+      <div className="requestsActions">
+        <Link href={`/company/${companyId}`} className="requestsBack">← Command Center</Link>
+        <Link href={`/company/${companyId}/command/proposals`} className="requestsCommand"><ShieldCheck size={15}/> Central de Comando <span>{waiting}</span></Link>
+      </div>
+    </header>
+
+    <section className="requestStats">
+      <div><span>Solicitações abertas</span><strong>{requests.filter(r => r.status !== 'COMPLETED').length}</strong><small>em processamento</small></div>
+      <div><span>P0 / P1</span><strong>{critical}</strong><small>tratamento prioritário</small></div>
+      <div><span>Aguardando autorização</span><strong>{waiting}</strong><small>não executadas</small></div>
+      <div><span>Policy Gate</span><strong>ACTIVE</strong><small>execução controlada</small></div>
+    </section>
+
+    <section className="requestNotice"><ShieldCheck size={17}/><div><b>Urgência não concede autoridade.</b><span>P0/P1 acelera o tratamento, mas toda ação continua sujeita a Policy Engine, risco, ambiente e autorização.</span></div></section>
+
+    <section className="requestToolbar"><div><SlidersHorizontal size={16}/><b>Fila operacional</b></div><span>Todos os clientes · Todas as prioridades · Tempo real simulado</span></section>
+
+    <section className="requestGrid">{requests.map(r => <article className="requestCard" key={r.id}>
+      <div className="requestCardHead"><div><b>{r.id}</b><span>{r.client}</span></div><strong className={`priority priority-${r.priority.toLowerCase()}`}>{r.priority}</strong></div>
+      <div className="requestTitle"><h2>{r.summary}</h2><span className={`status status-${r.status.toLowerCase()}`}>{r.status === 'COMPLETED' ? <CheckCircle2 size={13}/> : r.status === 'WAITING_APPROVAL' ? <AlertTriangle size={13}/> : <Clock3 size={13}/>} {statusLabel[r.status]}</span></div>
+      <div className="requestMeta"><span>Categoria <b>{r.category}</b></span><span>Impacto <b>{r.impact}</b></span><span>SLA <b>{r.sla}</b></span></div>
+      <div className="requestRouting"><span>DOMÍNIO <b>{r.domain}</b></span><span>AMBIENTE <b>{r.environment}</b></span><span>CLIENTE <b><UserRound size={12}/> {r.client}</b></span></div>
+      <div className="requestDecision"><span>AÇÃO ANALISADA</span><p>{r.action}</p><div className={r.authorized ? 'gate allowed' : 'gate review'}>{r.authorized ? 'ALLOW · EXECUÇÃO AUTORIZADA' : 'REVIEW_REQUIRED · PROPOSTA NECESSÁRIA'}</div></div>
+      <div className="requestFooter"><span>IA: triagem + análise de risco</span>{!r.authorized && r.status !== 'COMPLETED' ? <Link href={`/company/${companyId}/command/proposals?request=${r.id}`}>Ver proposta <ArrowRight size={14}/></Link> : <span className="verified">Policy verified <CheckCircle2 size={14}/></span>}</div>
+    </article>)}</section>
+
+    <footer><span>REQUEST → TRIAGE → DECISION → PLAN → POLICY CHECK → ACTION → OUTCOME → LEARN</span><span>AI Company OS · SIMULATION RUNTIME</span></footer>
+  </main>;
+}

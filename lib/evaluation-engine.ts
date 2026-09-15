@@ -35,11 +35,11 @@ export function evaluateTask(taskId: string, expected: string, actual: string, s
 }
 
 export function evaluatePlan(plan: OperatingPlan, results: Record<string, { actual: string; score: number }>): LearningRecord {
-  const evaluations = plan.tasks.map(task => {
-    const result = results[task.id]
-    if (!result) return evaluateTask(task.id, task.title, 'No result recorded', 0)
-    return evaluateTask(task.id, task.title, result.actual, result.score)
-  })
+  const evaluations = Object.entries(results)
+    .map(([taskId, result]) => {
+      const task = plan.tasks.find(candidate => candidate.id === taskId)
+      return evaluateTask(taskId, task?.title ?? 'Unknown task', result.actual, result.score)
+    })
 
   const average = evaluations.length
     ? Math.round(evaluations.reduce((sum, evaluation) => sum + evaluation.score, 0) / evaluations.length)

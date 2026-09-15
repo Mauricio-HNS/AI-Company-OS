@@ -5,6 +5,8 @@ import type {
   Request,
   Decision,
 } from '../core/domain-model';
+import type { PlanEvaluation } from '../planning/plan-evaluation';
+import type { OpportunityEvaluationResult } from '../planning/opportunity-evaluation';
 import type {
   PolicyRule,
   PolicyDecision,
@@ -18,6 +20,8 @@ import {
 import { attachRequestToRuntime } from './runtime-request';
 import { attachDecisionToRuntime } from './runtime-decision';
 import { attachPlanToRuntime } from './runtime-plan';
+import { attachPlanEvaluationToRuntime } from './runtime-plan-evaluation';
+import { attachOpportunityEvaluationToRuntime } from './runtime-opportunity';
 import { attachActionToRuntime } from './runtime-action';
 import { attachOutcomeToRuntime } from './runtime-outcome';
 import { attachLearningToRuntime, deriveLearningSignal, type LearningSignal } from './runtime-learning';
@@ -62,11 +66,7 @@ export interface RuntimeOrchestratorSnapshot {
   stopReason?: RuntimeStopReason;
 }
 
-/**
- * Coordinates the domain runtime without becoming an authorization authority.
- * It can orchestrate decisions and invoke an injected execution adapter, but
- * it cannot create owner authorization or bypass the Policy Engine.
- */
+/** Coordinates runtime transitions without becoming an authorization authority. */
 export class RuntimeOrchestrator {
   private snapshot: RuntimeOrchestratorSnapshot = {
     state: EMPTY_RUNTIME_CONTEXT,
@@ -95,15 +95,18 @@ export class RuntimeOrchestrator {
     return this.snapshot;
   }
 
-  markPlanEvaluated(): RuntimeOrchestratorSnapshot {
+  recordPlanEvaluation(evaluation: PlanEvaluation): RuntimeOrchestratorSnapshot {
+    if (this.snapshot.state.plan?.id !== evaluation.planId) {
+      throw new Error('Plan evaluation must reference the current runtime plan.');
+    }
     const state = transitionState(this.snapshot.state, 'PLAN_EVALUATION');
-    this.snapshot = { ...this.snapshot, state };
+    this.snapshot = { ...this.snapshot, state: attachPlanEvaluationToRuntime(state, evaluation) };
     return this.snapshot;
   }
 
-  markOpportunityAnalyzed(): RuntimeOrchestratorSnapshot {
+  recordOpportunityEvaluation(evaluation: OpportunityEvaluationResult): RuntimeOrchestratorSnapshot {
     const state = transitionState(this.snapshot.state, 'OPPORTUNITY_ANALYSIS');
-    this.snapshot = { ...this.snapshot, state };
+    this.snapshot = { ...this.snapshot, state: attachOpportunityEvaluationToRuntime(state, evaluation) };
     return this.snapshot;
   }
 
@@ -115,12 +118,10 @@ export class RuntimeOrchestrator {
       this.snapshot = { ...this.snapshot, state: next, stopped: true, stopReason: 'BLOCK', lastPolicyDecision: policyDecision };
       return this.snapshot;
     }
-
     if (policyDecision === 'REVIEW_REQUIRED') {
       this.snapshot = { ...this.snapshot, state: next, stopped: true, stopReason: 'REVIEW_REQUIRED', lastPolicyDecision: policyDecision };
       return this.snapshot;
     }
-
     if (policyDecision === 'APPROVAL_REQUIRED') {
       this.snapshot = { ...this.snapshot, state: next, stopped: true, stopReason: 'APPROVAL_REQUIRED', lastPolicyDecision: policyDecision };
       return this.snapshot;
@@ -142,7 +143,7 @@ export class RuntimeOrchestrator {
 
     const policyDecision = this.snapshot.state.policyDecision;
     if (!policyDecision || !canEnterAction(policyDecision)) {
-      return { allowed: false, reason: 'Action cannot enter execution without ALLOW or a valid approval path.' };
+      return { allowed: false, reason: 'Action cannot enter execution without ALLOW or APPROVAL_REQUIRED.' };
     }
 
     const input = {
@@ -180,13 +181,10 @@ export class RuntimeOrchestrator {
       stopReason: undefined,
       state: attachActionToRuntime({ ...state, policyDecision: gate.decision }, action, result.receipt),
     };
-
     return result;
   }
 
-  async executeAuthorizedAction(
-    adapter: RuntimeExecutionAdapter,
-  ): Promise<RuntimeOrchestratorSnapshot> {
+  async executeAuthorizedAction(adapter: RuntimeExecutionAdapter): Promise<RuntimeOrchestratorSnapshot> {
     const { action, executionReceipt } = this.snapshot.state;
     if (!action || !executionReceipt) throw new Error('No authorized action is ready for execution.');
 
@@ -211,21 +209,15 @@ export class RuntimeOrchestrator {
         stopReason: observed.success ? undefined : 'EXECUTION_FAILED',
       };
     } catch (error) {
-      this.snapshot = {
-        ...this.snapshot,
-        stopped: true,
-        stopReason: 'EXECUTION_FAILED',
-      };
+      this.snapshot = { ...this.snapshot, stopped: true, stopReason: 'EXECUTION_FAILED' };
       throw error;
     }
-
     return this.snapshot;
   }
 
   learn(): RuntimeOrchestratorSnapshot {
     const outcome = this.snapshot.state.outcome;
     if (!outcome) throw new Error('Learning requires an observed outcome.');
-
     const signal = deriveLearningSignal(outcome);
     const state = transitionState(this.snapshot.state, 'LEARNING');
     this.snapshot = { ...this.snapshot, state: attachLearningToRuntime(state, outcome), lastLearningSignal: signal };
@@ -235,10 +227,8 @@ export class RuntimeOrchestrator {
   replan(plan: Plan): RuntimeOrchestratorSnapshot {
     const signal = this.snapshot.lastLearningSignal;
     if (!signal) throw new Error('Replan requires a learning signal.');
-
     const decision = evaluateReplan(signal);
     this.snapshot = { ...this.snapshot, replanDecision: decision };
-
     if (!decision.required) return this.snapshot;
 
     const state = transitionState(this.snapshot.state, 'REPLAN');
@@ -258,7 +248,7 @@ export const RUNTIME_ORCHESTRATOR_RULES = {
   POLICY_IS_RECHECKED_AT_ACTION_BOUNDARY: 'The action gate must re-evaluate policy immediately before execution.',
   POLICY_DRIFT_STOPS_EXECUTION: 'A policy result different from the runtime decision stops the action.',
   BLOCK_IS_TERMINAL: 'BLOCK cannot continue into action execution.',
-  REVIEW_REQUIRES_PROPOSAL_PATH: 'REVIEW_REQUIRED stops execution and requires analysis/proposal handling outside execution.',
+  REVIEW_REQUIRES_PROPOSAL_PATH: 'REVIEW_REQUIRED stops execution and requires proposal handling outside execution.',
   APPROVAL_REQUIRES_EXPLICIT_OWNER_AUTHORIZATION: 'APPROVAL_REQUIRED cannot execute without exact usable owner authorization.',
   OUTCOME_REQUIRES_RECEIPT: 'Observed outcomes require an execution receipt tied to the exact action.',
   LEARNING_CANNOT_GRANT_AUTHORITY: 'Learning may recommend replanning but cannot change policy or authority.',

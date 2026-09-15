@@ -12,7 +12,7 @@ export type RuntimeProjectionState = {
 
 export type EventApplyResult = {
   accepted: boolean;
-  reason: 'APPLIED' | 'DUPLICATE' | 'OUT_OF_ORDER' | 'INVALID_SEQUENCE';
+  reason: 'APPLIED' | 'DUPLICATE' | 'OUT_OF_ORDER' | 'SEQUENCE_GAP' | 'INVALID_SEQUENCE';
   state: RuntimeProjectionState;
 };
 
@@ -44,6 +44,10 @@ export function applyRuntimeEvent(state: RuntimeProjectionState, event: RuntimeE
     return { accepted: false, reason: 'OUT_OF_ORDER', state };
   }
 
+  if (event.sequence !== state.lastSequence + 1) {
+    return { accepted: false, reason: 'SEQUENCE_GAP', state };
+  }
+
   let next = { ...state };
   switch (event.type) {
     case 'AGENT_STATE_CHANGED':
@@ -73,8 +77,10 @@ export function applyRuntimeEvent(state: RuntimeProjectionState, event: RuntimeE
 
 export const EVENT_REDUCER_RULES = {
   SERVER_SEQUENCE_IS_AUTHORITATIVE: 'Event sequence comes from the trusted runtime, not the browser.',
-  DUPLICATES_ARE_IDEMPOTENT: 'The same event ID must not mutate a projection twice.',
+  SEQUENCE_MUST_BE_CONTIGUOUS: 'A projection refuses sequence gaps until missing events are recovered.',
+  DUPLICATES_ARE_IDEMPOTENT: 'The same event ID must not mutate a projection twice while retained by the projection.',
   OUT_OF_ORDER_EVENTS_ARE_NOT_APPLIED: 'A stale event cannot overwrite a newer projection state.',
   CORRELATION_IS_REQUIRED: 'Every material runtime event must be traceable to a correlation context.',
   PROJECTIONS_ARE_REBUILDABLE: 'Operational UI state is a projection and must be reconstructible from durable events.',
+  PRODUCTION_REQUIRES_DURABLE_EVENT_IDEMPOTENCY: 'A production event store must durably retain event identities beyond the in-memory projection window.',
 } as const;

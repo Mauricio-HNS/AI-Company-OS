@@ -27,3 +27,7 @@ export function releaseReservation(reservation: BudgetReservation): BudgetReserv
 export function consumeReservation(reservation: BudgetReservation): BudgetReservation {
   return reservation.status === 'RESERVED' && !isReservationExpired(reservation) ? { ...reservation, status: 'CONSUMED' } : expireReservation(reservation)
 }
+
+export function sweepExpiredReservations(reservations: BudgetReservation[], now = Date.now()) {
+  return reservations.map(reservation => expireReservation(reservation, now))
+}

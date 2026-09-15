@@ -1,5 +1,6 @@
 import type { Decision, Plan, Proposal, Request, Action, Outcome } from '../core/domain-model';
 import type { PolicyDecision } from '../security/policy-engine';
+import type { PlanEvaluation } from '../planning/plan-evaluation';
 
 export type RuntimePhase =
   | 'REQUEST'
@@ -18,6 +19,7 @@ export type RuntimeContextState = {
   request?: Request;
   decision?: Decision;
   plan?: Plan;
+  planEvaluation?: PlanEvaluation;
   policyDecision?: PolicyDecision;
   proposal?: Proposal;
   action?: Action;
@@ -48,5 +50,6 @@ export const RUNTIME_CONTEXT_RULES = {
   POLICY_PRECEDES_ACTION: 'No action may enter execution before policy evaluation.',
   OUTCOME_FOLLOWS_ACTION: 'Execution is evaluated through an explicit outcome.',
   LEARNING_FOLLOWS_OUTCOME: 'Learning uses observed outcomes rather than execution status alone.',
+  PLAN_EVALUATION_PRECEDES_POLICY: 'Plan evaluation records feasibility, risk and recommendation before policy evaluation.',
   CONTEXT_IS_PROJECTION: 'This state is an operational projection, not an authorization boundary.',
 } as const;

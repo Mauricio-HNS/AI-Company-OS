@@ -3,6 +3,7 @@ import './globals.css';
 import './company/[companyId]/phase2.css';
 import './palette.css';
 import './font-scale.css';
+import './os-premium.css';
 
 export const metadata: Metadata = {
   title: 'AI Company OS',

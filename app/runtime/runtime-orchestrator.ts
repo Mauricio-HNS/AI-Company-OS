@@ -24,7 +24,7 @@ import { canEnterAction, transitionState } from './runtime-transitions';
 import type { RuntimeContextState } from './runtime-context';
 import { EMPTY_RUNTIME_CONTEXT } from './runtime-context';
 
-export const RUNTIME_ORCHESTRATOR_VERSION = '1.0';
+export const RUNTIME_ORCHESTRATOR_VERSION = '1.1';
 
 export type RuntimeStopReason =
   | 'REVIEW_REQUIRED'
@@ -170,8 +170,18 @@ export class RuntimeOrchestrator {
   }
 
   async executeAuthorizedAction(adapter: RuntimeExecutionAdapter): Promise<RuntimeOrchestratorSnapshot> {
+    if (this.snapshot.state.phase !== 'ACTION') {
+      throw new Error('Execution requires the runtime to be in ACTION phase.');
+    }
+
     const { action, executionReceipt } = this.snapshot.state;
     if (!action || !executionReceipt) throw new Error('No authorized action is ready for execution.');
+    if (executionReceipt.actionId !== action.id) throw new Error('Execution receipt does not match the current action.');
+
+    const ledgerEntry = this.executionLedger.get(executionReceipt);
+    if (!ledgerEntry || ledgerEntry.status !== 'RESERVED') {
+      throw new Error('Execution is not in a reservable ledger state.');
+    }
 
     this.executionLedger.markStarted(executionReceipt);
 
@@ -243,6 +253,9 @@ export const RUNTIME_ORCHESTRATOR_RULES = {
   APPROVAL_REQUIRES_EXPLICIT_OWNER_AUTHORIZATION: 'APPROVAL_REQUIRED cannot execute without exact usable owner authorization.',
   OUTCOME_REQUIRES_RECEIPT: 'Observed outcomes require an execution receipt tied to the exact action.',
   REPLAY_IS_DENIED: 'An idempotency key cannot be reserved twice in the same company execution scope.',
+  EXECUTION_REQUIRES_ACTION_PHASE: 'A side effect may only start while the runtime is explicitly in ACTION phase.',
+  EXECUTION_RECEIPT_MUST_MATCH_ACTION: 'The execution receipt must reference the exact action being executed.',
+  EXECUTION_REQUIRES_RESERVED_LEDGER_ENTRY: 'Execution may start only from a RESERVED ledger entry; started or terminal entries cannot be replayed.',
   LEARNING_CANNOT_GRANT_AUTHORITY: 'Learning may recommend replanning but cannot change policy or authority.',
   REPLAN_RESTARTS_GOVERNANCE: 'A replanned operation must pass evaluation and policy again.',
   EXECUTION_ADAPTER_IS_EXTERNAL: 'Real side effects are delegated to an explicit adapter and are not simulated by the orchestrator.',

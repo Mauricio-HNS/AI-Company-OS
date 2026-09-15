@@ -19,7 +19,7 @@
 import type { CriticalAction } from './owner-authorization';
 import { requiresOwnerAuthorization } from './owner-authorization';
 
-export const POLICY_ENGINE_VERSION = '1.1';
+export const POLICY_ENGINE_VERSION = '1.2';
 
 export type AuthorityLevel = 0 | 1 | 2 | 3 | 4 | 5;
 export type PolicyDecision = 'ALLOW' | 'REVIEW_REQUIRED' | 'APPROVAL_REQUIRED' | 'BLOCK';
@@ -115,6 +115,7 @@ function matchesRule(rule: PolicyRule, input: PolicyCheckInput, now: number): bo
   if (!rule.enabled || rule.companyId !== input.companyId) return false;
   if (rule.action !== input.action) return false;
   if (rule.agentId && rule.agentId !== input.agentId) return false;
+  if (input.authorityLevel < rule.authorityLevel) return false;
   if (isExpired(rule.expiresAt, now)) return false;
 
   if (rule.limits?.maxAmount !== undefined) {
@@ -201,11 +202,6 @@ export function evaluatePolicy(
   };
 }
 
-/**
- * A proposal is a request for analysis and an owner decision, never an
- * authorization. The proposal should be enriched by plan/risk evaluation
- * before the owner sees the final recommendation.
- */
 export function createAuthorizationProposal(
   input: PolicyCheckInput,
   reason: string,
@@ -244,4 +240,5 @@ export const POLICY_CONSTITUTION = [
   'MISSING_OR_INVALID_POLICY_MUST_NOT_EXECUTE',
   'POLICY_CHANGES_REQUIRE_AUTHORIZATION',
   'EVERY_EXECUTED_ACTION_MUST_BE_AUDITED',
+  'AUTHORITY_LEVEL_IS_REQUIRED_FOR_POLICY_MATCHING',
 ] as const;

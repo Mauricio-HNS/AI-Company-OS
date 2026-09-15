@@ -7,6 +7,7 @@ import './os-premium.css';
 import './company-os-functional.css';
 import './authority-shell.css';
 import './realtime-security.css';
+import './company/[companyId]/control-rail.css';
 
 export const metadata: Metadata = {
   title: 'AI Company OS',

@@ -1,6 +1,6 @@
 import type { AgentProfile, OperatingPlan, PlannedTask, TaskStatus } from './operating-engine'
 import type { LearningRecord } from './evaluation-engine'
-import { selectAgent } from './operating-engine'
+import { riskRequiresApproval, selectAgent } from './operating-engine'
 
 export type ReplanReason = 'FAILED_TASK' | 'BLOCKED_TASK' | 'LOW_SCORE' | 'NEXT_CYCLE'
 
@@ -37,7 +37,7 @@ export function replanTasks(plan: OperatingPlan, agents: AgentProfile[], decisio
     }
     const agent = selectAgent(replacement, agents)
     return agent
-      ? { ...replacement, assignedAgentId: agent.id, approvalRequired: replacement.risk !== 'LOW' && replacement.risk !== agent.riskLimit }
+      ? { ...replacement, assignedAgentId: agent.id, approvalRequired: riskRequiresApproval(replacement.risk, agent) }
       : { ...replacement, status: 'BLOCKED' as TaskStatus }
   })
 

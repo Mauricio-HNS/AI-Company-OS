@@ -18,51 +18,29 @@ const NEXT_PHASES: Record<RuntimePhase, RuntimePhase[]> = {
   REPLAN: ['PLAN'],
 };
 
-export function canTransition(
-  state: RuntimeContextState,
-  to: RuntimePhase,
-): RuntimeTransitionDecision {
+export function canTransition(state: RuntimeContextState, to: RuntimePhase): RuntimeTransitionDecision {
   const from = state.phase;
 
   if (!NEXT_PHASES[from].includes(to)) {
     return { allowed: false, from, to, reason: `Invalid runtime transition ${from} -> ${to}.` };
   }
 
-  if (to === 'DECISION' && !state.request) {
-    return { allowed: false, from, to, reason: 'Decision requires a request context.' };
+  if (to === 'DECISION' && !state.request) return { allowed: false, from, to, reason: 'Decision requires a request context.' };
+  if (to === 'PLAN' && !state.decision) return { allowed: false, from, to, reason: 'Plan requires a decision context.' };
+  if (to === 'PLAN_EVALUATION' && !state.plan) return { allowed: false, from, to, reason: 'Plan evaluation requires a plan.' };
+  if (to === 'OPPORTUNITY_ANALYSIS' && !state.planEvaluation) return { allowed: false, from, to, reason: 'Opportunity analysis requires plan evaluation.' };
+  if (to === 'POLICY_CHECK' && !state.opportunityEvaluation) return { allowed: false, from, to, reason: 'Policy check requires opportunity analysis.' };
+
+  if (to === 'ACTION') {
+    if (!state.policyDecision) return { allowed: false, from, to, reason: 'Action requires a recorded policy decision.' };
+    if (!canEnterAction(state.policyDecision)) {
+      return { allowed: false, from, to, reason: `Policy decision ${state.policyDecision} cannot enter the execution path.` };
+    }
   }
 
-  if (to === 'PLAN' && !state.decision) {
-    return { allowed: false, from, to, reason: 'Plan requires a decision context.' };
-  }
-
-  if (to === 'PLAN_EVALUATION' && !state.plan) {
-    return { allowed: false, from, to, reason: 'Plan evaluation requires a plan.' };
-  }
-
-  if (to === 'OPPORTUNITY_ANALYSIS' && !state.planEvaluation) {
-    return { allowed: false, from, to, reason: 'Opportunity analysis requires plan evaluation.' };
-  }
-
-  if (to === 'POLICY_CHECK' && !state.opportunityEvaluation) {
-    return { allowed: false, from, to, reason: 'Policy check requires opportunity analysis.' };
-  }
-
-  if (to === 'ACTION' && !state.policyDecision) {
-    return { allowed: false, from, to, reason: 'Action requires a recorded policy decision.' };
-  }
-
-  if (to === 'OUTCOME' && !state.action) {
-    return { allowed: false, from, to, reason: 'Outcome requires an action.' };
-  }
-
-  if (to === 'LEARNING' && !state.outcome) {
-    return { allowed: false, from, to, reason: 'Learning requires an observed outcome.' };
-  }
-
-  if (to === 'REPLAN' && !state.outcome) {
-    return { allowed: false, from, to, reason: 'Replan requires an observed outcome.' };
-  }
+  if (to === 'OUTCOME' && !state.action) return { allowed: false, from, to, reason: 'Outcome requires an action.' };
+  if (to === 'LEARNING' && !state.outcome) return { allowed: false, from, to, reason: 'Learning requires an observed outcome.' };
+  if (to === 'REPLAN' && !state.outcome) return { allowed: false, from, to, reason: 'Replan requires an observed outcome.' };
 
   return { allowed: true, from, to };
 }
@@ -75,13 +53,9 @@ export function isTerminalPolicyDecision(policyDecision: PolicyDecision): boolea
   return policyDecision === 'BLOCK' || policyDecision === 'REVIEW_REQUIRED';
 }
 
-export function transitionState(
-  state: RuntimeContextState,
-  to: RuntimePhase,
-): RuntimeContextState {
+export function transitionState(state: RuntimeContextState, to: RuntimePhase): RuntimeContextState {
   const decision = canTransition(state, to);
   if (!decision.allowed) throw new Error(decision.reason);
-
   return { ...state, phase: to, updatedAt: new Date().toISOString() };
 }
 

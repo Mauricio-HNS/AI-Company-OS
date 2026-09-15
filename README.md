@@ -23,10 +23,9 @@
 
 > **Phase 4 — Autonomous Operations: IN PROGRESS**
 >
-> The platform now has deterministic production planning, mission generation, task orchestration, execution-queue primitives, evaluation/learning records and replanning primitives. The UI remains simulation-first and no real external business side effects are connected.
+> The production runtime now contains deterministic planning, mission generation, dependency-aware execution, evidence-based experiment evaluation, quantitative risk scoring, safety monitoring with kill-switch levels, budget reservations with TTL, capability autonomy decay, experiment isolation and persistent company-memory lifecycle. Real external side effects remain disabled.
 
 ### Phase 1 — Interface & Simulation · COMPLETED
-
 - [x] Welcome / presentation experience
 - [x] Login and recovery interface
 - [x] Master / Portfolio Dashboard
@@ -38,7 +37,6 @@
 - [x] GitHub Pages deployment configuration
 
 ### Phase 2 — Agent Engine · COMPLETED
-
 - [x] Agent registry
 - [x] Agent roles, goals and responsibilities
 - [x] Live agent runtime states
@@ -61,7 +59,6 @@
 - [x] Task detail screens
 
 ### Phase 3 — Company Engine · COMPLETED
-
 - [x] Master Control Center / Portfolio Dashboard
 - [x] Multi-company tenant registry
 - [x] Company provisioning flow
@@ -89,7 +86,6 @@
 - [x] Premium responsive command-center experience
 
 ### Phase 4 — Autonomous Operations · IN PROGRESS
-
 - [x] Production planning engine
 - [x] Mission generation
 - [x] Task delegation and capability-based agent selection
@@ -97,15 +93,21 @@
 - [x] Result evaluation engine
 - [x] Learning record generation
 - [x] Replanning primitives
+- [x] Quantitative risk engine: impact × (1 - reversibility) × blast radius
+- [x] Statistical experiment evaluation with sample-size, confidence interval and p-value gates
+- [x] Independent safety monitor and kill-switch levels
+- [x] Budget reservations with TTL and expiry/release lifecycle
+- [x] Capability autonomy with failure-rate decay
+- [x] Isolated experiment lifecycle
+- [x] Company Memory with ACTIVE / SUPERSEDED / CONTESTED lifecycle
+- [x] Runtime integration of safety, budget, autonomy and memory controls
 - [ ] Opportunity detection
-- [ ] Experiment management
-- [ ] Durable operational state
+- [ ] Durable operational persistence
 - [ ] Human approval workflow in the UI
-- [ ] Command Center integration with the production engine
-- [ ] Automated tests for failure, blocking and replanning scenarios
+- [ ] Full Command Center replacement of legacy simulation state
+- [ ] Automated test suite for failure, blocking, safety and statistical scenarios
 
 ### Phase 5 — Real AI & Business Integrations · FUTURE
-
 - [ ] LLM providers
 - [ ] RAG / vector knowledge systems
 - [ ] CRM integrations
@@ -119,26 +121,26 @@
 
 ## Autonomous Operations Engine
 
-The production engine is being built around a deterministic control loop:
+The production engine is built around a controlled loop:
 
 ```text
-OBJECTIVE
+OBJECTIVE + CONSTRAINTS
    ↓
-MISSION GENERATOR
+MISSION / HYPOTHESIS
    ↓
 TASK GRAPH
    ↓
-AGENT SELECTION
+RISK + BUDGET + AUTONOMY GATES
    ↓
-RISK / PERMISSION GATE
-   ↓
-EXECUTION QUEUE
-   ↓
-RESULT
-   ↓
-EVALUATION
-   ↓
-LEARNING
+EXECUTION QUEUE ───────┐
+   ↓                   │
+SAFETY MONITOR         │ independent kill switch
+   ↓                   │
+RESULT                 │
+   ↓                   │
+STATISTICAL EVALUATION │
+   ↓                   │
+LEARNING + COMPANY MEMORY
    ↓
 REPLAN
    └──────────► NEXT CYCLE
@@ -149,10 +151,37 @@ Current runtime modules:
 - `lib/operating-engine.ts` — objective, agent, task, risk and operating-plan primitives.
 - `lib/mission-generator.ts` — converts an objective into a mission and dependency-aware task graph.
 - `lib/execution-queue.ts` — deterministic `READY → EXECUTING → COMPLETED/FAILED/BLOCKED` queue primitives.
-- `lib/evaluation-engine.ts` — evaluates task results and produces durable learning records.
-- `lib/replanning-engine.ts` — selects failed/blocked work for the next operating cycle while reapplying risk gates.
+- `lib/evaluation-engine.ts` — evaluates task results and produces learning records.
+- `lib/statistical-evaluation-engine.ts` — refuses to declare experiment winners without sufficient evidence.
+- `lib/risk-engine.ts` — quantitative risk score and approval classification.
+- `lib/safety-monitor.ts` — independent anomaly rules and kill-switch decisions.
+- `lib/budget-engine.ts` — reservations, TTL, release and consumption lifecycle.
+- `lib/autonomy-engine.ts` — capability-level autonomy and failure decay.
+- `lib/experiment-engine.ts` — isolated variant allocation and experiment lifecycle.
+- `lib/company-memory.ts` — evidence-backed memory with supersession and contestation.
+- `lib/replanning-engine.ts` — failed-task replacement and executable next-cycle generation.
+- `lib/company-runtime.ts` — integrates the controls into the runtime state.
 
-The current implementation intentionally stops before real-world side effects. External tools will be connected only after the execution, approval and audit paths are integrated into the company runtime.
+The current implementation intentionally stops before real-world side effects. External tools will be connected only after execution, approval, safety and audit paths are integrated into the company runtime.
+
+---
+
+## Safety Model
+
+The project is intentionally **simulation-first**. Real-world side effects are not connected to the current engine.
+
+The runtime now treats the following as first-class controls:
+
+- Human approval gates
+- Quantitative risk scoring
+- Budget reservations and expiration
+- Per-capability autonomy
+- Autonomy decay after failures
+- Independent safety monitoring
+- Emergency stop / task abort / experiment abort levels
+- Statistical evidence before declaring experiment winners
+- Persistent memory invalidation, supersession and contestation
+- Simulation-only external constraints
 
 ---
 
@@ -163,22 +192,6 @@ AI Company OS is a platform for building **companies operated by coordinated AI 
 The product models an entire company instead of a single chatbot: objectives, missions, tasks, agents, tools, finance, customers, knowledge, intelligence, operations, security and performance.
 
 Humans define direction, constraints, permissions and risk boundaries. The AI workforce operates inside those boundaries.
-
----
-
-## Safety Model
-
-The current project is intentionally **simulation-first**.
-
-Real-world side effects are not connected to the current engine. The architecture keeps explicit controls for:
-
-- Human approval gates
-- Permission-aware tools
-- Financial action gating
-- External action gating
-- Risk visibility
-- Simulation mode
-- Explicit real-money control
 
 ---
 
@@ -198,23 +211,21 @@ Real-world side effects are not connected to the current engine. The architectur
 ## Development Philosophy
 
 ### 1. The company is the product
-
 The core asset is the combination of structure, memory, workflows, tools, metrics and accumulated learning.
 
 ### 2. Agents have responsibilities
-
 Every agent has a role, goal, context, tools, tasks, memory and measurable performance.
 
 ### 3. Everything becomes measurable
+Missions create tasks. Tasks produce results. Results are evaluated against objectives and experiments.
 
-Missions create tasks. Tasks produce results. Results are evaluated against objectives.
+### 4. Evidence before autonomy
+The system does not promote an experiment to a winner merely because an observed metric moved.
 
-### 4. Simulation before autonomy
+### 5. Independent safety
+Safety monitoring can interrupt execution without waiting for the normal evaluation/replanning cycle.
 
-The operating model is validated safely before real-world execution is connected.
-
-### 5. Human control where it matters
-
+### 6. Human control where it matters
 Permissions, budgets, approvals and risk controls remain part of the architecture.
 
 ---
@@ -240,14 +251,12 @@ REAL AI & BUSINESS INTEGRATIONS
 AUTONOMOUS COMPANIES
 ```
 
-### Phase status
-
 | Phase | Status | Focus |
 |---|---|---|
 | Phase 1 | COMPLETED | Interface, simulation and platform foundation |
 | Phase 2 | COMPLETED | Agent Engine and autonomous-cycle simulation |
 | Phase 3 | COMPLETED | Company Engine, multi-company control and client portal |
-| Phase 4 | IN PROGRESS | Production planning, missions, orchestration, evaluation and replanning |
+| Phase 4 | IN PROGRESS | Production runtime, evidence, safety, risk, autonomy, memory and replanning |
 | Phase 5 | FUTURE | Real AI models and business integrations |
 
 ---

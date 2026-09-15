@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { Activity, Bot, BrainCircuit, CheckCircle2, CircleDollarSign, Gauge, LayoutDashboard, Pause, Play, Radio, Settings, ShieldCheck, Target, Users, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { runtimeAgents, useCompanyRuntime } from './CompanyRuntimeContext'
+import GuidedCommandCenter from './GuidedCommandCenter'
 
 type Company = { name: string; type: string; revenue: string; profit: string; health: string; agents: number; missions: number; objective: string }
 type View = 'Command Center' | 'Agents' | 'Missions' | 'Tasks' | 'Products' | 'Customers' | 'Finance' | 'Intelligence' | 'Knowledge' | 'Operations' | 'Security' | 'Settings'
@@ -54,8 +55,20 @@ export default function CompanyRuntimeWorkspace({ company, companyId, initialVie
 }
 
 function CommandCenter({ company, runtime, running, setRunning, progress, counts, lastAction, advance, onView, assignedAgents }: any) {
+  const [commandNotice, setCommandNotice] = useState('')
   const phase = runtime.plan.tasks.some((task: any) => task.status === 'EXECUTING') ? 'EXECUTE' : runtime.replan ? 'REPLAN' : counts.completed === runtime.plan.tasks.length ? 'LEARN' : 'PLAN'
+
+  function handleIntent(intent: string) {
+    setCommandNotice(`Intenção recebida: “${intent}”. O runtime atual registra a intenção, mas ainda não executa ações externas.`)
+  }
+
   return <>
+    <GuidedCommandCenter
+      objective={company.objective}
+      expectedOutcome={runtime.plan.expectedOutcome}
+      onSubmitIntent={handleIntent}
+    />
+    {commandNotice && <div className="runtimeNotice guidedRuntimeNotice">{commandNotice}</div>}
     <div className="runtimeStats"><Stat label="Revenue" value={company.revenue} note="Company portfolio"/><Stat label="Net profit" value={company.profit} note="Current baseline"/><Stat label="AI workforce" value={String(runtimeAgents.length)} note="Runtime agents"/><Stat label="Company health" value={company.health} note="Operating status"/></div>
     <section className="runtimeHero"><div><span>OBJECTIVE / ACTIVE MISSION</span><h2>{company.objective}</h2><p>{runtime.plan.expectedOutcome}</p><div className="runtimeProgress"><i style={{ width: `${progress}%` }}/></div><small>{progress}% complete · cycle {runtime.plan.cycle}</small></div><div className="runtimeControls"><strong>{phase}</strong><span>{running ? 'Runtime running' : 'Runtime paused'}</span><button onClick={() => setRunning(!running)}>{running ? <Pause size={14}/> : <Play size={14}/>} {running ? 'Pause' : 'Resume'}</button><button onClick={advance}>Advance cycle</button></div></section>
     <div className="runtimeGrid">

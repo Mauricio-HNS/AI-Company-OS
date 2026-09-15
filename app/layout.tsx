@@ -4,6 +4,7 @@ import './company/[companyId]/phase2.css';
 import './palette.css';
 import './font-scale.css';
 import './os-premium.css';
+import './company-os-functional.css';
 
 export const metadata: Metadata = {
   title: 'AI Company OS',

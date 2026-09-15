@@ -16,6 +16,10 @@ export type LearningRecord = {
   evaluations: TaskEvaluation[]
   summary: string
   createdAt: string
+  taskId?: string
+  score?: number
+  lesson?: string
+  outcome?: TaskEvaluation['diagnosis']
 }
 
 export function evaluateTask(taskId: string, expected: string, actual: string, score: number): TaskEvaluation {
@@ -35,19 +39,18 @@ export function evaluateTask(taskId: string, expected: string, actual: string, s
 }
 
 export function evaluatePlan(plan: OperatingPlan, results: Record<string, { actual: string; score: number }>): LearningRecord {
-  const evaluations = Object.entries(results)
-    .map(([taskId, result]) => {
-      const task = plan.tasks.find(candidate => candidate.id === taskId)
-      return evaluateTask(taskId, task?.title ?? 'Unknown task', result.actual, result.score)
-    })
+  const evaluations = Object.entries(results).map(([taskId, result]) => {
+    const task = plan.tasks.find(candidate => candidate.id === taskId)
+    return evaluateTask(taskId, task?.title ?? 'Unknown task', result.actual, result.score)
+  })
 
   const average = evaluations.length
     ? Math.round(evaluations.reduce((sum, evaluation) => sum + evaluation.score, 0) / evaluations.length)
     : 0
-
   const successes = evaluations.filter(evaluation => evaluation.diagnosis === 'SUCCESS').length
   const failures = evaluations.filter(evaluation => evaluation.diagnosis === 'FAILURE').length
   const blocked = evaluations.filter(evaluation => evaluation.diagnosis === 'BLOCKED').length
+  const primary = evaluations[0]
 
   return {
     id: `L-${plan.objectiveId}-${plan.cycle}-${Date.now()}`,
@@ -56,6 +59,10 @@ export function evaluatePlan(plan: OperatingPlan, results: Record<string, { actu
     evaluations,
     summary: `Average score ${average}/100. Successes: ${successes}. Failures: ${failures}. Blocked: ${blocked}.`,
     createdAt: new Date().toISOString(),
+    taskId: primary?.taskId,
+    score: primary?.score,
+    lesson: primary?.lesson,
+    outcome: primary?.diagnosis,
   }
 }
 

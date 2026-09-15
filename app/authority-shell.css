@@ -1,0 +1,180 @@
+:root{
+  --authority-ink:#07161b;
+  --authority-panel:#0d242b;
+  --authority-panel-2:#112f38;
+  --authority-gold:#c2a46a;
+  --authority-gold-soft:#e5cd9a;
+  --authority-line:rgba(229,205,154,.18);
+  --authority-glow:rgba(194,164,106,.14);
+}
+
+.companyOS{
+  position:relative;
+  isolation:isolate;
+  background:
+    radial-gradient(circle at 82% 8%,rgba(194,164,106,.08),transparent 28%),
+    radial-gradient(circle at 12% 92%,rgba(19,49,60,.7),transparent 34%),
+    linear-gradient(135deg,#07161b 0%,#091e24 48%,#07161b 100%);
+}
+
+.companyOS::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:-1;
+  opacity:.22;
+  background-image:linear-gradient(rgba(229,205,154,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(229,205,154,.035) 1px,transparent 1px);
+  background-size:48px 48px;
+  mask-image:linear-gradient(to bottom,black,transparent 85%);
+}
+
+.companySide{
+  background:linear-gradient(180deg,rgba(7,22,27,.98),rgba(9,30,36,.98));
+  border-right:1px solid var(--authority-line);
+  box-shadow:18px 0 55px rgba(0,0,0,.28),inset -1px 0 rgba(229,205,154,.035);
+}
+
+.companyBrand{
+  position:relative;
+  padding-bottom:18px;
+  margin-bottom:12px;
+  border-bottom:1px solid var(--authority-line);
+}
+
+.companyBrand::after{
+  content:"SECURE OPERATING ENVIRONMENT";
+  display:block;
+  margin-top:10px;
+  color:rgba(229,205,154,.58);
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:.18em;
+}
+
+.companyMark{
+  border:1px solid rgba(229,205,154,.45);
+  box-shadow:0 0 0 3px rgba(194,164,106,.06),0 8px 28px rgba(0,0,0,.32),inset 0 1px rgba(255,255,255,.12);
+  background:linear-gradient(145deg,#173841,#091e24);
+  color:var(--authority-gold-soft);
+}
+
+.companyIdentity{
+  background:linear-gradient(145deg,rgba(19,49,60,.72),rgba(7,22,27,.7));
+  border:1px solid var(--authority-line);
+  border-radius:12px;
+  padding:13px;
+  box-shadow:inset 0 1px rgba(255,255,255,.04),0 12px 30px rgba(0,0,0,.16);
+}
+
+.companyIdentity span,.companyEyebrow{
+  letter-spacing:.16em;
+  font-weight:800;
+  color:rgba(229,205,154,.66);
+}
+
+.companyIdentity i{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  margin-top:10px;
+  padding:5px 8px;
+  border:1px solid rgba(93,178,134,.22);
+  border-radius:999px;
+  background:rgba(61,130,96,.09);
+  color:#a8d8bd;
+  font-size:10px;
+  font-style:normal;
+  font-weight:700;
+}
+
+.companyIdentity i em,.topStatus em,.enginePulse i{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#82c59c;
+  box-shadow:0 0 12px rgba(130,197,156,.7);
+}
+
+.companySide nav button{
+  position:relative;
+  border:1px solid transparent;
+  transition:all .18s ease;
+}
+
+.companySide nav button:hover{
+  border-color:var(--authority-line);
+  background:rgba(19,49,60,.55);
+  transform:translateX(2px);
+}
+
+.companySide nav button.active{
+  background:linear-gradient(90deg,rgba(194,164,106,.15),rgba(194,164,106,.035));
+  border-color:rgba(194,164,106,.22);
+  box-shadow:inset 3px 0 var(--authority-gold),0 8px 24px rgba(0,0,0,.14);
+}
+
+.companySafety{
+  border:1px solid rgba(194,164,106,.2)!important;
+  background:linear-gradient(145deg,rgba(194,164,106,.09),rgba(19,49,60,.32))!important;
+  box-shadow:inset 0 1px rgba(255,255,255,.05),0 12px 28px rgba(0,0,0,.2);
+}
+
+.companySafety svg{color:var(--authority-gold-soft);filter:drop-shadow(0 0 7px var(--authority-glow));}
+
+.companyTop{
+  background:linear-gradient(180deg,rgba(7,22,27,.88),rgba(7,22,27,.58));
+  border-bottom:1px solid var(--authority-line);
+  backdrop-filter:blur(18px);
+}
+
+.topStatus{
+  border:1px solid var(--authority-line);
+  background:rgba(13,36,43,.72);
+  box-shadow:inset 0 1px rgba(255,255,255,.04),0 10px 32px rgba(0,0,0,.18);
+}
+
+.topStatus span{letter-spacing:.1em;font-weight:800;color:#b8d8c3;}
+.topStatus button{border:1px solid var(--authority-line);background:#0a2027;color:var(--authority-gold-soft);}
+
+.companyStat,.panel,.engineHero,.missionHero,.dataCard,.module .engineSummary,.missionRegistry,.tableCard{
+  border-color:var(--authority-line)!important;
+  box-shadow:0 18px 45px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.035)!important;
+}
+
+.companyStat:hover,.dataCard:hover,.panel:hover{
+  border-color:rgba(194,164,106,.34)!important;
+  box-shadow:0 22px 52px rgba(0,0,0,.24),0 0 24px rgba(194,164,106,.045),inset 0 1px rgba(255,255,255,.05)!important;
+}
+
+.engineHero,.missionHero,.module{
+  position:relative;
+}
+
+.engineHero::after,.missionHero::after{
+  content:"CONTROLLED EXECUTION";
+  position:absolute;
+  right:22px;
+  bottom:14px;
+  color:rgba(229,205,154,.18);
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.2em;
+}
+
+.moduleAction{color:var(--authority-gold-soft)!important;font-weight:800;letter-spacing:.04em;}
+
+.state{font-weight:800!important;letter-spacing:.06em;}
+
+.companyOS footer{
+  border-top:1px solid var(--authority-line);
+  color:rgba(229,205,154,.42);
+  letter-spacing:.08em;
+  font-size:9px;
+  text-transform:uppercase;
+}
+
+@media(max-width:700px){
+  .companyBrand::after{display:none}
+  .engineHero::after,.missionHero::after{display:none}
+}

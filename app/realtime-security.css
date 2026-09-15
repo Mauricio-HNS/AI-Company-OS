@@ -1,0 +1,130 @@
+/* Real-time + security visual contract.
+   This layer makes telemetry state explicit and prevents simulated values from
+   looking like unverified production data. Production truth must come from a
+   server-side source of truth with authenticated events, audit logs and policy gates. */
+
+:root {
+  --rt-live: #74d6a1;
+  --rt-warn: #e5cd9a;
+  --rt-danger: #d97878;
+  --rt-line: rgba(229, 205, 154, .2);
+}
+
+.companyTop {
+  position: relative;
+  overflow: hidden;
+}
+
+.companyTop::after {
+  content: 'TELEMETRY · POLICY GATED · AUDIT READY';
+  position: absolute;
+  right: 22px;
+  bottom: 10px;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .18em;
+  color: rgba(229, 205, 154, .58);
+  pointer-events: none;
+}
+
+.topStatus {
+  min-width: 210px;
+}
+
+.topStatus > span {
+  border: 1px solid var(--rt-line);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 8px 28px rgba(0,0,0,.18);
+}
+
+.topStatus > span em {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: var(--rt-live);
+  box-shadow: 0 0 0 3px rgba(116,214,161,.08), 0 0 12px rgba(116,214,161,.5);
+}
+
+.companySafety {
+  position: relative;
+  border-color: rgba(116,214,161,.18) !important;
+  background: linear-gradient(135deg, rgba(13,36,43,.96), rgba(7,22,27,.96));
+}
+
+.companySafety::before {
+  content: 'CONTROLLED';
+  position: absolute;
+  top: 8px;
+  right: 9px;
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: .14em;
+  color: rgba(116,214,161,.62);
+}
+
+.companySafety b {
+  color: var(--rt-warn);
+}
+
+.companySafety strong,
+.securityGate,
+.realtimeBadge {
+  letter-spacing: .08em;
+}
+
+/* Reusable states for future server-backed telemetry components. */
+.realtimeBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--rt-line);
+  border-radius: 8px;
+  background: rgba(7,22,27,.72);
+  color: #e9efe9;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.realtimeBadge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--rt-live);
+  box-shadow: 0 0 9px rgba(116,214,161,.45);
+}
+
+.securityGate {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border: 1px solid rgba(229,205,154,.18);
+  border-radius: 6px;
+  background: rgba(194,164,106,.06);
+  color: var(--rt-warn);
+  font-size: 8px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.securityGate.blocked {
+  color: var(--rt-danger);
+  border-color: rgba(217,120,120,.2);
+  background: rgba(217,120,120,.05);
+}
+
+.securityGate.approved {
+  color: var(--rt-live);
+  border-color: rgba(116,214,161,.2);
+  background: rgba(116,214,161,.05);
+}
+
+@media (max-width: 700px) {
+  .companyTop::after { display: none; }
+  .topStatus { min-width: 0; }
+}

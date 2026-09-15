@@ -1,4 +1,5 @@
 import CompanyWorkspace from './CompanyWorkspace';
+import CompanyRuntimeProvider from './CompanyRuntimeContext';
 import ControlRail from './ControlRail';
 import RuntimeCommandPipeline from './RuntimeCommandPipeline';
 
@@ -8,4 +9,4 @@ const companies: Record<string, {name:string;type:string;revenue:string;profit:s
   gamma:{name:'Company Gamma',type:'AI Automation',revenue:'€4,280',profit:'€920',health:'87%',agents:7,missions:2,objective:'Validate the first enterprise automation offer'}
 };
 export function generateStaticParams(){return Object.keys(companies).map(companyId=>({companyId}));}
-export default function CompanyPage({params}:{params:{companyId:string}}){const company=companies[params.companyId]??companies.alpha;return <><ControlRail companyId={params.companyId}/><RuntimeCommandPipeline company={company}/><CompanyWorkspace company={company} companyId={params.companyId} initialView="Command Center"/></>}
+export default function CompanyPage({params}:{params:{companyId:string}}){const company=companies[params.companyId]??companies.alpha;return <CompanyRuntimeProvider company={company}><ControlRail companyId={params.companyId}/><RuntimeCommandPipeline company={company}/><CompanyWorkspace company={company} companyId={params.companyId} initialView="Command Center"/></CompanyRuntimeProvider>}

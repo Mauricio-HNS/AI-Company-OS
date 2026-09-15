@@ -7,16 +7,10 @@ import type {
 } from '../core/domain-model';
 import type { PlanEvaluation } from '../planning/plan-evaluation';
 import type { OpportunityEvaluationResult } from '../planning/opportunity-evaluation';
-import type {
-  PolicyRule,
-  PolicyDecision,
-} from '../security/policy-engine';
+import type { PolicyRule, PolicyDecision } from '../security/policy-engine';
 import type { OwnerAuthorizationRequest } from '../security/owner-authorization';
-import {
-  canExecuteAction,
-  evaluateActionGate,
-  type ExecutionReceipt,
-} from './action-gate';
+import { canExecuteAction, evaluateActionGate, type ExecutionReceipt } from './action-gate';
+import { ExecutionLedger } from './execution-ledger';
 import { attachRequestToRuntime } from './runtime-request';
 import { attachDecisionToRuntime } from './runtime-decision';
 import { attachPlanToRuntime } from './runtime-plan';
@@ -68,10 +62,12 @@ export interface RuntimeOrchestratorSnapshot {
 
 /** Coordinates runtime transitions without becoming an authorization authority. */
 export class RuntimeOrchestrator {
-  private snapshot: RuntimeOrchestratorSnapshot = {
-    state: EMPTY_RUNTIME_CONTEXT,
-    stopped: false,
-  };
+  private snapshot: RuntimeOrchestratorSnapshot = { state: EMPTY_RUNTIME_CONTEXT, stopped: false };
+  private readonly executionLedger: ExecutionLedger;
+
+  constructor(executionLedger = new ExecutionLedger()) {
+    this.executionLedger = executionLedger;
+  }
 
   getSnapshot(): RuntimeOrchestratorSnapshot {
     return this.snapshot;
@@ -96,9 +92,7 @@ export class RuntimeOrchestrator {
   }
 
   recordPlanEvaluation(evaluation: PlanEvaluation): RuntimeOrchestratorSnapshot {
-    if (this.snapshot.state.plan?.id !== evaluation.planId) {
-      throw new Error('Plan evaluation must reference the current runtime plan.');
-    }
+    if (this.snapshot.state.plan?.id !== evaluation.planId) throw new Error('Plan evaluation must reference the current runtime plan.');
     const state = transitionState(this.snapshot.state, 'PLAN_EVALUATION');
     this.snapshot = { ...this.snapshot, state: attachPlanEvaluationToRuntime(state, evaluation) };
     return this.snapshot;
@@ -137,14 +131,10 @@ export class RuntimeOrchestrator {
     ownerAuthorization?: OwnerAuthorizationRequest,
     now = Date.now(),
   ): RuntimeExecutionResult {
-    if (this.snapshot.stopped && this.snapshot.stopReason !== 'APPROVAL_REQUIRED') {
-      return { allowed: false, reason: `Runtime is stopped: ${this.snapshot.stopReason}.` };
-    }
+    if (this.snapshot.stopped && this.snapshot.stopReason !== 'APPROVAL_REQUIRED') return { allowed: false, reason: `Runtime is stopped: ${this.snapshot.stopReason}.` };
 
     const policyDecision = this.snapshot.state.policyDecision;
-    if (!policyDecision || !canEnterAction(policyDecision)) {
-      return { allowed: false, reason: 'Action cannot enter execution without ALLOW or APPROVAL_REQUIRED.' };
-    }
+    if (!policyDecision || !canEnterAction(policyDecision)) return { allowed: false, reason: 'Action cannot enter execution without ALLOW or APPROVAL_REQUIRED.' };
 
     const input = {
       companyId: action.context.companyId,
@@ -152,11 +142,7 @@ export class RuntimeOrchestrator {
       action: action.action,
       authorityLevel: action.authorityLevel,
       risk: action.risk,
-      context: {
-        environmentId: action.context.environmentId,
-        domainId: action.context.domainId,
-        taskId: action.taskId,
-      },
+      context: { environmentId: action.context.environmentId, domainId: action.context.domainId, taskId: action.taskId },
       taskId: action.taskId,
       parametersHash: action.parametersHash,
       idempotencyKey: action.idempotencyKey,
@@ -165,14 +151,13 @@ export class RuntimeOrchestrator {
     };
 
     const gate = evaluateActionGate(input, rules, now);
-    if (gate.decision !== policyDecision) {
-      return { allowed: false, reason: `Policy changed between runtime decision and action gate: ${policyDecision} -> ${gate.decision}.` };
-    }
+    if (gate.decision !== policyDecision) return { allowed: false, reason: `Policy changed between runtime decision and action gate: ${policyDecision} -> ${gate.decision}.` };
 
     const result = canExecuteAction(input, gate, action.id, now);
-    if (!result.allowed || !result.receipt) {
-      return { allowed: false, reason: result.reason };
-    }
+    if (!result.allowed || !result.receipt) return { allowed: false, reason: result.reason };
+
+    const reservation = this.executionLedger.reserve(result.receipt, now);
+    if (!reservation.accepted) return { allowed: false, reason: reservation.reason };
 
     const state = transitionState(this.snapshot.state, 'ACTION');
     this.snapshot = {
@@ -188,8 +173,13 @@ export class RuntimeOrchestrator {
     const { action, executionReceipt } = this.snapshot.state;
     if (!action || !executionReceipt) throw new Error('No authorized action is ready for execution.');
 
+    this.executionLedger.markStarted(executionReceipt);
+
     try {
       const observed = await adapter(action, executionReceipt);
+      if (observed.success) this.executionLedger.markSucceeded(executionReceipt);
+      else this.executionLedger.markFailed(executionReceipt);
+
       const outcome: Outcome = {
         id: `OUT-${action.id}-${Date.now()}`,
         context: action.context,
@@ -209,6 +199,7 @@ export class RuntimeOrchestrator {
         stopReason: observed.success ? undefined : 'EXECUTION_FAILED',
       };
     } catch (error) {
+      this.executionLedger.markFailed(executionReceipt);
       this.snapshot = { ...this.snapshot, stopped: true, stopReason: 'EXECUTION_FAILED' };
       throw error;
     }
@@ -251,6 +242,7 @@ export const RUNTIME_ORCHESTRATOR_RULES = {
   REVIEW_REQUIRES_PROPOSAL_PATH: 'REVIEW_REQUIRED stops execution and requires proposal handling outside execution.',
   APPROVAL_REQUIRES_EXPLICIT_OWNER_AUTHORIZATION: 'APPROVAL_REQUIRED cannot execute without exact usable owner authorization.',
   OUTCOME_REQUIRES_RECEIPT: 'Observed outcomes require an execution receipt tied to the exact action.',
+  REPLAY_IS_DENIED: 'An idempotency key cannot be reserved twice in the same company execution scope.',
   LEARNING_CANNOT_GRANT_AUTHORITY: 'Learning may recommend replanning but cannot change policy or authority.',
   REPLAN_RESTARTS_GOVERNANCE: 'A replanned operation must pass evaluation and policy again.',
   EXECUTION_ADAPTER_IS_EXTERNAL: 'Real side effects are delegated to an explicit adapter and are not simulated by the orchestrator.',

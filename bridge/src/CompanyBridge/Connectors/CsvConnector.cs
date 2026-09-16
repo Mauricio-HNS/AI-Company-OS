@@ -15,11 +15,14 @@ public sealed class CsvConnector : ICompanyConnector
     }
 
     public Task<ConnectorDescriptor> DescribeAsync(CancellationToken cancellationToken) =>
-        Task.FromResult(new ConnectorDescriptor(Id, "Local CSV export", "read-only tabular export", true, true));
+        Task.FromResult(new ConnectorDescriptor(Id, "Local CSV export", ConnectorSourceKind.File,
+            new[] { "read", "discover-schema", "discover-records" },
+            new[] { "business-data", "tabular-data" },
+            new[] { "read-only" }, true, true));
 
     public async Task<IReadOnlyCollection<BusinessFact>> DiscoverAsync(CancellationToken cancellationToken)
     {
-        if (!File.Exists(_filePath))
+        if (!File.Exists(_filePath) || _allowedFields.Count == 0)
             return Array.Empty<BusinessFact>();
 
         using var reader = new StreamReader(_filePath);

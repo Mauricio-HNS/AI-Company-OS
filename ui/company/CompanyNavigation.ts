@@ -3,6 +3,7 @@ import {
   Activity,
   BrainCircuit,
   Bot,
+  Compass,
   LayoutDashboard,
   Megaphone,
   Package,
@@ -17,6 +18,7 @@ import {
 
 export const companyViews = [
   'Dashboard',
+  'Discovery',
   'Agents',
   'Missions',
   'Tasks',
@@ -48,7 +50,10 @@ export type CompanyNavigationGroup = {
 export const companyNavigation: CompanyNavigationGroup[] = [
   {
     title: '',
-    items: [{ label: 'Dashboard', icon: LayoutDashboard }],
+    items: [
+      { label: 'Dashboard', icon: LayoutDashboard },
+      { label: 'Discovery', icon: Compass },
+    ],
   },
   {
     title: 'AI WORKFORCE',

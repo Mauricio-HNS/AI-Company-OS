@@ -1,22 +1,20 @@
 #Requires -RunAsAdministrator
 $ErrorActionPreference = 'Stop'
 
-$root = Split-Path -Parent $PSScriptRoot
-$project = Join-Path $root 'src\CompanyBridge\CompanyBridge.csproj'
+$payload = Join-Path $PSScriptRoot 'payload'
 $install = 'C:\Program Files\AI Company OS\Company Bridge'
 $data = 'C:\ProgramData\AI Company OS\Company Bridge'
 $service = 'AI Company OS Company Bridge Service'
 
 Write-Host 'AI Company OS — Company Bridge installer' -ForegroundColor Cyan
 
-if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
-    throw '.NET 8 SDK/runtime is required. Install it before running this installer.'
+if (-not (Test-Path (Join-Path $payload 'CompanyBridge.exe'))) {
+    throw "Installer payload is missing. Build the release package first with package-company-bridge.ps1."
 }
 
 New-Item -ItemType Directory -Force -Path $install | Out-Null
 New-Item -ItemType Directory -Force -Path $data | Out-Null
-
-dotnet publish $project -c Release -r win-x64 --self-contained false -o $install
+Copy-Item -Path (Join-Path $payload '*') -Destination $install -Recurse -Force
 
 $config = Join-Path $install 'appsettings.json'
 if (-not (Test-Path $config)) {

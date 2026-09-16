@@ -4,7 +4,26 @@ using Microsoft.Extensions.Options;
 
 namespace CompanyBridge.Connectors;
 
-public sealed record ConnectorDescriptor(string Id, string Name, string Capability, bool ReadOnly, bool Enabled);
+public enum ConnectorSourceKind
+{
+    Api,
+    Database,
+    File,
+    Application,
+    Device,
+    Manual,
+    Other
+}
+
+public sealed record ConnectorDescriptor(
+    string Id,
+    string Name,
+    ConnectorSourceKind SourceKind,
+    IReadOnlyCollection<string> Capabilities,
+    IReadOnlyCollection<string> DataClasses,
+    IReadOnlyCollection<string> RequestedPermissions,
+    bool ReadOnly,
+    bool Enabled);
 
 public interface ICompanyConnector
 {
@@ -47,7 +66,11 @@ public sealed class ConnectorRegistry
                 continue;
 
             var descriptor = await connector.DescribeAsync(cancellationToken);
-            _logger.LogInformation("Authorized connector {Connector}: {Capability}", descriptor.Name, descriptor.Capability);
+            _logger.LogInformation(
+                "Authorized connector {Connector}: {SourceKind} / {Capabilities}",
+                descriptor.Name,
+                descriptor.SourceKind,
+                string.Join(", ", descriptor.Capabilities));
 
             if (!descriptor.Enabled)
                 continue;
@@ -63,6 +86,9 @@ public sealed class ConnectorRegistry
                 new
                 {
                     connector = descriptor.Id,
+                    sourceKind = descriptor.SourceKind.ToString(),
+                    capabilities = descriptor.Capabilities,
+                    dataClasses = descriptor.DataClasses,
                     readOnly = descriptor.ReadOnly,
                     facts
                 }));

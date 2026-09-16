@@ -1,18 +1,17 @@
+using Microsoft.Extensions.Options;
+
 namespace CompanyBridge.Security;
 
 public sealed class LocalPolicy
 {
-    private readonly HashSet<string> _authorizedConnectors = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _authorizedConnectors;
 
-    public LocalPolicy()
+    public LocalPolicy(IOptions<BridgeOptions> options)
     {
-        // Production enrollment will populate this from an explicit company configuration.
-        // No connector is authorized by default.
+        _authorizedConnectors = options.Value.AuthorizedConnectors.ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
     public bool IsConnectorAuthorized(string connectorId) => _authorizedConnectors.Contains(connectorId);
-
-    public void AuthorizeConnector(string connectorId) => _authorizedConnectors.Add(connectorId);
 
     public static IReadOnlyDictionary<string, object?> Minimize(IReadOnlyDictionary<string, object?> payload, IEnumerable<string> allowedFields)
     {

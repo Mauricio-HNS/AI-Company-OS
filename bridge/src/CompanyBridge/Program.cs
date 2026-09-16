@@ -3,7 +3,7 @@ using CompanyBridge.Security;
 using CompanyBridge.Sync;
 using Microsoft.Extensions.Options;
 
-var builder = Host.CreateApplicationBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddWindowsService(options => options.ServiceName = "AI Company OS Company Bridge Service");
 builder.Services.Configure<BridgeOptions>(builder.Configuration.GetSection("Bridge"));
 builder.Services.AddSingleton<LocalPolicy>();
@@ -13,6 +13,26 @@ builder.Services.AddHttpClient<CloudSyncClient>();
 builder.Services.AddHostedService<BridgeWorker>();
 
 var app = builder.Build();
+app.Urls.Add("http://127.0.0.1:48731");
+
+app.MapGet("/health", (IOptions<BridgeOptions> options) => Results.Ok(new
+{
+    status = "ok",
+    component = "company-bridge",
+    companyId = options.Value.CompanyId,
+    localOnlyApi = true,
+    utc = DateTimeOffset.UtcNow
+}));
+
+app.MapGet("/api/v1/status", (IOptions<BridgeOptions> options, OutboxStore outbox) => Results.Ok(new
+{
+    companyId = options.Value.CompanyId,
+    enrolled = options.Value.CompanyId != "un-enrolled",
+    cloudEndpoint = options.Value.CloudEndpoint,
+    pendingSyncItems = outbox.ReadPending().Count,
+    localApi = "127.0.0.1:48731"
+}));
+
 await app.RunAsync();
 
 public sealed class BridgeOptions
@@ -36,7 +56,7 @@ public sealed class BridgeWorker : BackgroundService
     {
         _connectors = connectors;
         _outbox = outbox;
-        _sync = sync;
+        _sync = _sync = sync;
         _options = options.Value;
         _logger = logger;
     }

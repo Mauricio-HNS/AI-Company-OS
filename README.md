@@ -164,28 +164,12 @@ Completed in this UI hardening cycle:
 - Company route composition retains `generateStaticParams()` in the Server Component
 - Dashboard includes revenue, conversion rate, AI workforce, active missions, company health, performance, funnel and live activity
 - Navigation model covers Dashboard, AI Workforce, Business, Intelligence and System areas
-- `npm run typecheck` is part of the project development scripts
+- `npm run typecheck` remains available as a development validation command
 - Legacy `CompanyRuntimeWorkspace.tsx` monolith removed from the active codebase after the V2 migration
 - Next.js configured for static export with the repository base path `/AI-Company-OS`
-- GitHub Actions workflow configured to typecheck, build and deploy the static site to GitHub Pages
-- Duplicate legacy Pages workflow consolidated into the canonical deployment workflow
-
-Current composition:
-
-```text
-Company route
-     ↓
-CompanyShell
-     ↓
-CompanyRuntimeWorkspaceV2
-     ├── CompanySidebar
-     ├── CompanyTopbar
-     └── CompanyContent
-            ↓
-      CompanyRuntimeContent
-            ↓
-       Runtime modules
-```
+- Missing runtime support modules restored for Agents, Tasks and Missions
+- Dynamic Tasks route split into a Server Component route plus Client Component so static export can generate company paths
+- GitHub Pages workflow hardened to build and deploy the static `out` artifact
 
 ### Live preview
 
@@ -193,9 +177,9 @@ GitHub Pages deployment is configured at:
 
 `https://mauricio-hns.github.io/AI-Company-OS/`
 
-The page becomes available after the GitHub Actions deployment completes successfully.
+The deployment is considered live only after the GitHub Actions build and Pages deployment complete successfully.
 
-Next implementation sequence:
+Current sequence:
 
 ```text
 Company OS Shell                  ✓
@@ -206,7 +190,9 @@ Content / module boundaries       ✓
       ↓
 Legacy workspace cleanup          ✓
       ↓
-GitHub Pages preview              ✓
+Pages build hardening             ✓
+      ↓
+GitHub Pages deployment           →
       ↓
 Dashboard 2.0                    →
       ↓
@@ -227,7 +213,7 @@ External side effects remain gated while the runtime and safety paths are being 
 app/
 ├── company/[companyId]/
 │   ├── CompanyRuntimeContext.tsx
-│   ├── CompanyRuntimeWorkspaceV2.tsx     # active composed workspace
+│   ├── CompanyRuntimeWorkspaceV2.tsx
 │   ├── CompanyRuntimeWorkspaceV2.module.css
 │   ├── CompanySessionGate.tsx
 │   └── domain modules / detail routes
@@ -246,6 +232,8 @@ ui/
 
 lib/
 ├── company-runtime.ts
+├── company-engine.ts
+├── operations-engine.ts
 ├── operating-engine.ts
 ├── mission-generator.ts
 ├── execution-queue.ts
@@ -300,7 +288,7 @@ Completed foundations:
 - Company OS presentation architecture
 - Centralized navigation and shell boundaries
 - Active composed Company Workspace
-- GitHub Pages static preview pipeline
+- Static Pages build hardening
 
 Remaining hardening work:
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Activity, Bot, BrainCircuit, CheckCircle2, CircleDollarSign, Gauge, LayoutDashboard, Pause, Play, Radio, Settings, ShieldCheck, Target, Users, Zap, PlugZap } from 'lucide-react'
+import { Activity, Bot, BrainCircuit, CheckCircle2, CircleDollarSign, Gauge, LayoutDashboard, Pause, Play, Radio, Settings, ShieldCheck, Target, Users, Zap, PlugZap, Megaphone } from 'lucide-react'
 import Link from 'next/link'
 import { runtimeAgents, useCompanyRuntime } from './CompanyRuntimeContext'
 import GuidedCommandCenter from './GuidedCommandCenter'
@@ -9,10 +9,10 @@ import type { CompanySession } from '../../../lib/company-access-control'
 import { hasPermission } from '../../../lib/company-access-control'
 
 type Company = { name: string; type: string; revenue: string; profit: string; health: string; agents: number; missions: number; objective: string }
-type View = 'Command Center' | 'Agents' | 'Missions' | 'Tasks' | 'Products' | 'Customers' | 'Finance' | 'Intelligence' | 'Knowledge' | 'Operations' | 'Security' | 'Settings'
+type View = 'Command Center' | 'Agents' | 'Missions' | 'Tasks' | 'Marketing' | 'Products' | 'Customers' | 'Finance' | 'Intelligence' | 'Knowledge' | 'Operations' | 'Security' | 'Settings'
 
 const navigation: Array<[View, typeof LayoutDashboard]> = [
-  ['Command Center', LayoutDashboard], ['Agents', Bot], ['Missions', Target], ['Tasks', Zap],
+  ['Command Center', LayoutDashboard], ['Agents', Bot], ['Missions', Target], ['Tasks', Zap], ['Marketing', Megaphone],
   ['Products', Gauge], ['Customers', Users], ['Finance', CircleDollarSign], ['Intelligence', Activity],
   ['Knowledge', BrainCircuit], ['Operations', Radio], ['Security', ShieldCheck], ['Settings', Settings],
 ]
@@ -48,6 +48,7 @@ export default function CompanyRuntimeWorkspace({ company, companyId, initialVie
         {view === 'Agents' && <Agents companyId={companyId} />}
         {view === 'Missions' && <Missions company={company} progress={progress} />}
         {view === 'Tasks' && <Tasks runtime={runtime} />}
+        {view === 'Marketing' && <MarketingEntry companyId={companyId} />}
         {view === 'Knowledge' && <Knowledge runtime={runtime} />}
         {view === 'Intelligence' && <Intelligence runtime={runtime} />}
         {view === 'Operations' && <Operations runtime={runtime} />}
@@ -62,13 +63,15 @@ export default function CompanyRuntimeWorkspace({ company, companyId, initialVie
   )
 }
 
+function MarketingEntry({ companyId }: { companyId: string }) {
+  return <Module title="Marketing Control Center" description="Central de marketing isolada por empresa. Contas, campanhas, histórico, análise e aprovações pertencem exclusivamente a este tenant."><div className="runtimeCards"><Link href={`/company/${companyId}/marketing`} className="runtimeCard"><div className="runtimeCardIcon"><Megaphone size={18}/></div><strong>Open Marketing Center</strong><span>Campanhas, conexões, governança, histórico e inteligência de marketing.</span><p>Tenant scope: {companyId}</p><b>Open →</b></Link><Link href={`/company/${companyId}/integrations`} className="runtimeCard"><div className="runtimeCardIcon"><PlugZap size={18}/></div><strong>Marketing Connections</strong><span>Gerencie Meta, Instagram, Google Ads e demais providers desta empresa.</span><p>Credential boundary active</p><b>Manage →</b></Link></div><div className="runtimeNotice"><ShieldCheck size={15}/><span>Isolamento lógico: toda leitura e gravação usa o companyId da sessão. Credenciais secretas não ficam no navegador.</span></div></Module>
+}
+
 function CommandCenter({ company, runtime, running, setRunning, progress, counts, lastAction, advance, onView, assignedAgents }: any) {
   const [commandNotice, setCommandNotice] = useState('')
   const phase = runtime.plan.tasks.some((task: any) => task.status === 'EXECUTING') ? 'EXECUTE' : runtime.replan ? 'REPLAN' : counts.completed === runtime.plan.tasks.length ? 'LEARN' : 'PLAN'
 
-  function handleIntent(intent: string) {
-    setCommandNotice(`Intenção recebida: “${intent}”. O runtime atual registra a intenção, mas ainda não executa ações externas.`)
-  }
+  function handleIntent(intent: string) { setCommandNotice(`Intenção recebida: “${intent}”. O runtime atual registra a intenção, mas ainda não executa ações externas.`) }
 
   return <>
     <GuidedCommandCenter objective={company.objective} expectedOutcome={runtime.plan.expectedOutcome} onSubmitIntent={handleIntent} />
@@ -89,12 +92,7 @@ function Tasks({ runtime }: any) { return <Module title="Task Graph" description
 function Knowledge({ runtime }: any) { return <Module title="Company Memory" description="Learning records are evidence-backed and attached to the operating cycle."><div className="runtimeList">{runtime.learning ? <div className="runtimeListRow"><BrainCircuit size={15}/><div><strong>{runtime.learning.lesson}</strong><small>Task {runtime.learning.taskId} · score {runtime.learning.score}</small></div><b>ACTIVE</b></div> : <div className="runtimeEmpty">No learning record has been produced in this cycle yet.</div>}</div></Module> }
 function Intelligence({ runtime }: any) { return <Module title="Intelligence" description="Evaluation and learning are produced from actual runtime results, not UI simulation."><div className="runtimeList"><div className="runtimeListRow"><Activity size={15}/><div><strong>Plan evaluation</strong><small>{runtime.plan.tasks.filter((t: any) => t.status === 'COMPLETED').length} completed · {runtime.plan.tasks.filter((t: any) => t.status === 'FAILED').length} failed · {runtime.plan.tasks.filter((t: any) => t.status === 'BLOCKED').length} blocked</small></div><b>{runtime.replan?.reason ?? 'CONTINUE'}</b></div>{runtime.learning && <div className="runtimeListRow"><BrainCircuit size={15}/><div><strong>{runtime.learning.lesson}</strong><small>Evidence score: {runtime.learning.score}</small></div><b>{runtime.learning.outcome}</b></div>}</div></Module> }
 function Operations({ runtime }: any) { return <Module title="Operations" description="The operating loop is explicit, deterministic and dependency-aware."><div className="operationFlow">{['OBJECTIVE','MISSION','PLAN','DELEGATE','EXECUTE','OBSERVE','EVALUATE','LEARN','REPLAN'].map((step, index) => <div className={index < 5 ? 'done' : ''} key={step}><span>{String(index + 1).padStart(2, '0')}</span><b>{step}</b></div>)}</div><div className="runtimeNotice">Current cycle: {runtime.plan.cycle} · Expected outcome: {runtime.plan.expectedOutcome}</div></Module> }
-function Security({ runtime, session }: { runtime: any; session: CompanySession | null }) {
-  const role = session?.role ?? 'VIEWER'
-  const permissions = ['VIEW_COMPANY','MONITOR_OPERATION','VIEW_FINANCE','MANAGE_STOCK','CREATE_MISSION','RUN_EXPERIMENT','CHANGE_PRICES','APPROVE_SPEND','MANAGE_USERS','EMERGENCY_STOP'] as const
-  const enabled = permissions.filter(permission => hasPermission(role, permission)).length
-  return <Module title="Security & Control" description="Identity, permissions and critical approvals are independent from normal execution decisions."><div className="securityGrid"><div><ShieldCheck size={18}/><strong>Signed-in identity</strong><span>{session ? `${session.displayName} · ${session.role}` : 'NOT IDENTIFIED'}</span></div><div><ShieldCheck size={18}/><strong>Permissions</strong><span>{enabled}/{permissions.length} enabled</span></div><div><ShieldCheck size={18}/><strong>Kill switch</strong><span>AVAILABLE</span></div></div><div className="runtimeNotice">Critical actions such as price changes, spending, user administration and emergency stop require an authorized role and explicit approval. Current task approval requirement: {runtime.plan.tasks.some((t: any) => t.approvalRequired) ? 'REQUIRED' : 'CLEAR'}.</div></Module>
-}
+function Security({ runtime, session }: { runtime: any; session: CompanySession | null }) { const role = session?.role ?? 'VIEWER'; const permissions = ['VIEW_COMPANY','MONITOR_OPERATION','VIEW_FINANCE','MANAGE_STOCK','CREATE_MISSION','RUN_EXPERIMENT','CHANGE_PRICES','APPROVE_SPEND','MANAGE_USERS','EMERGENCY_STOP'] as const; const enabled = permissions.filter(permission => hasPermission(role, permission)).length; return <Module title="Security & Control" description="Identity, permissions and critical approvals are independent from normal execution decisions."><div className="securityGrid"><div><ShieldCheck size={18}/><strong>Signed-in identity</strong><span>{session ? `${session.displayName} · ${session.role}` : 'NOT IDENTIFIED'}</span></div><div><ShieldCheck size={18}/><strong>Permissions</strong><span>{enabled}/{permissions.length} enabled</span></div><div><ShieldCheck size={18}/><strong>Kill switch</strong><span>AVAILABLE</span></div></div><div className="runtimeNotice">Critical actions such as price changes, spending, user administration and emergency stop require an authorized role and explicit approval. Current task approval requirement: {runtime.plan.tasks.some((t: any) => t.approvalRequired) ? 'REQUIRED' : 'CLEAR'}.</div></Module> }
 function SimpleModule({ title, description }: { title: string; description: string }) { return <Module title={title} description={description}><div className="runtimeEmpty">This module is intentionally connected to the runtime before external integrations are enabled.</div></Module> }
 function Module({ title, description, children }: { title: string; description: string; children: React.ReactNode }) { return <section className="runtimeModule"><div className="runtimeModuleHeader"><div><span>COMPANY OPERATIONS</span><h2>{title}</h2><p>{description}</p></div></div>{children}</section> }
 function PanelTitle({ title, action, onClick }: { title: string; action: string; onClick: () => void }) { return <div className="runtimePanelTitle"><strong>{title}</strong><button onClick={onClick}>{action} →</button></div> }

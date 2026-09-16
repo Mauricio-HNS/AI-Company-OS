@@ -33,13 +33,8 @@ export type TenantMarketingState = {
 export const MARKETING_STORAGE_PREFIX = 'company-marketing:'
 export const INTEGRATION_STORAGE_PREFIX = 'company-integrations:'
 
-export function marketingStorageKey(companyId: string) {
-  return `${MARKETING_STORAGE_PREFIX}${encodeURIComponent(companyId)}`
-}
-
-export function integrationStorageKey(companyId: string) {
-  return `${INTEGRATION_STORAGE_PREFIX}${encodeURIComponent(companyId)}`
-}
+export function marketingStorageKey(companyId: string) { return `${MARKETING_STORAGE_PREFIX}${companyId}` }
+export function integrationStorageKey(companyId: string) { return `${INTEGRATION_STORAGE_PREFIX}${companyId}` }
 
 export function emptyTenantMarketingState(companyId: string): TenantMarketingState {
   return { companyId, campaigns: [], audit: [], updatedAt: new Date().toISOString() }
@@ -51,13 +46,9 @@ export function readTenantMarketingState(companyId: string): TenantMarketingStat
     const raw = localStorage.getItem(marketingStorageKey(companyId))
     if (!raw) return emptyTenantMarketingState(companyId)
     const parsed = JSON.parse(raw) as TenantMarketingState
-    if (parsed.companyId !== companyId || !Array.isArray(parsed.campaigns) || !Array.isArray(parsed.audit)) {
-      return emptyTenantMarketingState(companyId)
-    }
+    if (parsed.companyId !== companyId || !Array.isArray(parsed.campaigns) || !Array.isArray(parsed.audit)) return emptyTenantMarketingState(companyId)
     return parsed
-  } catch {
-    return emptyTenantMarketingState(companyId)
-  }
+  } catch { return emptyTenantMarketingState(companyId) }
 }
 
 export function saveTenantMarketingState(state: TenantMarketingState) {
@@ -73,16 +64,10 @@ export function readTenantConnections(companyId: string): IntegrationConnection[
     if (!raw) return []
     const parsed = JSON.parse(raw) as IntegrationConnection[]
     return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
+  } catch { return [] }
 }
 
 export function appendMarketingAudit(state: TenantMarketingState, event: Omit<MarketingAuditEvent, 'id' | 'companyId' | 'createdAt'>): TenantMarketingState {
   const now = new Date().toISOString()
-  return {
-    ...state,
-    audit: [{ ...event, id: `audit-${Date.now()}`, companyId: state.companyId, createdAt: now }, ...state.audit].slice(0, 500),
-    updatedAt: now,
-  }
+  return { ...state, audit: [{ ...event, id: `audit-${Date.now()}`, companyId: state.companyId, createdAt: now }, ...state.audit].slice(0, 500), updatedAt: now }
 }

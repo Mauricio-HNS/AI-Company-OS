@@ -1,4 +1,4 @@
-import CompanyRuntimeWorkspace from './CompanyRuntimeWorkspace';
+import CompanyRuntimeWorkspace from './CompanyRuntimeWorkspaceV2';
 import CompanyRuntimeProvider from './CompanyRuntimeContext';
 import CompanySessionGate from './CompanySessionGate';
 import CompanyShell from '../../../ui/company/CompanyShell';

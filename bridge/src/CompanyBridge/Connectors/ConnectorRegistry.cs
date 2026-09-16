@@ -1,4 +1,6 @@
 using CompanyBridge.Security;
+using CompanyBridge.Sync;
+using Microsoft.Extensions.Options;
 
 namespace CompanyBridge.Connectors;
 
@@ -24,13 +26,17 @@ public sealed class ConnectorRegistry
 {
     private readonly IEnumerable<ICompanyConnector> _connectors;
     private readonly LocalPolicy _policy;
+    private readonly OutboxStore _outbox;
+    private readonly BridgeOptions _options;
     private readonly ILogger<ConnectorRegistry> _logger;
 
-    public ConnectorRegistry(LocalPolicy policy, ILogger<ConnectorRegistry> logger)
+    public ConnectorRegistry(IEnumerable<ICompanyConnector> connectors, LocalPolicy policy, OutboxStore outbox, IOptions<BridgeOptions> options, ILogger<ConnectorRegistry> logger)
     {
+        _connectors = connectors;
         _policy = policy;
+        _outbox = outbox;
+        _options = options.Value;
         _logger = logger;
-        _connectors = Array.Empty<ICompanyConnector>();
     }
 
     public async Task DiscoverAuthorizedSourcesAsync(CancellationToken cancellationToken)
@@ -42,6 +48,24 @@ public sealed class ConnectorRegistry
 
             var descriptor = await connector.DescribeAsync(cancellationToken);
             _logger.LogInformation("Authorized connector {Connector}: {Capability}", descriptor.Name, descriptor.Capability);
+
+            if (!descriptor.Enabled)
+                continue;
+
+            var facts = await connector.DiscoverAsync(cancellationToken);
+            if (facts.Count == 0)
+                continue;
+
+            _outbox.Enqueue(new SyncEnvelope(
+                _options.CompanyId,
+                DateTimeOffset.UtcNow,
+                "BUSINESS_FACTS",
+                new
+                {
+                    connector = descriptor.Id,
+                    readOnly = descriptor.ReadOnly,
+                    facts
+                }));
         }
     }
 }

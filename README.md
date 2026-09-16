@@ -145,6 +145,42 @@ The UI exposes:
 - Customers
 - Settings
 
+### Company OS shell status — 2026-09-16
+
+The presentation architecture is being consolidated into a canonical Company OS shell.
+
+Completed in this UI hardening cycle:
+
+- Centralized Company navigation model in `ui/company/CompanyNavigation.ts`
+- Reusable collapsible `CompanySidebar`
+- Reusable `CompanyTopbar`
+- User profile menu and session-aware sign-out boundary
+- Canonical `CompanyContent` presentation boundary
+- Server-first `CompanyShell`
+- Runtime composition kept separate from the presentation shell
+- Company route composition retains `generateStaticParams()` in the Server Component
+- Dashboard includes revenue, conversion rate, AI workforce, active missions, company health, performance, funnel and live activity
+- Navigation model covers Dashboard, AI Workforce, Business, Intelligence and System areas
+- `npm run typecheck` is part of the project development scripts
+
+Next implementation sequence:
+
+```text
+Company OS Shell
+      ↓
+Sidebar + Topbar integration
+      ↓
+Content / module boundaries
+      ↓
+Dashboard 2.0
+      ↓
+Module extraction
+      ↓
+Experience Intelligence
+      ↓
+Production hardening
+```
+
 External side effects remain gated while the runtime and safety paths are being hardened.
 
 ## Project structure
@@ -157,6 +193,16 @@ app/
 │   ├── ControlRail.tsx
 │   └── domain modules / detail routes
 │
+ui/
+└── company/
+    ├── CompanyShell.tsx
+    ├── CompanyNavigation.ts
+    ├── CompanySidebar.tsx
+    ├── CompanySidebar.module.css
+    ├── CompanyTopbar.tsx
+    ├── CompanyTopbar.module.css
+    └── CompanyContent.tsx
+
 lib/
 ├── company-runtime.ts
 ├── operating-engine.ts
@@ -210,6 +256,8 @@ Completed foundations:
 - Capability autonomy and decay
 - Company memory lifecycle
 - Runtime-driven Command Center
+- Company OS presentation architecture
+- Centralized navigation and shell boundaries
 
 Remaining hardening work:
 
@@ -219,6 +267,7 @@ Remaining hardening work:
 - Opportunity detection
 - Production experiment management
 - Real integrations
+- Complete extraction of the legacy CompanyRuntimeWorkspace monolith
 
 ### Phase 5 — Real AI and business integrations
 

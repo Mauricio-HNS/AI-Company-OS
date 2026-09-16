@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Activity, Bot, BrainCircuit, CheckCircle2, CircleDollarSign, Gauge, LayoutDashboard, Pause, Play, Radio, Settings, ShieldCheck, Target, Users, Zap } from 'lucide-react'
+import { Activity, Bot, BrainCircuit, CheckCircle2, CircleDollarSign, Gauge, LayoutDashboard, Pause, Play, Radio, Settings, ShieldCheck, Target, Users, Zap, PlugZap } from 'lucide-react'
 import Link from 'next/link'
 import { runtimeAgents, useCompanyRuntime } from './CompanyRuntimeContext'
 import GuidedCommandCenter from './GuidedCommandCenter'
@@ -39,7 +39,7 @@ export default function CompanyRuntimeWorkspace({ company, companyId, initialVie
         <div className="runtimeBrand"><div className="runtimeBrandMark">AI</div><div><strong>AI Company OS</strong><small>COMPANY OPERATING SYSTEM</small></div></div>
         <Link href="/portfolio" className="runtimeBack">← Portfolio</Link>
         <div className="runtimeIdentity"><span>COMPANY</span><strong>{company.name}</strong><small>{company.type}</small><em><i /> {session ? `${session.displayName} · ${session.role}` : 'Identity pending'}</em></div>
-        <nav>{navigation.map(([label, Icon]) => <button key={label} className={view === label ? 'active' : ''} onClick={() => navigate(label)}><Icon size={15}/><span>{label}</span></button>)}</nav>
+        <nav>{navigation.map(([label, Icon]) => <button key={label} className={view === label ? 'active' : ''} onClick={() => navigate(label)}><Icon size={15}/><span>{label}</span></button>)}<button onClick={() => window.location.assign(`/company/${companyId}/integrations`)}><PlugZap size={15}/><span>Integrations</span></button></nav>
         <div className="runtimeSafety"><ShieldCheck size={15}/><span>Control layer<br/><b>Identity + permissions active</b></span></div>
       </aside>
       <section className="runtimeMain">

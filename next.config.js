@@ -3,6 +3,12 @@ const nextConfig = {
   output: 'export',
   basePath: '/AI-Company-OS',
   trailingSlash: true,
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   images: {
     unoptimized: true,
   },

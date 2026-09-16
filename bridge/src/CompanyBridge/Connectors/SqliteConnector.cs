@@ -16,11 +16,19 @@ public sealed class SqliteConnector : ICompanyConnector
     }
 
     public Task<ConnectorDescriptor> DescribeAsync(CancellationToken cancellationToken) =>
-        Task.FromResult(new ConnectorDescriptor(Id, "SQLite local database", "read-only tabular business data", true, true));
+        Task.FromResult(new ConnectorDescriptor(
+            Id,
+            "SQLite local database",
+            ConnectorSourceKind.Database,
+            new[] { "read", "discover-schema", "discover-records" },
+            new[] { "business-data", "tabular-data" },
+            new[] { "read-only" },
+            true,
+            true));
 
     public async Task<IReadOnlyCollection<BusinessFact>> DiscoverAsync(CancellationToken cancellationToken)
     {
-        if (!File.Exists(_databasePath))
+        if (!File.Exists(_databasePath) || _allowedTables.Count == 0)
             return Array.Empty<BusinessFact>();
 
         var facts = new List<BusinessFact>();

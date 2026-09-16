@@ -48,6 +48,81 @@ Company
  └── Audit / Runtime State
 ```
 
+## Company Bridge — local-first company connection
+
+Company Bridge is the Windows component that connects a real company's local environment to the Company Brain without treating the customer's computer as a cloud data dump.
+
+```text
+CUSTOMER PC
+    │
+    ▼
+Company Bridge Service
+    │
+    ├── Discovery
+    ├── Local connectors
+    ├── Data minimization
+    ├── Local policy
+    ├── Local outbox
+    └── Local API: 127.0.0.1:48731
+             │
+             │ outbound HTTPS only
+             ▼
+      AI Company OS Cloud
+             │
+             ▼
+       Company Brain
+```
+
+The Bridge is installed as the Windows service `AI Company OS Company Bridge Service`. A desktop shortcut is only a management entry point; deleting it does not stop the service.
+
+### Data boundary
+
+The Bridge follows a local-first rule:
+
+```text
+RAW LOCAL DATA
+      ↓
+LOCAL PARSING
+      ↓
+BUSINESS FACTS
+      ↓
+MINIMIZATION
+      ↓
+LOCAL OUTBOX
+      ↓
+ONLY REQUIRED DATA → CLOUD
+```
+
+Raw files and complete local databases remain on the customer's machine unless a separate explicit workflow authorizes a specific transfer.
+
+The first connectors are read-only SQLite and CSV adapters. Connector authorization is empty by default. Generated connectors must follow the governed lifecycle in `bridge/CONNECTOR-BUILDER.md` and cannot be activated merely because AI generated code.
+
+### Company Bridge files
+
+```text
+bridge/
+├── README.md
+├── CONNECTOR-BUILDER.md
+├── installer/
+│   ├── install-company-bridge.ps1
+│   └── package-company-bridge.ps1
+└── src/CompanyBridge/
+    ├── CompanyBridge.csproj
+    ├── Program.cs
+    ├── appsettings.json
+    ├── Connectors/
+    │   ├── ConnectorRegistry.cs
+    │   ├── SqliteConnector.cs
+    │   └── CsvConnector.cs
+    ├── Security/
+    │   └── LocalPolicy.cs
+    └── Sync/
+        ├── OutboxStore.cs
+        └── CloudSyncClient.cs
+```
+
+The release package is produced by the packaging script and then signed/distributed. The customer installer does not require the .NET SDK.
+
 ## Runtime engines
 
 | Module | Responsibility |
@@ -173,6 +248,11 @@ Completed in this UI hardening cycle:
 - Missing runtime support modules restored for Agents, Tasks and Missions
 - Dynamic Tasks route split into a Server Component route plus Client Component so static export can generate company paths
 - GitHub Pages workflow hardened to build and deploy the static `out` artifact
+- Company Bridge local-first Windows service foundation added
+- Read-only SQLite and CSV connectors added
+- Local minimization and explicit connector authorization added
+- Durable local outbox and outbound-only cloud sync added
+- Governed AI connector-builder lifecycle documented
 
 ### Live preview
 
@@ -189,21 +269,23 @@ Company OS Shell                  ✓
       ↓
 Sidebar + Topbar integration      ✓
       ↓
-Content / module boundaries       ✓
+Content / module boundaries      ✓
       ↓
-Legacy workspace cleanup          ✓
+Legacy workspace cleanup         ✓
       ↓
-Pages build hardening             ✓
+Pages build hardening            ✓
       ↓
-Dashboard typography system      ✓
+Dashboard typography system     ✓
       ↓
-GitHub Pages deployment           →
+Company Bridge foundation       ✓
+      ↓
+Company Brain real ingestion     →
+      ↓
+Real cloud bridge endpoint       →
       ↓
 Dashboard 2.0                    →
       ↓
-Module extraction                 →
-      ↓
-Experience Intelligence           →
+Experience Intelligence          →
       ↓
 Production hardening              →
 ```
@@ -294,17 +376,19 @@ Completed foundations:
 - Centralized navigation and shell boundaries
 - Active composed Company Workspace
 - Static Pages build hardening
+- Company Bridge local-first ingestion foundation
 
 Remaining hardening work:
 
 - Automated unit tests for critical runtime paths
-- Durable persistence
+- Durable cloud persistence
 - Human approval workflow UI
 - Opportunity detection
 - Production experiment management
 - Real integrations
 - Dashboard 2.0 visual refinement
 - Module-level component extraction
+- Production cloud Bridge endpoint and device enrollment
 
 ### Phase 5 — Real AI and business integrations
 
@@ -324,6 +408,7 @@ Future.
 - React 18
 - TypeScript
 - Lucide React
+- .NET 8 Company Bridge
 - GitHub Pages deployment
 
 ## Safety model

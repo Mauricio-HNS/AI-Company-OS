@@ -1,0 +1,33 @@
+name: Build Company Bridge
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'bridge/**'
+      - '.github/workflows/build-company-bridge.yml'
+  pull_request:
+    paths:
+      - 'bridge/**'
+      - '.github/workflows/build-company-bridge.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore bridge/src/CompanyBridge/CompanyBridge.csproj
+
+      - name: Build
+        run: dotnet build bridge/src/CompanyBridge/CompanyBridge.csproj --configuration Release --no-restore

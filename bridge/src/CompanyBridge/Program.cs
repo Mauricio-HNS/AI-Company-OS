@@ -34,6 +34,7 @@ app.MapGet("/api/v1/status", (IOptions<BridgeOptions> options, OutboxStore outbo
     companyId = options.Value.CompanyId,
     enrolled = options.Value.CompanyId != "un-enrolled",
     cloudEndpoint = options.Value.CloudEndpoint,
+    authorizedConnectors = options.Value.AuthorizedConnectors,
     pendingSyncItems = outbox.ReadPending().Count,
     localApi = "127.0.0.1:48731"
 }));
@@ -49,6 +50,7 @@ public sealed class BridgeOptions
     public bool AllowLocalDiscovery { get; set; } = true;
     public string LocalDatabasePath { get; set; } = "";
     public string[] AllowedTables { get; set; } = Array.Empty<string>();
+    public string[] AuthorizedConnectors { get; set; } = Array.Empty<string>();
 }
 
 public sealed class BridgeWorker : BackgroundService

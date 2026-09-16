@@ -1,7 +1,6 @@
 import CompanyRuntimeWorkspace from './CompanyRuntimeWorkspace';
 import CompanyRuntimeProvider from './CompanyRuntimeContext';
 import CompanySessionGate from './CompanySessionGate';
-import ControlRail from './ControlRail';
 import CompanyShell from '../../../ui/company/CompanyShell';
 import { companyIds, getCompany } from '../../../infrastructure/company/company-catalog';
 
@@ -15,7 +14,6 @@ export default function CompanyPage({params}:{params:{companyId:string}}){
   return <CompanySessionGate companyId={company.id} companyName={company.name}>
     <CompanyRuntimeProvider company={company}>
       <CompanyShell>
-        <ControlRail companyId={company.id}/>
         <CompanyRuntimeWorkspace company={company} companyId={company.id} initialView="Dashboard"/>
       </CompanyShell>
     </CompanyRuntimeProvider>

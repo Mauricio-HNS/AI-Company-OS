@@ -164,6 +164,7 @@ Completed in this UI hardening cycle:
 - Company route composition retains `generateStaticParams()` in the Server Component
 - Dashboard includes revenue, conversion rate, AI workforce, active missions, company health, performance, funnel and live activity
 - Navigation model covers Dashboard, AI Workforce, Business, Intelligence and System areas
+- Dashboard, topbar and sidebar typography scaled up for improved readability
 - `npm run typecheck` remains available as a development validation command
 - Legacy `CompanyRuntimeWorkspace.tsx` monolith removed from the active codebase after the V2 migration
 - Next.js configured for static export with the repository base path `/AI-Company-OS`

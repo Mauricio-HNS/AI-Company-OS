@@ -166,6 +166,9 @@ Completed in this UI hardening cycle:
 - Navigation model covers Dashboard, AI Workforce, Business, Intelligence and System areas
 - `npm run typecheck` is part of the project development scripts
 - Legacy `CompanyRuntimeWorkspace.tsx` monolith removed from the active codebase after the V2 migration
+- Next.js configured for static export with the repository base path `/AI-Company-OS`
+- GitHub Actions workflow configured to typecheck, build and deploy the static site to GitHub Pages
+- Duplicate legacy Pages workflow consolidated into the canonical deployment workflow
 
 Current composition:
 
@@ -184,6 +187,14 @@ CompanyRuntimeWorkspaceV2
        Runtime modules
 ```
 
+### Live preview
+
+GitHub Pages deployment is configured at:
+
+`https://mauricio-hns.github.io/AI-Company-OS/`
+
+The page becomes available after the GitHub Actions deployment completes successfully.
+
 Next implementation sequence:
 
 ```text
@@ -194,6 +205,8 @@ Sidebar + Topbar integration      ✓
 Content / module boundaries       ✓
       ↓
 Legacy workspace cleanup          ✓
+      ↓
+GitHub Pages preview              ✓
       ↓
 Dashboard 2.0                    →
       ↓
@@ -287,6 +300,7 @@ Completed foundations:
 - Company OS presentation architecture
 - Centralized navigation and shell boundaries
 - Active composed Company Workspace
+- GitHub Pages static preview pipeline
 
 Remaining hardening work:
 

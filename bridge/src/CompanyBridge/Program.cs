@@ -1,4 +1,5 @@
 using CompanyBridge.Connectors;
+using CompanyBridge.Discovery;
 using CompanyBridge.Security;
 using CompanyBridge.Sync;
 using Microsoft.Extensions.Options;
@@ -8,6 +9,7 @@ builder.Services.AddWindowsService(options => options.ServiceName = "AI Company 
 builder.Services.Configure<BridgeOptions>(builder.Configuration.GetSection("Bridge"));
 builder.Services.AddSingleton<LocalPolicy>();
 builder.Services.AddSingleton<ConnectorRegistry>();
+builder.Services.AddSingleton<LocalSourceDiscovery>();
 builder.Services.AddSingleton<OutboxStore>();
 builder.Services.AddHttpClient<CloudSyncClient>();
 builder.Services.AddSingleton<ICompanyConnector>(sp =>
@@ -44,6 +46,21 @@ app.MapGet("/api/v1/status", (IOptions<BridgeOptions> options, OutboxStore outbo
     localApi = "127.0.0.1:48731"
 }));
 
+app.MapGet("/api/v1/discovery", async (IOptions<BridgeOptions> options, LocalSourceDiscovery discovery, CancellationToken cancellationToken) =>
+{
+    if (!options.Value.AllowLocalDiscovery)
+        return Results.Ok(new { enabled = false, sources = Array.Empty<LocalSourceDescriptor>() });
+
+    var sources = await discovery.DiscoverAsync(options.Value.DiscoveryPaths, cancellationToken);
+    return Results.Ok(new
+    {
+        enabled = true,
+        localOnly = true,
+        sourceCount = sources.Count,
+        sources
+    });
+});
+
 await app.RunAsync();
 
 public sealed class BridgeOptions
@@ -53,6 +70,7 @@ public sealed class BridgeOptions
     public string DataDirectory { get; set; } = @"C:\ProgramData\AI Company OS\Company Bridge";
     public int SyncIntervalSeconds { get; set; } = 60;
     public bool AllowLocalDiscovery { get; set; } = true;
+    public string[] DiscoveryPaths { get; set; } = Array.Empty<string>();
     public string LocalDatabasePath { get; set; } = "";
     public string[] AllowedTables { get; set; } = Array.Empty<string>();
     public string LocalCsvPath { get; set; } = "";

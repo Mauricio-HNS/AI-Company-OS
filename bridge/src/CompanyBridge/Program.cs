@@ -15,6 +15,11 @@ builder.Services.AddSingleton<ICompanyConnector>(sp =>
     var options = sp.GetRequiredService<IOptions<BridgeOptions>>().Value;
     return new SqliteConnector(options.LocalDatabasePath, options.AllowedTables);
 });
+builder.Services.AddSingleton<ICompanyConnector>(sp =>
+{
+    var options = sp.GetRequiredService<IOptions<BridgeOptions>>().Value;
+    return new CsvConnector(options.LocalCsvPath, options.AllowedCsvFields);
+});
 builder.Services.AddHostedService<BridgeWorker>();
 
 var app = builder.Build();
@@ -50,6 +55,8 @@ public sealed class BridgeOptions
     public bool AllowLocalDiscovery { get; set; } = true;
     public string LocalDatabasePath { get; set; } = "";
     public string[] AllowedTables { get; set; } = Array.Empty<string>();
+    public string LocalCsvPath { get; set; } = "";
+    public string[] AllowedCsvFields { get; set; } = Array.Empty<string>();
     public string[] AuthorizedConnectors { get; set; } = Array.Empty<string>();
 }
 

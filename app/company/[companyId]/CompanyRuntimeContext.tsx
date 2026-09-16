@@ -1,8 +1,10 @@
 'use client'
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { applyReplan, initializeRuntime, recordTaskResult, startNextReadyTask, type RuntimeState } from '../../../lib/company-runtime'
+import { CompanyRuntimeService } from '../../../application/company-runtime/runtime-service'
+import type { RuntimeState } from '../../../lib/company-runtime'
 import type { AgentProfile, CompanyObjective } from '../../../lib/operating-engine'
+import type { Company } from '../../../domain/company/company.types'
 import { startExperienceSession, trackExperience } from '../../../lib/experience-intelligence'
 import { advanceBusinessMetrics, formatMoney, initializeBusinessMetrics, type BusinessMetrics } from '../../../lib/business-metrics'
 
@@ -14,18 +16,18 @@ export const runtimeAgents: AgentProfile[] = [
   { id: 'cfo', name: 'CFO Agent', capabilities: ['finance', 'analytics'], efficiency: 97, riskLimit: 'HIGH', available: true },
 ]
 
-type Company = { name: string; objective: string; revenue: string }
+type RuntimeCompany = Pick<Company, 'name' | 'objective' | 'revenue'>
 export type RuntimeContextValue = { runtime: RuntimeState; running: boolean; setRunning: (running: boolean) => void; lastAction: string; progress: number; counts: { completed: number; executing: number; blocked: number }; metrics: BusinessMetrics; metricEvent: string; tick: number; advance: () => void }
 const RuntimeContext = createContext<RuntimeContextValue | null>(null)
 
-function objective(company: Company): CompanyObjective {
+function objective(company: RuntimeCompany): CompanyObjective {
   const current = Number(company.revenue.replace(/[^0-9]/g, '')) || 0
   return { id: `${company.name}-objective`, title: company.objective, description: `Operate ${company.name} toward its active objective.`, priority: 10, targetMetric: 'revenue', currentValue: current, targetValue: Math.round(current * 1.2), deadline: new Date(Date.now() + 30 * 86400000).toISOString() }
 }
 
-export default function CompanyRuntimeProvider({ company, children }: { company: Company; children: ReactNode }) {
+export default function CompanyRuntimeProvider({ company, children }: { company: RuntimeCompany; children: ReactNode }) {
   const [running, setRunning] = useState(true)
-  const [runtime, setRuntime] = useState<RuntimeState>(() => initializeRuntime(objective(company), runtimeAgents, { constraints: ['Simulation only', 'No external side effects'] }))
+  const [runtime, setRuntime] = useState<RuntimeState>(() => CompanyRuntimeService.initialize(objective(company), runtimeAgents, { constraints: ['Simulation only', 'No external side effects'] }))
   const [metrics, setMetrics] = useState<BusinessMetrics>(() => initializeBusinessMetrics(Number(company.revenue.replace(/[^0-9]/g, '')) || 0))
   const [lastAction, setLastAction] = useState('Runtime initialized')
   const [metricEvent, setMetricEvent] = useState('Business metrics initialized')
@@ -48,18 +50,18 @@ export default function CompanyRuntimeProvider({ company, children }: { company:
       if (executing) {
         const action = `Completed ${executing.id}`
         setLastAction(action); trackExperience('action', action)
-        return recordTaskResult(current, executing.id, true, `Deterministic result: ${executing.title}`, 92)
+        return CompanyRuntimeService.recordTaskResult(current, executing.id, true, `Deterministic result: ${executing.title}`, 92)
       }
       const ready = current.plan.tasks.find(task => task.status === 'READY')
       if (ready) {
         const action = `Started ${ready.id}`
         setLastAction(action); trackExperience('action', action)
-        return startNextReadyTask(current)
+        return CompanyRuntimeService.startNextTask(current)
       }
       if (current.replan) {
         const action = `Replan: ${current.replan.reason}`
         setLastAction(action); trackExperience('action', action)
-        return applyReplan(current, runtimeAgents)
+        return CompanyRuntimeService.replan(current, runtimeAgents)
       }
       return current
     })

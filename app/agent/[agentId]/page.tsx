@@ -1,5 +1,3 @@
-'use client';
-
 import Link from 'next/link';
 import { Activity, ArrowLeft, BrainCircuit, ShieldCheck, Wrench } from 'lucide-react';
 

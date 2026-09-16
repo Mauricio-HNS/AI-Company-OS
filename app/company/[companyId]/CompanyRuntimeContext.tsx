@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { applyReplan, initializeRuntime, recordTaskResult, startNextReadyTask, type RuntimeState } from '../../../lib/company-runtime'
 import type { AgentProfile, CompanyObjective } from '../../../lib/operating-engine'
 import { startExperienceSession, trackExperience } from '../../../lib/experience-intelligence'
@@ -15,18 +15,7 @@ export const runtimeAgents: AgentProfile[] = [
 ]
 
 type Company = { name: string; objective: string; revenue: string }
-export type RuntimeContextValue = {
-  runtime: RuntimeState
-  running: boolean
-  setRunning: (running: boolean) => void
-  lastAction: string
-  progress: number
-  counts: { completed: number; executing: number; blocked: number }
-  metrics: BusinessMetrics
-  metricEvent: string
-  tick: number
-  advance: () => void
-}
+export type RuntimeContextValue = { runtime: RuntimeState; running: boolean; setRunning: (running: boolean) => void; lastAction: string; progress: number; counts: { completed: number; executing: number; blocked: number }; metrics: BusinessMetrics; metricEvent: string; tick: number; advance: () => void }
 const RuntimeContext = createContext<RuntimeContextValue | null>(null)
 
 function objective(company: Company): CompanyObjective {
@@ -41,13 +30,15 @@ export default function CompanyRuntimeProvider({ company, children }: { company:
   const [lastAction, setLastAction] = useState('Runtime initialized')
   const [metricEvent, setMetricEvent] = useState('Business metrics initialized')
   const [tick, setTick] = useState(0)
+  const tickRef = useRef(0)
 
   useEffect(() => { startExperienceSession(); trackExperience('view', `company:${company.name}`) }, [company.name])
 
   const advance = () => {
-    setTick(currentTick => currentTick + 1)
+    tickRef.current += 1
+    const nextTick = tickRef.current
+    setTick(nextTick)
     setMetrics(current => {
-      const nextTick = tick + 1
       const result = advanceBusinessMetrics(current, nextTick)
       setMetricEvent(`${result.event} · ${formatMoney(result.metrics.revenue)} revenue`)
       return result.metrics
@@ -74,7 +65,7 @@ export default function CompanyRuntimeProvider({ company, children }: { company:
     })
   }
 
-  useEffect(() => { if (!running) return; const timer = window.setInterval(advance, 2200); return () => window.clearInterval(timer) }, [running, tick])
+  useEffect(() => { if (!running) return; const timer = window.setInterval(advance, 2200); return () => window.clearInterval(timer) }, [running])
 
   const counts = useMemo(() => ({ completed: runtime.plan.tasks.filter(task => task.status === 'COMPLETED').length, executing: runtime.plan.tasks.filter(task => task.status === 'EXECUTING').length, blocked: runtime.plan.tasks.filter(task => task.status === 'BLOCKED').length }), [runtime.plan.tasks])
   const progress = runtime.plan.tasks.length ? Math.round((counts.completed / runtime.plan.tasks.length) * 100) : 0

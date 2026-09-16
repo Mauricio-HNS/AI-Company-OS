@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   typography:
-    if: ${{ !contains(github.event.head_commit.message, 'chore: apply typography enhancer') }}
+    if: "${{ !contains(github.event.head_commit.message, 'chore: apply typography enhancer') }}"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,6 +21,11 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
       - name: Apply typography enhancer
         run: node scripts/enforce-typography.js
@@ -31,6 +36,7 @@ jobs:
             echo "No UI changes needed."
             exit 0
           fi
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add site/index.html

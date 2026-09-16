@@ -147,15 +147,18 @@ The UI exposes:
 
 ### Company OS shell status — 2026-09-16
 
-The presentation architecture is being consolidated into a canonical Company OS shell.
+The canonical Company OS presentation shell is now active on the company route.
 
 Completed in this UI hardening cycle:
 
 - Centralized Company navigation model in `ui/company/CompanyNavigation.ts`
 - Reusable collapsible `CompanySidebar`
+- Collapsed sidebar state with compact navigation mode
 - Reusable `CompanyTopbar`
 - User profile menu and session-aware sign-out boundary
 - Canonical `CompanyContent` presentation boundary
+- Extracted runtime-driven dashboard and business modules into `CompanyRuntimeContent`
+- New composed `CompanyRuntimeWorkspaceV2` activated by the company route
 - Server-first `CompanyShell`
 - Runtime composition kept separate from the presentation shell
 - Company route composition retains `generateStaticParams()` in the Server Component
@@ -163,23 +166,44 @@ Completed in this UI hardening cycle:
 - Navigation model covers Dashboard, AI Workforce, Business, Intelligence and System areas
 - `npm run typecheck` is part of the project development scripts
 
+Current composition:
+
+```text
+Company route
+     ↓
+CompanyShell
+     ↓
+CompanyRuntimeWorkspaceV2
+     ├── CompanySidebar
+     ├── CompanyTopbar
+     └── CompanyContent
+            ↓
+      CompanyRuntimeContent
+            ↓
+       Runtime modules
+```
+
 Next implementation sequence:
 
 ```text
-Company OS Shell
+Company OS Shell                  ✓
       ↓
-Sidebar + Topbar integration
+Sidebar + Topbar integration      ✓
       ↓
-Content / module boundaries
+Content / module boundaries       ✓
       ↓
-Dashboard 2.0
+Legacy workspace cleanup          →
       ↓
-Module extraction
+Dashboard 2.0                    →
       ↓
-Experience Intelligence
+Module extraction                 →
       ↓
-Production hardening
+Experience Intelligence           →
+      ↓
+Production hardening              →
 ```
+
+Every relevant implementation milestone must update this status section so the repository home remains the source of truth for project progress.
 
 External side effects remain gated while the runtime and safety paths are being hardened.
 
@@ -189,8 +213,10 @@ External side effects remain gated while the runtime and safety paths are being 
 app/
 ├── company/[companyId]/
 │   ├── CompanyRuntimeContext.tsx
-│   ├── CompanyRuntimeWorkspace.tsx
-│   ├── ControlRail.tsx
+│   ├── CompanyRuntimeWorkspace.tsx       # legacy monolith pending cleanup
+│   ├── CompanyRuntimeWorkspaceV2.tsx     # active composed workspace
+│   ├── CompanyRuntimeWorkspaceV2.module.css
+│   ├── CompanySessionGate.tsx
 │   └── domain modules / detail routes
 │
 ui/
@@ -201,7 +227,9 @@ ui/
     ├── CompanySidebar.module.css
     ├── CompanyTopbar.tsx
     ├── CompanyTopbar.module.css
-    └── CompanyContent.tsx
+    ├── CompanyContent.tsx
+    ├── CompanyContent.module.css
+    └── CompanyRuntimeContent.tsx
 
 lib/
 ├── company-runtime.ts
@@ -219,7 +247,7 @@ lib/
 └── company-memory.ts
 ```
 
-Obsolete simulated runtime components are intentionally removed from the active architecture.
+The original `CompanyRuntimeWorkspace.tsx` remains temporarily as a legacy implementation so the refactor can be verified safely before deletion. The active company route no longer composes through that monolith.
 
 ## Development status
 
@@ -258,6 +286,7 @@ Completed foundations:
 - Runtime-driven Command Center
 - Company OS presentation architecture
 - Centralized navigation and shell boundaries
+- Active composed Company Workspace
 
 Remaining hardening work:
 
@@ -267,7 +296,7 @@ Remaining hardening work:
 - Opportunity detection
 - Production experiment management
 - Real integrations
-- Complete extraction of the legacy CompanyRuntimeWorkspace monolith
+- Legacy workspace deletion after verification
 
 ### Phase 5 — Real AI and business integrations
 

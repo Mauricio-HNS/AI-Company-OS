@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import type { CompanySession } from '../../../lib/company-access-control'
-import { CompanyView } from '../../../ui/company/CompanyNavigation'
+import type { CompanyView } from '../../../ui/company/CompanyNavigation'
 import CompanySidebar from '../../../ui/company/CompanySidebar'
 import CompanyTopbar from '../../../ui/company/CompanyTopbar'
 import CompanyContent from '../../../ui/company/CompanyContent'
@@ -33,9 +33,7 @@ export default function CompanyRuntimeWorkspaceV2({ company, companyId, initialV
       <CompanySidebar company={company} view={view} collapsed={collapsed} onViewChange={changeView} onToggle={() => setCollapsed(value => !value)} />
       <section className={styles.main}>
         <CompanyTopbar companyName={company.name} companyId={companyId} session={session} profileOpen={profileOpen} onProfileToggle={() => setProfileOpen(value => !value)} onViewChange={changeView} />
-        <CompanyContent>
-          <CompanyRuntimeContent company={company} view={view} setView={changeView} />
-        </CompanyContent>
+        <CompanyContent><CompanyRuntimeContent company={company} view={view} setView={changeView} /></CompanyContent>
       </section>
     </main>
   )

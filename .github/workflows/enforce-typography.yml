@@ -1,0 +1,38 @@
+name: Enforce AI Company OS Typography
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/index.html'
+      - 'scripts/enforce-typography.js'
+      - '.github/workflows/enforce-typography.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  typography:
+    if: ${{ !contains(github.event.head_commit.message, 'chore: apply typography enhancer') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply typography enhancer
+        run: node scripts/enforce-typography.js
+
+      - name: Commit generated UI update
+        run: |
+          if git diff --quiet -- site/index.html; then
+            echo "No UI changes needed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site/index.html
+          git commit -m "chore: apply typography enhancer"
+          git push origin HEAD:main

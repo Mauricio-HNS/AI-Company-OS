@@ -16,7 +16,7 @@ export default function CompanyPage({params}:{params:{companyId:string}}){
   return <CompanySessionGate companyId={params.companyId} companyName={company.name}>
     <CompanyRuntimeProvider company={company}>
       <ControlRail companyId={params.companyId}/>
-      <CompanyRuntimeWorkspace company={company} companyId={params.companyId} initialView="Command Center"/>
+      <CompanyRuntimeWorkspace company={company} companyId={params.companyId} initialView="Dashboard"/>
     </CompanyRuntimeProvider>
   </CompanySessionGate>
 }

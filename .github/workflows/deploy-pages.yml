@@ -1,4 +1,4 @@
-name: Deploy Next.js to GitHub Pages
+name: Deploy AI Company OS Preview to GitHub Pages
 
 on:
   push:
@@ -20,22 +20,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build static site
-        run: npm run build
-
-      - name: Upload Pages artifact
+      - name: Upload static preview
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./out
+          path: ./site
 
   deploy:
     environment:

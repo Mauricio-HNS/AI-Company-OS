@@ -1,0 +1,66 @@
+using CompanyBridge.Connectors;
+using CompanyBridge.Security;
+using CompanyBridge.Sync;
+using Microsoft.Extensions.Options;
+
+var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddWindowsService(options => options.ServiceName = "AI Company OS Company Bridge Service");
+builder.Services.Configure<BridgeOptions>(builder.Configuration.GetSection("Bridge"));
+builder.Services.AddSingleton<LocalPolicy>();
+builder.Services.AddSingleton<ConnectorRegistry>();
+builder.Services.AddSingleton<OutboxStore>();
+builder.Services.AddHttpClient<CloudSyncClient>();
+builder.Services.AddHostedService<BridgeWorker>();
+
+var app = builder.Build();
+await app.RunAsync();
+
+public sealed class BridgeOptions
+{
+    public string CompanyId { get; set; } = "un-enrolled";
+    public string CloudEndpoint { get; set; } = "https://api.aicompanyos.com";
+    public string DataDirectory { get; set; } = @"C:\ProgramData\AI Company OS\Company Bridge";
+    public int SyncIntervalSeconds { get; set; } = 60;
+    public bool AllowLocalDiscovery { get; set; } = true;
+}
+
+public sealed class BridgeWorker : BackgroundService
+{
+    private readonly ConnectorRegistry _connectors;
+    private readonly OutboxStore _outbox;
+    private readonly CloudSyncClient _sync;
+    private readonly BridgeOptions _options;
+    private readonly ILogger<BridgeWorker> _logger;
+
+    public BridgeWorker(ConnectorRegistry connectors, OutboxStore outbox, CloudSyncClient sync, IOptions<BridgeOptions> options, ILogger<BridgeWorker> logger)
+    {
+        _connectors = connectors;
+        _outbox = outbox;
+        _sync = sync;
+        _options = options.Value;
+        _logger = logger;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        Directory.CreateDirectory(_options.DataDirectory);
+        _logger.LogInformation("Company Bridge started for company {CompanyId}", _options.CompanyId);
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                if (_options.AllowLocalDiscovery)
+                    await _connectors.DiscoverAuthorizedSourcesAsync(stoppingToken);
+
+                await _sync.FlushAsync(_outbox, stoppingToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Company Bridge cycle failed; local data remains protected in the outbox");
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(Math.Max(15, _options.SyncIntervalSeconds)), stoppingToken);
+        }
+    }
+}

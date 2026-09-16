@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { applyReplan, initializeRuntime, recordTaskResult, startNextReadyTask, type RuntimeState } from '../../../lib/company-runtime'
 import type { AgentProfile, CompanyObjective } from '../../../lib/operating-engine'
 import { startExperienceSession, trackExperience } from '../../../lib/experience-intelligence'
+import { advanceBusinessMetrics, formatMoney, initializeBusinessMetrics, type BusinessMetrics } from '../../../lib/business-metrics'
 
 export const runtimeAgents: AgentProfile[] = [
   { id: 'ceo', name: 'CEO Agent', capabilities: ['research', 'analytics', 'finance'], efficiency: 98, riskLimit: 'MEDIUM', available: true },
@@ -14,7 +15,18 @@ export const runtimeAgents: AgentProfile[] = [
 ]
 
 type Company = { name: string; objective: string; revenue: string }
-type RuntimeContextValue = { runtime: RuntimeState; running: boolean; setRunning: (running: boolean) => void; lastAction: string; progress: number; counts: { completed: number; executing: number; blocked: number }; advance: () => void }
+export type RuntimeContextValue = {
+  runtime: RuntimeState
+  running: boolean
+  setRunning: (running: boolean) => void
+  lastAction: string
+  progress: number
+  counts: { completed: number; executing: number; blocked: number }
+  metrics: BusinessMetrics
+  metricEvent: string
+  tick: number
+  advance: () => void
+}
 const RuntimeContext = createContext<RuntimeContextValue | null>(null)
 
 function objective(company: Company): CompanyObjective {
@@ -25,11 +37,21 @@ function objective(company: Company): CompanyObjective {
 export default function CompanyRuntimeProvider({ company, children }: { company: Company; children: ReactNode }) {
   const [running, setRunning] = useState(true)
   const [runtime, setRuntime] = useState<RuntimeState>(() => initializeRuntime(objective(company), runtimeAgents, { constraints: ['Simulation only', 'No external side effects'] }))
+  const [metrics, setMetrics] = useState<BusinessMetrics>(() => initializeBusinessMetrics(Number(company.revenue.replace(/[^0-9]/g, '')) || 0))
   const [lastAction, setLastAction] = useState('Runtime initialized')
+  const [metricEvent, setMetricEvent] = useState('Business metrics initialized')
+  const [tick, setTick] = useState(0)
 
   useEffect(() => { startExperienceSession(); trackExperience('view', `company:${company.name}`) }, [company.name])
 
   const advance = () => {
+    setTick(currentTick => currentTick + 1)
+    setMetrics(current => {
+      const nextTick = tick + 1
+      const result = advanceBusinessMetrics(current, nextTick)
+      setMetricEvent(`${result.event} · ${formatMoney(result.metrics.revenue)} revenue`)
+      return result.metrics
+    })
     setRuntime(current => {
       const executing = current.plan.tasks.find(task => task.status === 'EXECUTING')
       if (executing) {
@@ -52,11 +74,11 @@ export default function CompanyRuntimeProvider({ company, children }: { company:
     })
   }
 
-  useEffect(() => { if (!running) return; const timer = window.setInterval(advance, 2200); return () => window.clearInterval(timer) }, [running])
+  useEffect(() => { if (!running) return; const timer = window.setInterval(advance, 2200); return () => window.clearInterval(timer) }, [running, tick])
 
   const counts = useMemo(() => ({ completed: runtime.plan.tasks.filter(task => task.status === 'COMPLETED').length, executing: runtime.plan.tasks.filter(task => task.status === 'EXECUTING').length, blocked: runtime.plan.tasks.filter(task => task.status === 'BLOCKED').length }), [runtime.plan.tasks])
   const progress = runtime.plan.tasks.length ? Math.round((counts.completed / runtime.plan.tasks.length) * 100) : 0
-  const value = useMemo(() => ({ runtime, running, setRunning, lastAction, progress, counts, advance }), [runtime, running, lastAction, progress, counts])
+  const value = useMemo(() => ({ runtime, running, setRunning, lastAction, progress, counts, metrics, metricEvent, tick, advance }), [runtime, running, lastAction, progress, counts, metrics, metricEvent, tick])
   return <RuntimeContext.Provider value={value}>{children}</RuntimeContext.Provider>
 }
 

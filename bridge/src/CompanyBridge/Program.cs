@@ -10,6 +10,11 @@ builder.Services.AddSingleton<LocalPolicy>();
 builder.Services.AddSingleton<ConnectorRegistry>();
 builder.Services.AddSingleton<OutboxStore>();
 builder.Services.AddHttpClient<CloudSyncClient>();
+builder.Services.AddSingleton<ICompanyConnector>(sp =>
+{
+    var options = sp.GetRequiredService<IOptions<BridgeOptions>>().Value;
+    return new SqliteConnector(options.LocalDatabasePath, options.AllowedTables);
+});
 builder.Services.AddHostedService<BridgeWorker>();
 
 var app = builder.Build();
@@ -42,6 +47,8 @@ public sealed class BridgeOptions
     public string DataDirectory { get; set; } = @"C:\ProgramData\AI Company OS\Company Bridge";
     public int SyncIntervalSeconds { get; set; } = 60;
     public bool AllowLocalDiscovery { get; set; } = true;
+    public string LocalDatabasePath { get; set; } = "";
+    public string[] AllowedTables { get; set; } = Array.Empty<string>();
 }
 
 public sealed class BridgeWorker : BackgroundService
@@ -56,7 +63,7 @@ public sealed class BridgeWorker : BackgroundService
     {
         _connectors = connectors;
         _outbox = outbox;
-        _sync = _sync = sync;
+        _sync = sync;
         _options = options.Value;
         _logger = logger;
     }

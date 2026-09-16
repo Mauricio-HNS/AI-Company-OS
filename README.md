@@ -165,6 +165,8 @@ Completed in this UI hardening cycle:
 - Dashboard includes revenue, conversion rate, AI workforce, active missions, company health, performance, funnel and live activity
 - Navigation model covers Dashboard, AI Workforce, Business, Intelligence and System areas
 - Dashboard, topbar and sidebar typography scaled up for improved readability
+- Dashboard typography standardized to a rem-based SaaS hierarchy: 30px-class page titles, 16–18px section titles, 13–14px body/labels, 11–12px metadata and 28–40px KPI values
+- Dashboard typography now avoids unnecessary 9–10px text except where decorative/auxiliary treatment is intentional
 - `npm run typecheck` remains available as a development validation command
 - Legacy `CompanyRuntimeWorkspace.tsx` monolith removed from the active codebase after the V2 migration
 - Next.js configured for static export with the repository base path `/AI-Company-OS`
@@ -192,6 +194,8 @@ Content / module boundaries       ✓
 Legacy workspace cleanup          ✓
       ↓
 Pages build hardening             ✓
+      ↓
+Dashboard typography system      ✓
       ↓
 GitHub Pages deployment           →
       ↓

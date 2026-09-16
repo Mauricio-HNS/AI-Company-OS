@@ -9,6 +9,8 @@ import './authority-shell.css';
 import './realtime-security.css';
 import './company/[companyId]/control-rail.css';
 import './runtime-workspace.css';
+import './core/experience/experience-intelligence.css';
+import { ExperienceIntelligence } from './core/experience/ExperienceIntelligence';
 
 export const metadata: Metadata = {
   title: 'AI Company OS',
@@ -16,5 +18,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body>{children}</body></html>;
+  return <html lang="en"><body><ExperienceIntelligence>{children}</ExperienceIntelligence></body></html>;
 }

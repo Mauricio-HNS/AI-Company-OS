@@ -32,6 +32,7 @@ app.MapGet("/health", (IOptions<BridgeOptions> options) => Results.Ok(new
     status = "ok",
     component = "company-bridge",
     companyId = options.Value.CompanyId,
+    deviceId = options.Value.DeviceId,
     enrolled = options.Value.CompanyId != "un-enrolled" && !string.IsNullOrWhiteSpace(options.Value.CloudApiKey),
     localOnlyApi = true,
     utc = DateTimeOffset.UtcNow
@@ -40,6 +41,7 @@ app.MapGet("/health", (IOptions<BridgeOptions> options) => Results.Ok(new
 app.MapGet("/api/v1/status", (IOptions<BridgeOptions> options, OutboxStore outbox) => Results.Ok(new
 {
     companyId = options.Value.CompanyId,
+    deviceId = options.Value.DeviceId,
     enrolled = options.Value.CompanyId != "un-enrolled" && !string.IsNullOrWhiteSpace(options.Value.CloudApiKey),
     cloudEndpoint = options.Value.CloudEndpoint,
     authorizedConnectors = options.Value.AuthorizedConnectors,
@@ -67,6 +69,8 @@ await app.RunAsync();
 public sealed class BridgeOptions
 {
     public string CompanyId { get; set; } = "un-enrolled";
+    public string DeviceId { get; set; } = Environment.MachineName;
+    public string EnrollmentToken { get; set; } = "";
     public string CloudEndpoint { get; set; } = "https://api.aicompanyos.com";
     public string CloudApiKey { get; set; } = "";
     public string DataDirectory { get; set; } = @"C:\ProgramData\AI Company OS\Company Bridge";
@@ -100,7 +104,7 @@ public sealed class BridgeWorker : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         Directory.CreateDirectory(_options.DataDirectory);
-        _logger.LogInformation("Company Bridge started for company {CompanyId}", _options.CompanyId);
+        _logger.LogInformation("Company Bridge started for company {CompanyId}, device {DeviceId}", _options.CompanyId, _options.DeviceId);
 
         while (!stoppingToken.IsCancellationRequested)
         {

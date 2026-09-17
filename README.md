@@ -69,8 +69,11 @@ Company Bridge Service
              ▼
       AI Company OS Cloud
              │
-             ▼
-       Company Brain
+             ├── Device Enrollment
+             ├── Authenticated Ingress
+             ├── Durable Cloud Store
+             ├── Idempotency
+             └── Company Brain
 ```
 
 The Bridge is installed as the Windows service `AI Company OS Company Bridge Service`. A desktop shortcut is only a management entry point; deleting it does not stop the service.
@@ -97,6 +100,32 @@ Raw files and complete local databases remain on the customer's machine unless a
 
 The first connectors are read-only SQLite and CSV adapters. Connector authorization is empty by default. Generated connectors must follow the governed lifecycle in `bridge/CONNECTOR-BUILDER.md` and cannot be activated merely because AI generated code.
 
+### Real cloud boundary
+
+The cloud side is a separate .NET 8 service under `cloud/CompanyBrain.Api/` because the public Next.js application is a static GitHub Pages export.
+
+The current real flow is:
+
+```text
+Bridge
+  ↓ HTTPS + device identity
+POST /api/bridge/v1/sync
+  ↓
+Device authentication
+  ↓
+JSON validation
+  ↓
+SHA-256 event identity
+  ↓
+SQLite durable persistence
+  ↓
+Idempotent event storage
+  ↓
+Company Brain processing boundary
+```
+
+Device enrollment is explicit. An enrollment token provisions a device-specific API key; the cloud stores only the API-key hash. The API key is then used for authenticated synchronization. No company can synchronize while remaining `un-enrolled`.
+
 ### Company Bridge files
 
 ```text
@@ -119,6 +148,12 @@ bridge/
     └── Sync/
         ├── OutboxStore.cs
         └── CloudSyncClient.cs
+
+cloud/CompanyBrain.Api/
+├── CompanyBrain.Api.csproj
+├── Program.cs
+├── CloudStore.cs
+└── appsettings.json
 ```
 
 The release package is produced by the packaging script and then signed/distributed. The customer installer does not require the .NET SDK.
@@ -220,7 +255,7 @@ The UI exposes:
 - Customers
 - Settings
 
-### Company OS shell status — 2026-09-16
+### Company OS shell status — 2026-09-17
 
 The canonical Company OS presentation shell is active on the company route.
 
@@ -240,8 +275,7 @@ Completed in this UI hardening cycle:
 - Dashboard includes revenue, conversion rate, AI workforce, active missions, company health, performance, funnel and live activity
 - Navigation model covers Dashboard, AI Workforce, Business, Intelligence and System areas
 - Dashboard, topbar and sidebar typography scaled up for improved readability
-- Dashboard typography standardized to a rem-based SaaS hierarchy: 30px-class page titles, 16–18px section titles, 13–14px body/labels, 11–12px metadata and 28–40px KPI values
-- Dashboard typography now avoids unnecessary 9–10px text except where decorative/auxiliary treatment is intentional
+- Dashboard typography standardized to a rem-based SaaS hierarchy
 - `npm run typecheck` remains available as a development validation command
 - Legacy `CompanyRuntimeWorkspace.tsx` monolith removed from the active codebase after the V2 migration
 - Next.js configured for static export with the repository base path `/AI-Company-OS`
@@ -253,6 +287,12 @@ Completed in this UI hardening cycle:
 - Local minimization and explicit connector authorization added
 - Durable local outbox and outbound-only cloud sync added
 - Governed AI connector-builder lifecycle documented
+- Real .NET cloud ingress service added
+- Explicit device enrollment added
+- Device-specific API keys with hashed cloud storage added
+- Durable SQLite cloud event persistence added
+- Event-level idempotency added
+- Authenticated Bridge → Cloud synchronization added
 
 ### Live preview
 
@@ -269,23 +309,29 @@ Company OS Shell                  ✓
       ↓
 Sidebar + Topbar integration      ✓
       ↓
-Content / module boundaries      ✓
+Content / module boundaries       ✓
       ↓
-Legacy workspace cleanup         ✓
+Legacy workspace cleanup          ✓
       ↓
-Pages build hardening            ✓
+Pages build hardening             ✓
       ↓
-Dashboard typography system     ✓
+Dashboard typography system       ✓
       ↓
-Company Bridge foundation       ✓
+Company Bridge foundation         ✓
       ↓
-Company Brain real ingestion     →
+Real Company Brain ingress        ✓
       ↓
-Real cloud bridge endpoint       →
+Device enrollment                 ✓
       ↓
-Dashboard 2.0                    →
+Durable cloud persistence         ✓
       ↓
-Experience Intelligence          →
+Real agent/LLM execution          →
+      ↓
+Real integrations                 →
+      ↓
+Dashboard 2.0                     →
+      ↓
+Experience Intelligence           →
       ↓
 Production hardening              →
 ```
@@ -333,6 +379,12 @@ lib/
 ├── experiment-engine.ts
 ├── autonomy-engine.ts
 └── company-memory.ts
+
+cloud/CompanyBrain.Api/
+├── CompanyBrain.Api.csproj
+├── Program.cs
+├── CloudStore.cs
+└── appsettings.json
 ```
 
 The active company route composes through `CompanyRuntimeWorkspaceV2`; the former workspace monolith has been removed.
@@ -377,22 +429,27 @@ Completed foundations:
 - Active composed Company Workspace
 - Static Pages build hardening
 - Company Bridge local-first ingestion foundation
+- Real authenticated cloud Bridge ingress
+- Device enrollment
+- Durable cloud event persistence
+- Event idempotency
 
 Remaining hardening work:
 
 - Automated unit tests for critical runtime paths
-- Durable cloud persistence
+- PostgreSQL production provider
+- Direct cloud-to-Company-Brain processing
 - Human approval workflow UI
 - Opportunity detection
 - Production experiment management
 - Real integrations
 - Dashboard 2.0 visual refinement
 - Module-level component extraction
-- Production cloud Bridge endpoint and device enrollment
+- Production observability and rate limiting
 
 ### Phase 5 — Real AI and business integrations
 
-Future.
+Next.
 
 - LLM providers
 - RAG / vector knowledge
@@ -409,15 +466,27 @@ Future.
 - TypeScript
 - Lucide React
 - .NET 8 Company Bridge
+- .NET 8 Company Brain API
+- SQLite development persistence
 - GitHub Pages deployment
 
 ## Safety model
 
-The project remains simulation-first. Real external side effects are not enabled by default.
+The platform now has a real authenticated data-ingestion path, while real external business side effects remain gated.
 
 The intended production sequence is:
 
 ```text
+REAL COMPANY DATA
+ ↓
+LOCAL MINIMIZATION
+ ↓
+LOCAL OUTBOX
+ ↓
+AUTHENTICATED CLOUD INGRESS
+ ↓
+BRAIN VALIDATION
+ ↓
 PLAN
  ↓
 RISK CHECK
@@ -426,7 +495,7 @@ BUDGET CHECK
  ↓
 APPROVAL
  ↓
-EXECUTION
+CONTROLLED EXECUTION
  ↓
 SAFETY MONITOR
  ↓

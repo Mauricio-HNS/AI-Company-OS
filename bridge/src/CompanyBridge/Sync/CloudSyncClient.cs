@@ -32,7 +32,12 @@ public sealed class CloudSyncClient
                     HttpMethod.Post,
                     new Uri(new Uri(_options.CloudEndpoint), "/api/bridge/v1/sync"));
                 request.Headers.Add("X-Bridge-Api-Key", _options.CloudApiKey);
-                request.Content = JsonContent.Create(new { companyId = _options.CompanyId, envelope = line });
+                request.Content = JsonContent.Create(new
+                {
+                    companyId = _options.CompanyId,
+                    deviceId = _options.DeviceId,
+                    envelope = line
+                });
 
                 using var response = await _http.SendAsync(request, cancellationToken);
 

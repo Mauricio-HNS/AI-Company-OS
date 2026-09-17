@@ -32,6 +32,7 @@ app.MapGet("/health", (IOptions<BridgeOptions> options) => Results.Ok(new
     status = "ok",
     component = "company-bridge",
     companyId = options.Value.CompanyId,
+    enrolled = options.Value.CompanyId != "un-enrolled" && !string.IsNullOrWhiteSpace(options.Value.CloudApiKey),
     localOnlyApi = true,
     utc = DateTimeOffset.UtcNow
 }));
@@ -39,7 +40,7 @@ app.MapGet("/health", (IOptions<BridgeOptions> options) => Results.Ok(new
 app.MapGet("/api/v1/status", (IOptions<BridgeOptions> options, OutboxStore outbox) => Results.Ok(new
 {
     companyId = options.Value.CompanyId,
-    enrolled = options.Value.CompanyId != "un-enrolled",
+    enrolled = options.Value.CompanyId != "un-enrolled" && !string.IsNullOrWhiteSpace(options.Value.CloudApiKey),
     cloudEndpoint = options.Value.CloudEndpoint,
     authorizedConnectors = options.Value.AuthorizedConnectors,
     pendingSyncItems = outbox.ReadPending().Count,
@@ -67,6 +68,7 @@ public sealed class BridgeOptions
 {
     public string CompanyId { get; set; } = "un-enrolled";
     public string CloudEndpoint { get; set; } = "https://api.aicompanyos.com";
+    public string CloudApiKey { get; set; } = "";
     public string DataDirectory { get; set; } = @"C:\ProgramData\AI Company OS\Company Bridge";
     public int SyncIntervalSeconds { get; set; } = 60;
     public bool AllowLocalDiscovery { get; set; } = true;

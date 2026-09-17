@@ -1,9 +1,10 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using CompanyBrain.Api;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddSingleton<IngressStore>();
+builder.Services.AddSingleton<CloudStore>();
 
 var app = builder.Build();
 
@@ -11,22 +12,48 @@ app.MapGet("/health", () => Results.Ok(new
 {
     status = "ok",
     component = "company-brain-ingress",
+    persistence = "sqlite",
     utc = DateTimeOffset.UtcNow
 }));
 
-app.MapPost("/api/bridge/v1/sync", async (HttpRequest request, SyncRequest input, IngressStore store, IConfiguration configuration, CancellationToken cancellationToken) =>
+app.MapPost("/api/bridge/v1/enroll", async (EnrollmentRequest input, CloudStore store, IConfiguration configuration, CancellationToken cancellationToken) =>
 {
-    var configuredKey = configuration["BridgeIngress:ApiKey"];
-    if (string.IsNullOrWhiteSpace(configuredKey))
+    if (!IsSafeIdentifier(input.CompanyId) || !IsSafeIdentifier(input.DeviceId))
+        return Results.BadRequest(new { enrolled = false, reason = "Invalid company or device identifier" });
+
+    var configuredToken = configuration["BridgeEnrollment:Token"];
+    if (string.IsNullOrWhiteSpace(configuredToken))
         return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
 
-    if (!CryptographicOperations.FixedTimeEquals(
-            Encoding.UTF8.GetBytes(configuredKey),
-            Encoding.UTF8.GetBytes(request.Headers["X-Bridge-Api-Key"].ToString())))
+    var result = await store.EnrollAsync(
+        input.CompanyId,
+        input.DeviceId,
+        input.EnrollmentToken,
+        configuredToken,
+        cancellationToken);
+
+    if (result is null)
         return Results.Unauthorized();
 
-    if (string.IsNullOrWhiteSpace(input.CompanyId) || input.CompanyId == "un-enrolled" || string.IsNullOrWhiteSpace(input.Envelope))
+    return Results.Ok(new
+    {
+        enrolled = true,
+        companyId = result.CompanyId,
+        deviceId = result.DeviceId,
+        apiKey = result.ApiKey,
+        issuedAt = DateTimeOffset.UtcNow,
+        note = "Store this API key securely. It is returned only during enrollment."
+    });
+});
+
+app.MapPost("/api/bridge/v1/sync", async (HttpRequest request, SyncRequest input, CloudStore store, CancellationToken cancellationToken) =>
+{
+    if (!IsSafeIdentifier(input.CompanyId) || !IsSafeIdentifier(input.DeviceId) || string.IsNullOrWhiteSpace(input.Envelope))
         return Results.BadRequest(new { accepted = false, reason = "Invalid bridge envelope" });
+
+    var apiKey = request.Headers["X-Bridge-Api-Key"].ToString();
+    if (string.IsNullOrWhiteSpace(apiKey) || !await store.IsDeviceAuthorizedAsync(input.CompanyId, input.DeviceId, apiKey, cancellationToken))
+        return Results.Unauthorized();
 
     try
     {
@@ -39,8 +66,12 @@ app.MapPost("/api/bridge/v1/sync", async (HttpRequest request, SyncRequest input
         return Results.BadRequest(new { accepted = false, reason = "Envelope contains invalid JSON" });
     }
 
-    var eventId = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(input.CompanyId + "\n" + input.Envelope)));
-    var accepted = await store.AppendIfNewAsync(input.CompanyId, eventId, input.Envelope, cancellationToken);
+    var eventId = Convert.ToHexString(SHA256.HashData(
+        Encoding.UTF8.GetBytes(input.CompanyId + "\n" + input.DeviceId + "\n" + input.Envelope)));
+
+    var accepted = await store.AppendEventIfNewAsync(
+        new StoredEvent(eventId, input.CompanyId, input.DeviceId, input.Envelope, DateTimeOffset.UtcNow),
+        cancellationToken);
 
     return Results.Ok(new
     {
@@ -51,51 +82,27 @@ app.MapPost("/api/bridge/v1/sync", async (HttpRequest request, SyncRequest input
     });
 });
 
+app.MapGet("/api/brain/v1/companies/{companyId}/status", async (string companyId, CloudStore store, CancellationToken cancellationToken) =>
+{
+    if (!IsSafeIdentifier(companyId))
+        return Results.BadRequest();
+
+    var eventCount = await store.GetEventCountAsync(companyId, cancellationToken);
+    return Results.Ok(new
+    {
+        companyId,
+        eventCount,
+        brainIngress = "active",
+        persistence = "durable"
+    });
+});
+
 app.Run();
 
-public sealed record SyncRequest(string CompanyId, string Envelope);
+static bool IsSafeIdentifier(string? value)
+    => !string.IsNullOrWhiteSpace(value)
+       && value.Length <= 100
+       && value.All(ch => char.IsLetterOrDigit(ch) || ch is '-' or '_' or '.');
 
-public sealed class IngressStore
-{
-    private readonly string _root;
-    private readonly SemaphoreSlim _gate = new(1, 1);
-
-    public IngressStore(IConfiguration configuration)
-    {
-        _root = configuration["BridgeIngress:DataDirectory"]
-            ?? Path.Combine(AppContext.BaseDirectory, "data", "bridge-ingress");
-        Directory.CreateDirectory(_root);
-    }
-
-    public async Task<bool> AppendIfNewAsync(string companyId, string eventId, string envelope, CancellationToken cancellationToken)
-    {
-        var safeCompanyId = string.Concat(companyId.Where(ch => char.IsLetterOrDigit(ch) || ch is '-' or '_'));
-        if (string.IsNullOrWhiteSpace(safeCompanyId))
-            throw new InvalidOperationException("Invalid company id");
-
-        var directory = Path.Combine(_root, safeCompanyId);
-        var path = Path.Combine(directory, "events.ndjson");
-        Directory.CreateDirectory(directory);
-
-        await _gate.WaitAsync(cancellationToken);
-        try
-        {
-            if (File.Exists(path))
-            {
-                await foreach (var line in File.ReadLinesAsync(path, cancellationToken))
-                {
-                    if (line.StartsWith(eventId + "\t", StringComparison.Ordinal))
-                        return false;
-                }
-            }
-
-            var record = eventId + "\t" + DateTimeOffset.UtcNow.ToString("O") + "\t" + envelope + Environment.NewLine;
-            await File.AppendAllTextAsync(path, record, Encoding.UTF8, cancellationToken);
-            return true;
-        }
-        finally
-        {
-            _gate.Release();
-        }
-    }
-}
+public sealed record EnrollmentRequest(string CompanyId, string DeviceId, string EnrollmentToken);
+public sealed record SyncRequest(string CompanyId, string DeviceId, string Envelope);

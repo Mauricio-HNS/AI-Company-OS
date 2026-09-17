@@ -8,6 +8,7 @@ import { monitorSafety, type SafetyDecision, type SafetyRule } from './safety-mo
 import { reserveBudget, type BudgetReservation } from './budget-engine'
 import { grantAutonomy, recordAutonomyExecution, type CapabilityAutonomy } from './autonomy-engine'
 import { createMemory, type CompanyMemory } from './company-memory'
+import { ingestBridgeEnvelope, type BridgeIngestionEnvelope } from './company-brain-ingestion'
 
 export type RuntimeState = {
   objective: CompanyObjective
@@ -36,6 +37,16 @@ export function initializeRuntime(objective: CompanyObjective, agents: AgentProf
     budgetReservations: options.budget ? [reserveBudget(`${objective.id}:cycle-1`, options.budget)] : [],
     autonomy: ['research', 'analytics', 'experimentation', 'product', 'finance'].map(capability => grantAutonomy(capability, capability === 'finance' ? 'LOW' : 'MEDIUM')),
     memory: [createMemory({ statement: `Objective initialized: ${objective.title}`, context: objective.description, source: 'runtime', observedAt: new Date().toISOString(), confidence: 1, evidence: [], supportingExperiments: [] })],
+  }
+}
+
+export function ingestCompanyBridge(state: RuntimeState, envelope: BridgeIngestionEnvelope): RuntimeState {
+  const result = ingestBridgeEnvelope(envelope)
+  if (!result.accepted || result.memories.length === 0) return state
+
+  return {
+    ...state,
+    memory: [...state.memory, ...result.memories],
   }
 }
 

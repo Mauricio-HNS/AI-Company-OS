@@ -13,7 +13,6 @@ public sealed class CloudSyncClient
     {
         _http = http;
         _options = options.Value;
-    
         _logger = logger;
         _http.Timeout = TimeSpan.FromSeconds(20);
     }
@@ -21,7 +20,7 @@ public sealed class CloudSyncClient
     public async Task FlushAsync(OutboxStore outbox, CancellationToken cancellationToken)
     {
         var pending = outbox.ReadPending();
-        if (pending.Count == 0 || _options.CompanyId == "un-enrolled")
+        if (pending.Count == 0 || _options.CompanyId == "un-enrolled" || string.IsNullOrWhiteSpace(_options.CloudApiKey))
             return;
 
         var remaining = new List<string>();
@@ -29,10 +28,13 @@ public sealed class CloudSyncClient
         {
             try
             {
-                using var response = await _http.PostAsJsonAsync(
-                    new Uri(new Uri(_options.CloudEndpoint), "/api/bridge/v1/sync"),
-                    new { companyId = _options.CompanyId, envelope = line },
-                    cancellationToken);
+                using var request = new HttpRequestMessage(
+                    HttpMethod.Post,
+                    new Uri(new Uri(_options.CloudEndpoint), "/api/bridge/v1/sync"));
+                request.Headers.Add("X-Bridge-Api-Key", _options.CloudApiKey);
+                request.Content = JsonContent.Create(new { companyId = _options.CompanyId, envelope = line });
+
+                using var response = await _http.SendAsync(request, cancellationToken);
 
                 if (!response.IsSuccessStatusCode)
                 {

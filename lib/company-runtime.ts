@@ -1,7 +1,7 @@
 import type { AgentProfile, CompanyObjective, OperatingPlan } from './operating-engine'
 import { advanceTask, evaluatePlan } from './operating-engine'
 import { generateMission, missionToOperatingPlan, type Mission } from './mission-generator'
-import { completeTask, createExecutionQueue, getReadyItems, startTask, type ExecutionQueue } from './execution-queue'
+import { completeTask, createExecutionQueue, enqueueTask, getReadyItems, startTask, type ExecutionQueue } from './execution-queue'
 import { evaluatePlan as evaluateResults, type LearningRecord } from './evaluation-engine'
 import { createReplanDecision, replanTasks, type ReplanDecision } from './replanning-engine'
 import { monitorSafety, type SafetyDecision, type SafetyRule } from './safety-monitor'
@@ -9,7 +9,7 @@ import { reserveBudget, type BudgetReservation } from './budget-engine'
 import { grantAutonomy, recordAutonomyExecution, type CapabilityAutonomy } from './autonomy-engine'
 import { createMemory, type CompanyMemory } from './company-memory'
 import { ingestBridgeEnvelope, type BridgeIngestionEnvelope } from './company-brain-ingestion'
-import { registerBrainDecision, approveBrainDecision, rejectBrainDecision, decisionToTask, type RuntimeBrainDecision } from './brain-decision'
+import { registerBrainDecision, approveBrainDecision, rejectBrainDecision, decisionToTask, markBrainDecisionExecuted, type RuntimeBrainDecision } from './brain-decision'
 
 export type RuntimeState = {
   objective: CompanyObjective
@@ -91,12 +91,12 @@ export function rejectRuntimeBrainDecision(state: RuntimeState, decisionId: stri
 export function enqueueApprovedBrainDecision(state: RuntimeState, decisionId: string): RuntimeState {
   const decision = state.brainDecisions.find(item => item.decisionId === decisionId)
   if (!decision) return state
-  const task = decisionToTask(decision)
+  const task = decisionToTask(decision, state.objective.id)
   if (!task || state.plan.tasks.some(item => item.id === task.id)) return state
   return {
     ...state,
     plan: { ...state.plan, tasks: [...state.plan.tasks, task] },
-    queue: createExecutionQueue({ ...state.plan, tasks: [...state.plan.tasks, task] }),
+    queue: enqueueTask(state.queue, task.id),
   }
 }
 
@@ -113,10 +113,14 @@ export function recordTaskResult(state: RuntimeState, taskId: string, success: b
   const capability = state.plan.tasks.find(task => task.id === taskId)?.requiredCapabilities[0]
   const queue = completeTask(state.queue, taskId, success, success ? undefined : actual)
   const plan = advanceTask(state.plan, taskId, success ? 'success' : 'failure')
+  const brainDecisionId = taskId.startsWith('BRAIN-') ? taskId.slice('BRAIN-'.length) : undefined
+  const brainDecisions = brainDecisionId && success
+    ? state.brainDecisions.map(decision => decision.decisionId === brainDecisionId ? markBrainDecisionExecuted(decision) : decision)
+    : state.brainDecisions
   const learning = evaluateResults(plan, { [taskId]: { actual, score } })
   const evaluation = evaluatePlan(plan)
   return {
-    ...state, queue, plan, learning, safety,
+    ...state, queue, plan, learning, safety, brainDecisions,
     replan: evaluation.recommendation === 'REPLAN_FAILED_TASKS' || evaluation.recommendation === 'LEARN_AND_REPLAN' ? createReplanDecision(plan, learning) : undefined,
     autonomy: state.autonomy.map(item => item.capability === capability ? recordAutonomyExecution(item, success) : item),
   }

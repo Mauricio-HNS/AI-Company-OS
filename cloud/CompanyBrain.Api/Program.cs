@@ -8,6 +8,7 @@ builder.Services.AddSingleton<CloudStore>();
 builder.Services.AddSingleton<BrainProcessor>();
 builder.Services.AddSingleton<BrainDecisionEngine>();
 builder.Services.AddSingleton<AgentExecutionService>();
+builder.Services.AddSingleton<AutonomousCycleService>();
 builder.Services.AddHttpClient<BrainLlmGateway>();
 builder.Services.AddHostedService<BrainProcessorWorker>();
 

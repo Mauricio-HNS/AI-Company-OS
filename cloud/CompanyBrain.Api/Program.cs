@@ -137,7 +137,7 @@ app.MapGet("/api/brain/v1/companies/{companyId}/status", async (HttpRequest requ
 {
     if (!HasBrainAdminKey(request, configuration))
         return Results.Unauthorized();
-{
+
     if (!IsSafeIdentifier(companyId))
         return Results.BadRequest();
 

@@ -7,6 +7,7 @@ namespace CompanyBrain.Api;
 public sealed record EnrollmentResult(string CompanyId, string DeviceId, string ApiKey);
 public sealed record BrainDecisionAudit(string AuditId, string DecisionId, string CompanyId, string Action, string Actor, string? Reason, DateTimeOffset CreatedAt);
 public sealed record StoredEvent(string EventId, string CompanyId, string DeviceId, string Envelope, DateTimeOffset ReceivedAt);
+public sealed record MemoryProvenance(string CompanyId, string DeviceId, string SourceId, string SourceType);
 
 public sealed class CloudStore
 {
@@ -226,17 +227,23 @@ public sealed class CloudStore
                 statement TEXT NOT NULL,
                 context TEXT NOT NULL,
                 source TEXT NOT NULL,
+                source_id TEXT NOT NULL DEFAULT '',
+                source_type TEXT NOT NULL DEFAULT 'UNKNOWN',
+                device_id TEXT NOT NULL DEFAULT '',
                 observed_at TEXT NOT NULL,
                 confidence REAL NOT NULL
             );
-            INSERT OR REPLACE INTO memories(memory_id, company_id, statement, context, source, observed_at, confidence)
-            VALUES($id, $company, $statement, $context, $source, $observed, $confidence);
+            INSERT OR REPLACE INTO memories(memory_id, company_id, statement, context, source, source_id, source_type, device_id, observed_at, confidence)
+            VALUES($id, $company, $statement, $context, $source, $sourceId, $sourceType, $deviceId, $observed, $confidence);
             """;
         command.Parameters.AddWithValue("$id", memory.MemoryId);
         command.Parameters.AddWithValue("$company", memory.CompanyId);
         command.Parameters.AddWithValue("$statement", memory.Statement);
         command.Parameters.AddWithValue("$context", memory.Context);
         command.Parameters.AddWithValue("$source", memory.Source);
+        command.Parameters.AddWithValue("$sourceId", memory.Source);
+        command.Parameters.AddWithValue("$sourceType", "UNKNOWN");
+        command.Parameters.AddWithValue("$deviceId", "");
         command.Parameters.AddWithValue("$observed", memory.ObservedAt.ToString("O"));
         command.Parameters.AddWithValue("$confidence", memory.Confidence);
         await command.ExecuteNonQueryAsync(cancellationToken);

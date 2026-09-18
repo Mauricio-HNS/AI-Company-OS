@@ -31,6 +31,7 @@ export const companyViews = [
   'Operations',
   'Integrations',
   'Security',
+  'Approvals',
   'Settings',
 ] as const
 
@@ -85,6 +86,7 @@ export const companyNavigation: CompanyNavigationGroup[] = [
       { label: 'Operations', icon: Activity },
       { label: 'Integrations', icon: PlugZap },
       { label: 'Security', icon: ShieldCheck },
+      { label: 'Approvals', icon: ShieldCheck },
       { label: 'Settings', icon: Settings },
     ],
   },

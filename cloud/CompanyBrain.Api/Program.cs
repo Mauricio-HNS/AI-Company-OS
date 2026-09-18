@@ -7,6 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<CloudStore>();
 builder.Services.AddSingleton<BrainProcessor>();
 builder.Services.AddSingleton<BrainDecisionEngine>();
+builder.Services.AddSingleton<AgentExecutionService>();
 builder.Services.AddHttpClient<BrainLlmGateway>();
 builder.Services.AddHostedService<BrainProcessorWorker>();
 
@@ -199,6 +200,54 @@ app.MapGet("/api/brain/v1/companies/{companyId}/decisions", async (
 
     var decisions = await store.GetDecisionsAsync(companyId, 100, cancellationToken);
     return Results.Ok(new { companyId, count = decisions.Count, decisions });
+});
+
+app.MapPost("/api/brain/v1/companies/{companyId}/decisions/{decisionId}/execute", async (
+    HttpRequest request,
+    string companyId,
+    string decisionId,
+    CloudStore store,
+    AgentExecutionService executionService,
+    IConfiguration configuration,
+    CancellationToken cancellationToken) =>
+{
+    if (!HasBrainAdminKey(request, configuration))
+        return Results.Unauthorized();
+
+    if (!IsSafeIdentifier(companyId) || !IsSafeIdentifier(decisionId))
+        return Results.BadRequest();
+
+    var decision = await store.GetDecisionAsync(companyId, decisionId, cancellationToken);
+    if (decision is null)
+        return Results.NotFound();
+
+    if (decision.Status != "APPROVED")
+        return Results.Conflict(new { executed = false, reason = $"Decision must be APPROVED before execution. Current status: {decision.Status}." });
+
+    var memories = await store.GetMemoriesAsync(companyId, 100, cancellationToken);
+    var execution = await executionService.ExecuteAsync(decision, memories, cancellationToken);
+    if (execution is null)
+        return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+
+    if (execution.Status == "COMPLETED")
+    {
+        await store.UpdateDecisionStatusAsync(
+            companyId,
+            decisionId,
+            "APPROVED",
+            "EXECUTED",
+            "agent-runtime",
+            execution.Summary,
+            cancellationToken);
+    }
+
+    return Results.Ok(new
+    {
+        companyId,
+        decisionId,
+        execution,
+        externalSideEffect = false
+    });
 });
 
 app.MapGet("/api/brain/v1/companies/{companyId}/runtime/decisions", async (

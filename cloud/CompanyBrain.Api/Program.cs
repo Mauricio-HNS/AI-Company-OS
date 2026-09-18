@@ -5,6 +5,9 @@ using CompanyBrain.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<CloudStore>();
+builder.Services.AddSingleton<BrainProcessor>();
+builder.Services.AddHttpClient<BrainLlmGateway>();
+builder.Services.AddHostedService<BrainProcessorWorker>();
 
 var app = builder.Build();
 
@@ -80,6 +83,28 @@ app.MapPost("/api/bridge/v1/sync", async (HttpRequest request, SyncRequest input
         eventId,
         receivedAt = DateTimeOffset.UtcNow
     });
+});
+
+app.MapPost("/api/brain/v1/process", async (BrainProcessor processor, CancellationToken cancellationToken) =>
+{
+    var processed = await processor.ProcessPendingAsync(cancellationToken);
+    return Results.Ok(new { processed });
+});
+
+app.MapPost("/api/brain/v1/companies/{companyId}/analyze", async (string companyId, CloudStore store, BrainLlmGateway llm, CancellationToken cancellationToken) =>
+{
+    if (!IsSafeIdentifier(companyId))
+        return Results.BadRequest();
+
+    var prompt = new BrainPrompt(
+        companyId,
+        "You are the Company Brain. Analyze business facts conservatively. Separate facts from hypotheses and never invent missing data.",
+        $"Analyze the current company state for companyId={companyId}. Available memory count: {await store.GetMemoryCountAsync(companyId, cancellationToken)}.");
+
+    var analysis = await llm.CompleteAsync(prompt, cancellationToken);
+    return analysis is null
+        ? Results.StatusCode(StatusCodes.Status503ServiceUnavailable)
+        : Results.Ok(new { companyId, analysis });
 });
 
 app.MapGet("/api/brain/v1/companies/{companyId}/status", async (string companyId, CloudStore store, CancellationToken cancellationToken) =>

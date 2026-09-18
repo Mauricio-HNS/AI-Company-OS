@@ -77,6 +77,16 @@ app.MapPost("/api/bridge/v1/sync", async (HttpRequest request, SyncRequest input
         using var document = JsonDocument.Parse(input.Envelope);
         if (document.RootElement.ValueKind != JsonValueKind.Object)
             return Results.BadRequest(new { accepted = false, reason = "Envelope must be a JSON object" });
+
+        if (!document.RootElement.TryGetProperty("CompanyId", out var envelopeCompany)
+            || !string.Equals(envelopeCompany.GetString(), input.CompanyId, StringComparison.Ordinal))
+            return Results.BadRequest(new { accepted = false, reason = "Envelope CompanyId does not match the authenticated bridge tenant" });
+
+        if (document.RootElement.TryGetProperty("Payload", out var payload)
+            && payload.ValueKind == JsonValueKind.Object
+            && payload.TryGetProperty("companyId", out var payloadCompany)
+            && !string.Equals(payloadCompany.GetString(), input.CompanyId, StringComparison.Ordinal))
+            return Results.BadRequest(new { accepted = false, reason = "Source payload belongs to a different company" });
     }
     catch (JsonException)
     {

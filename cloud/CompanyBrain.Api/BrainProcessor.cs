@@ -97,11 +97,13 @@ public sealed class BrainProcessorWorker : BackgroundService
 {
     private readonly BrainProcessor _processor;
     private readonly ILogger<BrainProcessorWorker> _logger;
+    private readonly AutonomousCycleService _cycle;
 
-    public BrainProcessorWorker(BrainProcessor processor, ILogger<BrainProcessorWorker> logger)
+    public BrainProcessorWorker(BrainProcessor processor, ILogger<BrainProcessorWorker> logger, AutonomousCycleService cycle)
     {
         _processor = processor;
         _logger = logger;
+        _cycle = cycle;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -111,6 +113,7 @@ public sealed class BrainProcessorWorker : BackgroundService
             try
             {
                 await _processor.ProcessPendingAsync(stoppingToken);
+                await _cycle.RunAsync(stoppingToken);
             }
             catch (Exception ex)
             {

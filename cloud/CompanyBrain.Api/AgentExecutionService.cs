@@ -31,6 +31,8 @@ public sealed class AgentExecutionService
         if (decision.Status != "APPROVED")
             return null;
 
+        await _registry.EnsureRuntimeAgentAsync(decision.CompanyId, cancellationToken);
+
         var capability = decision.Action switch
         {
             "OBSERVE" => "OBSERVE",

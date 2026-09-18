@@ -48,7 +48,8 @@ public sealed class CloudStore
                 company_id TEXT NOT NULL,
                 device_id TEXT NOT NULL,
                 envelope TEXT NOT NULL,
-                received_at TEXT NOT NULL
+                received_at TEXT NOT NULL,
+                processed_at TEXT
             );
             CREATE INDEX IF NOT EXISTS ix_events_company_received
                 ON events(company_id, received_at);
@@ -142,6 +143,82 @@ public sealed class CloudStore
         {
             _gate.Release();
         }
+    }
+
+    public async Task<IReadOnlyList<StoredEvent>> GetUnprocessedEventsAsync(int limit, CancellationToken cancellationToken)
+    {
+        var items = new List<StoredEvent>();
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT event_id, company_id, device_id, envelope, received_at
+            FROM events
+            WHERE processed_at IS NULL
+            ORDER BY received_at
+            LIMIT $limit;
+            """;
+        command.Parameters.AddWithValue("$limit", Math.Clamp(limit, 1, 500));
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            items.Add(new StoredEvent(
+                reader.GetString(0),
+                reader.GetString(1),
+                reader.GetString(2),
+                reader.GetString(3),
+                DateTimeOffset.Parse(reader.GetString(4))));
+        }
+        return items;
+    }
+
+    public async Task MarkEventProcessedAsync(string eventId, CancellationToken cancellationToken)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = "UPDATE events SET processed_at = $processed WHERE event_id = $id AND processed_at IS NULL";
+        command.Parameters.AddWithValue("$processed", DateTimeOffset.UtcNow.ToString("O"));
+        command.Parameters.AddWithValue("$id", eventId);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task SaveMemoryAsync(BrainMemory memory, CancellationToken cancellationToken)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            CREATE TABLE IF NOT EXISTS memories (
+                memory_id TEXT PRIMARY KEY,
+                company_id TEXT NOT NULL,
+                statement TEXT NOT NULL,
+                context TEXT NOT NULL,
+                source TEXT NOT NULL,
+                observed_at TEXT NOT NULL,
+                confidence REAL NOT NULL
+            );
+            INSERT OR REPLACE INTO memories(memory_id, company_id, statement, context, source, observed_at, confidence)
+            VALUES($id, $company, $statement, $context, $source, $observed, $confidence);
+            """;
+        command.Parameters.AddWithValue("$id", memory.MemoryId);
+        command.Parameters.AddWithValue("$company", memory.CompanyId);
+        command.Parameters.AddWithValue("$statement", memory.Statement);
+        command.Parameters.AddWithValue("$context", memory.Context);
+        command.Parameters.AddWithValue("$source", memory.Source);
+        command.Parameters.AddWithValue("$observed", memory.ObservedAt.ToString("O"));
+        command.Parameters.AddWithValue("$confidence", memory.Confidence);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task<int> GetMemoryCountAsync(string companyId, CancellationToken cancellationToken)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM memories WHERE company_id = $company";
+        command.Parameters.AddWithValue("$company", companyId);
+        return Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken));
     }
 
     public async Task<int> GetEventCountAsync(string companyId, CancellationToken cancellationToken)

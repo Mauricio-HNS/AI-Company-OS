@@ -6,6 +6,7 @@ import type { RuntimeState } from '../../../lib/company-runtime'
 import type { AgentProfile, CompanyObjective } from '../../../lib/operating-engine'
 import type { Company } from '../../../domain/company/company.types'
 import { startExperienceSession, trackExperience } from '../../../lib/experience-intelligence'
+import { mergeCloudBrainDecisions, pullApprovedBrainDecisions } from '../../../lib/brain-runtime-sync'
 import { advanceBusinessMetrics, formatMoney, initializeBusinessMetrics, type BusinessMetrics } from '../../../lib/business-metrics'
 
 export const runtimeAgents: AgentProfile[] = [
@@ -16,7 +17,7 @@ export const runtimeAgents: AgentProfile[] = [
   { id: 'cfo', name: 'CFO Agent', capabilities: ['finance', 'analytics'], efficiency: 97, riskLimit: 'HIGH', available: true },
 ]
 
-type RuntimeCompany = Pick<Company, 'name' | 'objective' | 'revenue'>
+type RuntimeCompany = Pick<Company, 'id' | 'name' | 'objective' | 'revenue'>
 export type RuntimeContextValue = { runtime: RuntimeState; running: boolean; setRunning: (running: boolean) => void; lastAction: string; progress: number; counts: { completed: number; executing: number; blocked: number }; metrics: BusinessMetrics; metricEvent: string; tick: number; advance: () => void; approveDecision: (decisionId: string) => void; rejectDecision: (decisionId: string) => void }
 const RuntimeContext = createContext<RuntimeContextValue | null>(null)
 
@@ -35,6 +36,22 @@ export default function CompanyRuntimeProvider({ company, children }: { company:
   const tickRef = useRef(0)
 
   useEffect(() => { startExperienceSession(); trackExperience('view', `company:${company.name}`) }, [company.name])
+
+  useEffect(() => {
+    let active = true
+    const sync = async () => {
+      try {
+        const payload = await pullApprovedBrainDecisions('http://127.0.0.1:48731', company.id)
+        if (!active || payload.decisions.length === 0) return
+        setRuntime(current => mergeCloudBrainDecisions(current, payload.decisions))
+      } catch {
+        // The Bridge is optional while the public simulation remains usable.
+      }
+    }
+    void sync()
+    const timer = window.setInterval(sync, 5000)
+    return () => { active = false; window.clearInterval(timer) }
+  }, [company.id])
 
   const advance = () => {
     tickRef.current += 1

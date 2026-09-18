@@ -265,6 +265,82 @@ public sealed class CloudStore
         return Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken));
     }
 
+    public async Task SaveDecisionAsync(BrainDecision decision, CancellationToken cancellationToken)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            CREATE TABLE IF NOT EXISTS brain_decisions (
+                decision_id TEXT PRIMARY KEY,
+                company_id TEXT NOT NULL,
+                objective TEXT NOT NULL,
+                action TEXT NOT NULL,
+                reason TEXT NOT NULL,
+                risk_level TEXT NOT NULL,
+                confidence REAL NOT NULL,
+                approval_required INTEGER NOT NULL,
+                preconditions TEXT NOT NULL,
+                status TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+            INSERT OR REPLACE INTO brain_decisions(
+                decision_id, company_id, objective, action, reason, risk_level,
+                confidence, approval_required, preconditions, status, created_at)
+            VALUES(
+                $id, $company, $objective, $action, $reason, $risk,
+                $confidence, $approval, $preconditions, $status, $created);
+            """;
+        command.Parameters.AddWithValue("$id", decision.DecisionId);
+        command.Parameters.AddWithValue("$company", decision.CompanyId);
+        command.Parameters.AddWithValue("$objective", decision.Objective);
+        command.Parameters.AddWithValue("$action", decision.Action);
+        command.Parameters.AddWithValue("$reason", decision.Reason);
+        command.Parameters.AddWithValue("$risk", decision.RiskLevel);
+        command.Parameters.AddWithValue("$confidence", decision.Confidence);
+        command.Parameters.AddWithValue("$approval", decision.ApprovalRequired ? 1 : 0);
+        command.Parameters.AddWithValue("$preconditions", System.Text.Json.JsonSerializer.Serialize(decision.Preconditions));
+        command.Parameters.AddWithValue("$status", decision.Status);
+        command.Parameters.AddWithValue("$created", decision.CreatedAt.ToString("O"));
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<BrainDecision>> GetDecisionsAsync(string companyId, int limit, CancellationToken cancellationToken)
+    {
+        var items = new List<BrainDecision>();
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT decision_id, company_id, objective, action, reason, risk_level,
+                   confidence, approval_required, preconditions, status, created_at
+            FROM brain_decisions
+            WHERE company_id = $company
+            ORDER BY created_at DESC
+            LIMIT $limit;
+            """;
+        command.Parameters.AddWithValue("$company", companyId);
+        command.Parameters.AddWithValue("$limit", Math.Clamp(limit, 1, 100));
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var preconditions = System.Text.Json.JsonSerializer.Deserialize<string[]>(reader.GetString(8)) ?? Array.Empty<string>();
+            items.Add(new BrainDecision(
+                reader.GetString(0),
+                reader.GetString(1),
+                reader.GetString(2),
+                reader.GetString(3),
+                reader.GetString(4),
+                reader.GetString(5),
+                reader.GetDouble(6),
+                reader.GetInt32(7) == 1,
+                preconditions,
+                reader.GetString(9),
+                DateTimeOffset.Parse(reader.GetString(10))));
+        }
+        return items;
+    }
+
     private static string Hash(string value)
         => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
 

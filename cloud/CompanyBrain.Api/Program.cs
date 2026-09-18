@@ -229,6 +229,8 @@ app.MapPost("/api/brain/v1/companies/{companyId}/decisions/{decisionId}/execute"
     if (execution is null)
         return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
 
+    await store.SaveExecutionResultAsync(execution, cancellationToken);
+
     if (execution.Status == "COMPLETED")
     {
         await store.UpdateDecisionStatusAsync(

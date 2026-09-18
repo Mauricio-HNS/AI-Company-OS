@@ -2,6 +2,13 @@ using System.Text.Json;
 
 namespace CompanyBrain.Api;
 
+public sealed record BrainDecisionProvenance(
+    string MemoryId,
+    string CompanyId,
+    string SourceId,
+    string SourceType,
+    string DeviceId);
+
 public sealed record BrainDecision(
     string DecisionId,
     string CompanyId,
@@ -12,6 +19,7 @@ public sealed record BrainDecision(
     double Confidence,
     bool ApprovalRequired,
     string[] Preconditions,
+    BrainDecisionProvenance[] Evidence,
     string Status,
     DateTimeOffset CreatedAt);
 
@@ -45,9 +53,21 @@ public sealed class BrainDecisionEngine
         if (memories.Count == 0)
             return null;
 
+        var verifiedMemories = memories
+            .Where(memory =>
+                string.Equals(memory.CompanyId, companyId, StringComparison.Ordinal) &&
+                !string.IsNullOrWhiteSpace(memory.MemoryId) &&
+                !string.IsNullOrWhiteSpace(memory.SourceId) &&
+                !string.IsNullOrWhiteSpace(memory.SourceType) &&
+                !string.IsNullOrWhiteSpace(memory.DeviceId))
+            .ToArray();
+
+        if (verifiedMemories.Length == 0)
+            return null;
+
         var facts = string.Join(
             "\n",
-            memories.Select((memory, index) =>
+            verifiedMemories.Select((memory, index) =>
                 $"{index + 1}. {memory.Statement} | confidence={memory.Confidence:0.00} | observedAt={memory.ObservedAt:O} | source={memory.Source}"));
 
         var prompt = new BrainPrompt(
@@ -101,6 +121,12 @@ public sealed class BrainDecisionEngine
                 dto.Confidence,
                 approvalRequired,
                 dto.Preconditions.Where(x => !string.IsNullOrWhiteSpace(x)).Take(20).Select(x => x.Trim()).ToArray(),
+                verifiedMemories.Select(memory => new BrainDecisionProvenance(
+                    memory.MemoryId,
+                    memory.CompanyId,
+                    memory.SourceId,
+                    memory.SourceType,
+                    memory.DeviceId)).ToArray(),
                 approvalRequired ? "APPROVAL_REQUIRED" : "PROPOSED",
                 DateTimeOffset.UtcNow);
         }

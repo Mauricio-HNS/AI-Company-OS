@@ -9,6 +9,7 @@ import { reserveBudget, type BudgetReservation } from './budget-engine'
 import { grantAutonomy, recordAutonomyExecution, type CapabilityAutonomy } from './autonomy-engine'
 import { createMemory, type CompanyMemory } from './company-memory'
 import { ingestBridgeEnvelope, type BridgeIngestionEnvelope } from './company-brain-ingestion'
+import { registerBrainDecision, approveBrainDecision, rejectBrainDecision, decisionToTask, type RuntimeBrainDecision } from './brain-decision'
 
 export type RuntimeState = {
   objective: CompanyObjective
@@ -21,6 +22,7 @@ export type RuntimeState = {
   budgetReservations: BudgetReservation[]
   autonomy: CapabilityAutonomy[]
   memory: CompanyMemory[]
+  brainDecisions: RuntimeBrainDecision[]
 }
 
 const defaultSafetyRules: SafetyRule[] = [
@@ -36,6 +38,7 @@ export function initializeRuntime(objective: CompanyObjective, agents: AgentProf
     safety: monitorSafety({ margin: 1, anomaly: 0 }, defaultSafetyRules),
     budgetReservations: options.budget ? [reserveBudget(`${objective.id}:cycle-1`, options.budget)] : [],
     autonomy: ['research', 'analytics', 'experimentation', 'product', 'finance'].map(capability => grantAutonomy(capability, capability === 'finance' ? 'LOW' : 'MEDIUM')),
+    brainDecisions: [],
     memory: [createMemory({ statement: `Objective initialized: ${objective.title}`, context: objective.description, source: 'runtime', observedAt: new Date().toISOString(), confidence: 1, evidence: [], supportingExperiments: [] })],
   }
 }
@@ -47,6 +50,53 @@ export function ingestCompanyBridge(state: RuntimeState, envelope: BridgeIngesti
   return {
     ...state,
     memory: [...state.memory, ...result.memories],
+  }
+}
+
+export function registerRuntimeBrainDecision(
+  state: RuntimeState,
+  decision: RuntimeBrainDecision,
+): RuntimeState {
+  const normalized = registerBrainDecision(decision, state.objective.id)
+  if (!normalized) return state
+  const existing = state.brainDecisions.some(item => item.decisionId === normalized.decisionId)
+  if (existing) return state
+  return { ...state, brainDecisions: [...state.brainDecisions, normalized] }
+}
+
+export function approveRuntimeBrainDecision(
+  state: RuntimeState,
+  decisionId: string,
+  preconditionsSatisfied = true,
+): RuntimeState {
+  const decision = state.brainDecisions.find(item => item.decisionId === decisionId)
+  if (!decision) return state
+  const approved = approveBrainDecision(decision, preconditionsSatisfied)
+  if (approved.status !== 'APPROVED') return state
+  return {
+    ...state,
+    brainDecisions: state.brainDecisions.map(item => item.decisionId === decisionId ? approved : item),
+  }
+}
+
+export function rejectRuntimeBrainDecision(state: RuntimeState, decisionId: string): RuntimeState {
+  const decision = state.brainDecisions.find(item => item.decisionId === decisionId)
+  if (!decision) return state
+  return {
+    ...state,
+    brainDecisions: state.brainDecisions.map(item => item.decisionId === decisionId ? rejectBrainDecision(item) : item),
+  }
+}
+
+export function enqueueApprovedBrainDecision(state: RuntimeState, decisionId: string): RuntimeState {
+  const decision = state.brainDecisions.find(item => item.decisionId === decisionId)
+  if (!decision) return state
+  const task = decisionToTask(decision)
+  if (!task || state.plan.tasks.some(item => item.id === task.id)) return state
+  return {
+    ...state,
+    plan: { ...state.plan, tasks: [...state.plan.tasks, task] },
+    queue: createExecutionQueue({ ...state.plan, tasks: [...state.plan.tasks, task] }),
   }
 }
 

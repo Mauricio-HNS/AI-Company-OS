@@ -24,9 +24,7 @@ export type RuntimeBrainDecision = {
 
 export function registerBrainDecision(
   decision: RuntimeBrainDecision,
-  companyId: string,
 ): RuntimeBrainDecision | undefined {
-  if (decision.companyId !== companyId) return undefined
   if (decision.confidence < 0 || decision.confidence > 1) return undefined
   if (decision.riskLevel === 'HIGH' || decision.riskLevel === 'CRITICAL') {
     return { ...decision, approvalRequired: true, status: 'APPROVAL_REQUIRED' }

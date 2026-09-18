@@ -7,6 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<CloudStore>();
 builder.Services.AddSingleton<BrainProcessor>();
 builder.Services.AddSingleton<BrainDecisionEngine>();
+builder.Services.AddSingleton<AgentRegistry>();
 builder.Services.AddSingleton<AgentExecutionService>();
 builder.Services.AddSingleton<EvaluationReplanningService>();
 builder.Services.AddSingleton<AutonomousCycleService>();

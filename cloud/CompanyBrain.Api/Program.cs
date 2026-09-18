@@ -201,6 +201,119 @@ app.MapGet("/api/brain/v1/companies/{companyId}/decisions", async (
     return Results.Ok(new { companyId, count = decisions.Count, decisions });
 });
 
+app.MapGet("/api/brain/v1/companies/{companyId}/approvals", async (
+    HttpRequest request,
+    string companyId,
+    CloudStore store,
+    IConfiguration configuration,
+    CancellationToken cancellationToken) =>
+{
+    if (!HasBrainAdminKey(request, configuration))
+        return Results.Unauthorized();
+
+    if (!IsSafeIdentifier(companyId))
+        return Results.BadRequest();
+
+    var decisions = await store.GetDecisionsAsync(companyId, 100, cancellationToken);
+    var approvals = decisions.Where(decision => decision.Status == "APPROVAL_REQUIRED").ToArray();
+    return Results.Ok(new { companyId, count = approvals.Length, approvals });
+});
+
+app.MapPost("/api/brain/v1/companies/{companyId}/decisions/{decisionId}/approve", async (
+    HttpRequest request,
+    string companyId,
+    string decisionId,
+    ApprovalRequest input,
+    CloudStore store,
+    IConfiguration configuration,
+    CancellationToken cancellationToken) =>
+{
+    if (!HasBrainAdminKey(request, configuration))
+        return Results.Unauthorized();
+
+    if (!IsSafeIdentifier(companyId) || !IsSafeIdentifier(decisionId))
+        return Results.BadRequest();
+
+    var decision = await store.GetDecisionAsync(companyId, decisionId, cancellationToken);
+    if (decision is null)
+        return Results.NotFound();
+
+    if (decision.Status != "APPROVAL_REQUIRED")
+        return Results.Conflict(new { approved = false, reason = $"Decision is already {decision.Status}." });
+
+    if (!input.PreconditionsSatisfied)
+        return Results.BadRequest(new { approved = false, reason = "Approval requires all preconditions to be satisfied." });
+
+    var actor = NormalizeActor(request.Headers["X-Brain-Actor"].ToString());
+    var updated = await store.UpdateDecisionStatusAsync(
+        companyId, decisionId, "APPROVAL_REQUIRED", "APPROVED",
+        actor, input.Reason, cancellationToken);
+
+    if (!updated)
+        return Results.Conflict(new { approved = false, reason = "Decision changed before approval was recorded." });
+
+    var approved = await store.GetDecisionAsync(companyId, decisionId, cancellationToken);
+    return Results.Ok(new { approved = true, decision = approved });
+});
+
+app.MapPost("/api/brain/v1/companies/{companyId}/decisions/{decisionId}/reject", async (
+    HttpRequest request,
+    string companyId,
+    string decisionId,
+    ApprovalRequest input,
+    CloudStore store,
+    IConfiguration configuration,
+    CancellationToken cancellationToken) =>
+{
+    if (!HasBrainAdminKey(request, configuration))
+        return Results.Unauthorized();
+
+    if (!IsSafeIdentifier(companyId) || !IsSafeIdentifier(decisionId))
+        return Results.BadRequest();
+
+    var decision = await store.GetDecisionAsync(companyId, decisionId, cancellationToken);
+    if (decision is null)
+        return Results.NotFound();
+
+    if (decision.Status != "APPROVAL_REQUIRED")
+        return Results.Conflict(new { rejected = false, reason = $"Decision is already {decision.Status}." });
+
+    if (string.IsNullOrWhiteSpace(input.Reason))
+        return Results.BadRequest(new { rejected = false, reason = "A rejection reason is required." });
+
+    var actor = NormalizeActor(request.Headers["X-Brain-Actor"].ToString());
+    var updated = await store.UpdateDecisionStatusAsync(
+        companyId, decisionId, "APPROVAL_REQUIRED", "REJECTED",
+        actor, input.Reason, cancellationToken);
+
+    if (!updated)
+        return Results.Conflict(new { rejected = false, reason = "Decision changed before rejection was recorded." });
+
+    var rejected = await store.GetDecisionAsync(companyId, decisionId, cancellationToken);
+    return Results.Ok(new { rejected = true, decision = rejected });
+});
+
+app.MapGet("/api/brain/v1/companies/{companyId}/decisions/{decisionId}/audit", async (
+    HttpRequest request,
+    string companyId,
+    string decisionId,
+    CloudStore store,
+    IConfiguration configuration,
+    CancellationToken cancellationToken) =>
+{
+    if (!HasBrainAdminKey(request, configuration))
+        return Results.Unauthorized();
+
+    if (!IsSafeIdentifier(companyId) || !IsSafeIdentifier(decisionId))
+        return Results.BadRequest();
+
+    if (await store.GetDecisionAsync(companyId, decisionId, cancellationToken) is null)
+        return Results.NotFound();
+
+    var audit = await store.GetDecisionAuditAsync(companyId, decisionId, cancellationToken);
+    return Results.Ok(new { companyId, decisionId, count = audit.Count, audit });
+});
+
 app.MapGet("/api/brain/v1/companies/{companyId}/status", async (HttpRequest request, string companyId, CloudStore store, IConfiguration configuration, CancellationToken cancellationToken) =>
 {
     if (!HasBrainAdminKey(request, configuration))
@@ -226,5 +339,17 @@ static bool IsSafeIdentifier(string? value)
        && value.Length <= 100
        && value.All(ch => char.IsLetterOrDigit(ch) || ch is '-' or '_' or '.');
 
+static string NormalizeActor(string? value)
+{
+    if (string.IsNullOrWhiteSpace(value))
+        return "brain-admin";
+
+    var actor = value.Trim();
+    return actor.Length <= 100 && actor.All(ch => char.IsLetterOrDigit(ch) || ch is '-' or '_' or '.' || ch == '@')
+        ? actor
+        : "brain-admin";
+}
+
+public sealed record ApprovalRequest(bool PreconditionsSatisfied = true, string? Reason = null);
 public sealed record EnrollmentRequest(string CompanyId, string DeviceId, string EnrollmentToken);
 public sealed record SyncRequest(string CompanyId, string DeviceId, string Envelope);

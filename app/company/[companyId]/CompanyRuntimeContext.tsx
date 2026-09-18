@@ -17,7 +17,7 @@ export const runtimeAgents: AgentProfile[] = [
 ]
 
 type RuntimeCompany = Pick<Company, 'name' | 'objective' | 'revenue'>
-export type RuntimeContextValue = { runtime: RuntimeState; running: boolean; setRunning: (running: boolean) => void; lastAction: string; progress: number; counts: { completed: number; executing: number; blocked: number }; metrics: BusinessMetrics; metricEvent: string; tick: number; advance: () => void }
+export type RuntimeContextValue = { runtime: RuntimeState; running: boolean; setRunning: (running: boolean) => void; lastAction: string; progress: number; counts: { completed: number; executing: number; blocked: number }; metrics: BusinessMetrics; metricEvent: string; tick: number; advance: () => void; approveDecision: (decisionId: string) => void; rejectDecision: (decisionId: string) => void }
 const RuntimeContext = createContext<RuntimeContextValue | null>(null)
 
 function objective(company: RuntimeCompany): CompanyObjective {
@@ -69,9 +69,12 @@ export default function CompanyRuntimeProvider({ company, children }: { company:
 
   useEffect(() => { if (!running) return; const timer = window.setInterval(advance, 2200); return () => window.clearInterval(timer) }, [running])
 
+  const approveDecision = (decisionId: string) => setRuntime(current => CompanyRuntimeService.approveDecision(current, decisionId, true))
+  const rejectDecision = (decisionId: string) => setRuntime(current => CompanyRuntimeService.rejectDecision(current, decisionId))
+
   const counts = useMemo(() => ({ completed: runtime.plan.tasks.filter(task => task.status === 'COMPLETED').length, executing: runtime.plan.tasks.filter(task => task.status === 'EXECUTING').length, blocked: runtime.plan.tasks.filter(task => task.status === 'BLOCKED').length }), [runtime.plan.tasks])
   const progress = runtime.plan.tasks.length ? Math.round((counts.completed / runtime.plan.tasks.length) * 100) : 0
-  const value = useMemo(() => ({ runtime, running, setRunning, lastAction, progress, counts, metrics, metricEvent, tick, advance }), [runtime, running, lastAction, progress, counts, metrics, metricEvent, tick])
+  const value = useMemo(() => ({ runtime, running, setRunning, lastAction, progress, counts, metrics, metricEvent, tick, advance, approveDecision, rejectDecision }), [runtime, running, lastAction, progress, counts, metrics, metricEvent, tick])
   return <RuntimeContext.Provider value={value}>{children}</RuntimeContext.Provider>
 }
 

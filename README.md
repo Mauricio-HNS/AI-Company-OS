@@ -535,7 +535,9 @@ In progress.
 
 Latest completed control-loop milestone:
 
-**EXECUTE → OBSERVE → EVALUATE → LEARN → REPLAN**
+**EXECUTE → OBSERVE → EVALUATE → LEARN → REPLAN → NEXT DECISION**
+
+The autonomous loop now persists evaluation/replan state and converts a bounded replan into the next tenant-scoped Brain decision. Low-risk replans can be auto-approved; higher-risk replans remain approval-gated.
 
 Completed foundations:
 
@@ -563,6 +565,11 @@ Completed foundations:
 - Device enrollment
 - Durable cloud event persistence
 - Event idempotency
+- Tenant/data provenance isolation across devices and sources
+- Decision evidence provenance
+- Durable evaluation and replan persistence
+- Replan → next decision/task loop
+- Approved decision resume/execute cycle
 
 Remaining hardening work:
 
@@ -576,6 +583,7 @@ Remaining hardening work:
 - Human approval workflow UI
 - Opportunity detection
 - Production experiment management
+- Agent registry, capabilities and explicit autonomy policies
 - Real integrations
 - Dashboard 2.0 visual refinement
 - Module-level component extraction

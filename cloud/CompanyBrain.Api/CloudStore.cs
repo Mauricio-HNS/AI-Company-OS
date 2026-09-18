@@ -5,6 +5,7 @@ using System.Text;
 namespace CompanyBrain.Api;
 
 public sealed record EnrollmentResult(string CompanyId, string DeviceId, string ApiKey);
+public sealed record BrainDecisionAudit(string AuditId, string DecisionId, string CompanyId, string Action, string Actor, string? Reason, DateTimeOffset CreatedAt);
 public sealed record StoredEvent(string EventId, string CompanyId, string DeviceId, string Envelope, DateTimeOffset ReceivedAt);
 
 public sealed class CloudStore
@@ -53,6 +54,32 @@ public sealed class CloudStore
             );
             CREATE INDEX IF NOT EXISTS ix_events_company_received
                 ON events(company_id, received_at);
+            CREATE TABLE IF NOT EXISTS brain_decisions (
+                decision_id TEXT PRIMARY KEY,
+                company_id TEXT NOT NULL,
+                objective TEXT NOT NULL,
+                action TEXT NOT NULL,
+                reason TEXT NOT NULL,
+                risk_level TEXT NOT NULL,
+                confidence REAL NOT NULL,
+                approval_required INTEGER NOT NULL,
+                preconditions TEXT NOT NULL,
+                status TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ix_brain_decisions_company_status
+                ON brain_decisions(company_id, status, created_at);
+            CREATE TABLE IF NOT EXISTS brain_decision_audit (
+                audit_id TEXT PRIMARY KEY,
+                decision_id TEXT NOT NULL,
+                company_id TEXT NOT NULL,
+                action TEXT NOT NULL,
+                actor TEXT NOT NULL,
+                reason TEXT,
+                created_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ix_brain_decision_audit_decision
+                ON brain_decision_audit(decision_id, created_at);
             """;
         command.ExecuteNonQuery();
 
@@ -337,6 +364,122 @@ public sealed class CloudStore
                 preconditions,
                 reader.GetString(9),
                 DateTimeOffset.Parse(reader.GetString(10))));
+        }
+        return items;
+    }
+
+    public async Task<BrainDecision?> GetDecisionAsync(string companyId, string decisionId, CancellationToken cancellationToken)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT decision_id, company_id, objective, action, reason, risk_level,
+                   confidence, approval_required, preconditions, status, created_at
+            FROM brain_decisions
+            WHERE company_id = $company AND decision_id = $id
+            LIMIT 1;
+            """;
+        command.Parameters.AddWithValue("$company", companyId);
+        command.Parameters.AddWithValue("$id", decisionId);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken))
+            return null;
+
+        var preconditions = System.Text.Json.JsonSerializer.Deserialize<string[]>(reader.GetString(8)) ?? Array.Empty<string>();
+        return new BrainDecision(
+            reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3),
+            reader.GetString(4), reader.GetString(5), reader.GetDouble(6), reader.GetInt32(7) == 1,
+            preconditions, reader.GetString(9), DateTimeOffset.Parse(reader.GetString(10)));
+    }
+
+    public async Task<bool> UpdateDecisionStatusAsync(
+        string companyId,
+        string decisionId,
+        string expectedStatus,
+        string newStatus,
+        string actor,
+        string? reason,
+        CancellationToken cancellationToken)
+    {
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            await using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
+            await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+            await using var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = """
+                UPDATE brain_decisions
+                SET status = $status
+                WHERE company_id = $company
+                  AND decision_id = $id
+                  AND status = $expected;
+                """;
+            command.Parameters.AddWithValue("$status", newStatus);
+            command.Parameters.AddWithValue("$company", companyId);
+            command.Parameters.AddWithValue("$id", decisionId);
+            command.Parameters.AddWithValue("$expected", expectedStatus);
+            var changed = await command.ExecuteNonQueryAsync(cancellationToken);
+
+            if (changed != 1)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return false;
+            }
+
+            await using var audit = connection.CreateCommand();
+            audit.Transaction = transaction;
+            audit.CommandText = """
+                INSERT INTO brain_decision_audit(
+                    audit_id, decision_id, company_id, action, actor, reason, created_at)
+                VALUES($audit, $decision, $company, $action, $actor, $reason, $created);
+                """;
+            audit.Parameters.AddWithValue("$audit", Guid.NewGuid().ToString("N"));
+            audit.Parameters.AddWithValue("$decision", decisionId);
+            audit.Parameters.AddWithValue("$company", companyId);
+            audit.Parameters.AddWithValue("$action", newStatus);
+            audit.Parameters.AddWithValue("$actor", actor);
+            audit.Parameters.AddWithValue("$reason", (object?)reason ?? DBNull.Value);
+            audit.Parameters.AddWithValue("$created", DateTimeOffset.UtcNow.ToString("O"));
+            await audit.ExecuteNonQueryAsync(cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+            return true;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    public async Task<IReadOnlyList<BrainDecisionAudit>> GetDecisionAuditAsync(
+        string companyId,
+        string decisionId,
+        CancellationToken cancellationToken)
+    {
+        var items = new List<BrainDecisionAudit>();
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT audit_id, decision_id, company_id, action, actor, reason, created_at
+            FROM brain_decision_audit
+            WHERE company_id = $company AND decision_id = $id
+            ORDER BY created_at DESC;
+            """;
+        command.Parameters.AddWithValue("$company", companyId);
+        command.Parameters.AddWithValue("$id", decisionId);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            items.Add(new BrainDecisionAudit(
+                reader.GetString(0), reader.GetString(1), reader.GetString(2),
+                reader.GetString(3), reader.GetString(4),
+                reader.IsDBNull(5) ? null : reader.GetString(5),
+                DateTimeOffset.Parse(reader.GetString(6))));
         }
         return items;
     }

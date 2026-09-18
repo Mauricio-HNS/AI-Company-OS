@@ -10,6 +10,7 @@ builder.Services.AddSingleton<BrainDecisionEngine>();
 builder.Services.AddSingleton<AgentExecutionService>();
 builder.Services.AddSingleton<EvaluationReplanningService>();
 builder.Services.AddSingleton<AutonomousCycleService>();
+builder.Services.AddSingleton<AgentRegistryService>();
 builder.Services.AddHttpClient<BrainLlmGateway>();
 builder.Services.AddHostedService<BrainProcessorWorker>();
 
@@ -407,6 +408,70 @@ app.MapGet("/api/brain/v1/companies/{companyId}/decisions/{decisionId}/audit", a
     return Results.Ok(new { companyId, decisionId, count = audit.Count, audit });
 });
 
+app.MapGet("/api/brain/v1/companies/{companyId}/agents", async (
+    HttpRequest request,
+    string companyId,
+    AgentRegistryService registry,
+    IConfiguration configuration,
+    CancellationToken cancellationToken) =>
+{
+    if (!HasBrainAdminKey(request, configuration))
+        return Results.Unauthorized();
+
+    if (!IsSafeIdentifier(companyId))
+        return Results.BadRequest();
+
+    var agents = await registry.ListAsync(companyId, cancellationToken);
+    return Results.Ok(new { companyId, count = agents.Count, agents });
+});
+
+app.MapPost("/api/brain/v1/companies/{companyId}/agents", async (
+    HttpRequest request,
+    string companyId,
+    AgentRegistrationRequest input,
+    AgentRegistryService registry,
+    IConfiguration configuration,
+    CancellationToken cancellationToken) =>
+{
+    if (!HasBrainAdminKey(request, configuration))
+        return Results.Unauthorized();
+
+    if (!IsSafeIdentifier(companyId) ||
+        !IsSafeIdentifier(input.AgentId) ||
+        string.IsNullOrWhiteSpace(input.Name) ||
+        input.Name.Length > 120 ||
+        input.Status is not ("ACTIVE" or "DISABLED"))
+        return Results.BadRequest(new { registered = false, reason = "Invalid agent registration" });
+
+    if (input.Capabilities is null || input.Capabilities.Length == 0)
+        return Results.BadRequest(new { registered = false, reason = "At least one capability is required" });
+
+    var capabilities = input.Capabilities
+        .Where(item => !string.IsNullOrWhiteSpace(item.Capability))
+        .Select(item => new AgentCapabilityPolicy(
+            item.Capability.Trim().ToUpperInvariant(),
+            item.AutonomyLevel.Trim().ToUpperInvariant(),
+            item.MaxRiskLevel.Trim().ToUpperInvariant(),
+            item.Enabled))
+        .ToArray();
+
+    var allowedAutonomy = new[] { "NONE", "LOW", "MEDIUM", "HIGH" };
+    var allowedRisk = new[] { "LOW", "MEDIUM", "HIGH", "CRITICAL" };
+    if (capabilities.Any(item =>
+        !IsSafeIdentifier(item.Capability) ||
+        !allowedAutonomy.Contains(item.AutonomyLevel, StringComparer.Ordinal) ||
+        !allowedRisk.Contains(item.MaxRiskLevel, StringComparer.Ordinal)))
+        return Results.BadRequest(new { registered = false, reason = "Invalid capability autonomy or risk policy" });
+
+    var now = DateTimeOffset.UtcNow;
+    await registry.RegisterAsync(
+        new AgentProfile(input.AgentId, companyId, input.Name.Trim(), input.Status, capabilities, now, now),
+        cancellationToken);
+
+    var agent = await registry.GetAsync(companyId, input.AgentId, cancellationToken);
+    return Results.Ok(new { registered = true, agent });
+});
+
 app.MapGet("/api/brain/v1/companies/{companyId}/status", async (HttpRequest request, string companyId, CloudStore store, IConfiguration configuration, CancellationToken cancellationToken) =>
 {
     if (!HasBrainAdminKey(request, configuration))
@@ -446,3 +511,9 @@ static string NormalizeActor(string? value)
 public sealed record ApprovalRequest(bool PreconditionsSatisfied = true, string? Reason = null);
 public sealed record EnrollmentRequest(string CompanyId, string DeviceId, string EnrollmentToken);
 public sealed record SyncRequest(string CompanyId, string DeviceId, string Envelope);
+public sealed record AgentCapabilityRequest(string Capability, string AutonomyLevel, string MaxRiskLevel, bool Enabled = true);
+public sealed record AgentRegistrationRequest(
+    string AgentId,
+    string Name,
+    string Status,
+    AgentCapabilityRequest[] Capabilities);

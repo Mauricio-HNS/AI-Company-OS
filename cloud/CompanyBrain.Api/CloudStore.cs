@@ -484,7 +484,7 @@ public sealed class CloudStore
         await using var command = connection.CreateCommand();
         command.CommandText = """
             SELECT decision_id, company_id, objective, action, reason, risk_level,
-                   confidence, approval_required, preconditions, status, created_at
+                   confidence, approval_required, preconditions, evidence, status, created_at
             FROM brain_decisions
             WHERE company_id = $company AND decision_id = $id
             LIMIT 1;

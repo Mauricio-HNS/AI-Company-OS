@@ -15,8 +15,13 @@ public sealed record AgentExecutionResult(
 public sealed class AgentExecutionService
 {
     private readonly BrainLlmGateway _llm;
+    private readonly AgentRegistryService _registry;
 
-    public AgentExecutionService(BrainLlmGateway llm) => _llm = llm;
+    public AgentExecutionService(BrainLlmGateway llm, AgentRegistryService registry)
+    {
+        _llm = llm;
+        _registry = registry;
+    }
 
     public async Task<AgentExecutionResult?> ExecuteAsync(
         BrainDecision decision,
@@ -24,6 +29,21 @@ public sealed class AgentExecutionService
         CancellationToken cancellationToken)
     {
         if (decision.Status != "APPROVED")
+            return null;
+
+        var capability = decision.Action switch
+        {
+            "OBSERVE" => "OBSERVE",
+            "PLAN" => "PLAN",
+            _ => string.Empty
+        };
+
+        if (string.IsNullOrWhiteSpace(capability) ||
+            !await _registry.CanExecuteAsync(
+                decision.CompanyId,
+                capability,
+                decision.RiskLevel,
+                cancellationToken))
             return null;
 
         var facts = string.Join(

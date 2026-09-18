@@ -442,9 +442,11 @@ Tenant/data provenance isolation       ✓
       ↓
 Decision evidence provenance           ✓
       ↓
-Evaluation + Replanning                 ✓
+Evaluation + Replanning            ✓
       ↓
-Real integrations                 →
+Next decision / autonomous cycle   ✓
+      ↓
+Real integrations                  →
       ↓
 Dashboard 2.0                     →
       ↓
@@ -535,7 +537,9 @@ In progress.
 
 Latest completed control-loop milestone:
 
-**EXECUTE → OBSERVE → EVALUATE → LEARN → REPLAN**
+**EXECUTE → OBSERVE → EVALUATE → LEARN → REPLAN → NEXT DECISION**
+
+The autonomous loop now persists execution outcomes, evaluation results and replan proposals, then converts a bounded replan into the next tenant-scoped Brain decision. Low-risk decisions can be promoted automatically; higher-risk decisions remain approval-gated. External business side effects remain isolated.
 
 Completed foundations:
 
@@ -563,23 +567,34 @@ Completed foundations:
 - Device enrollment
 - Durable cloud event persistence
 - Event idempotency
+- Direct cloud-to-Company-Brain agent decision loop
+- Durable agent execution result store
+- Authenticated cloud decision → runtime synchronization contract
+- Runtime pull endpoint for approved Brain decisions
+- Trusted Bridge → browser runtime decision delivery
+- Human approval workflow UI
+- Tenant/data provenance isolation across devices and sources
+- Decision evidence provenance
+- Durable evaluation and replan persistence
+- Replan → next decision/task loop
+- Approved decision resume/execute cycle
+- Bounded Agent Execution with structured COMPLETED / BLOCKED outcomes
+- Autonomous Company Brain cycle with low-risk auto-approval and higher-risk human gating
 
 Remaining hardening work:
 
 - Automated unit tests for critical runtime paths
 - PostgreSQL production provider
-- Direct cloud-to-Company-Brain agent decision loop ✓
-- Durable agent execution result store
-- Authenticated cloud decision → runtime synchronization contract ✓
-- Runtime pull endpoint for approved Brain decisions ✓
-- Trusted Bridge → browser runtime decision delivery ✓
-- Human approval workflow UI
+- Explicit persistent Agent Registry, capabilities and autonomy policies
 - Opportunity detection
 - Production experiment management
 - Real integrations
+- Controlled external actions behind production policy gates
+- Durable Bridge runtime decision persistence and local authentication
+- Production user authentication and tenant-aware roles/permissions
+- Production observability and rate limiting
 - Dashboard 2.0 visual refinement
 - Module-level component extraction
-- Production observability and rate limiting
 
 ### Phase 5 — Real AI and business integrations
 

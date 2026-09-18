@@ -16,6 +16,7 @@ public sealed class BrainLlmGateway
         _http = http;
         _configuration = configuration;
         _logger = logger;
+        _http.Timeout = TimeSpan.FromSeconds(60);
     }
 
     public async Task<string?> CompleteAsync(BrainPrompt prompt, CancellationToken cancellationToken)
@@ -42,18 +43,40 @@ public sealed class BrainLlmGateway
             temperature = 0.1
         });
 
-        using var response = await _http.SendAsync(request, cancellationToken);
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            _logger.LogWarning("LLM request failed with status {StatusCode}", response.StatusCode);
+            using var response = await _http.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("LLM request failed with status {StatusCode}", response.StatusCode);
+                return null;
+            }
+
+            using var json = await response.Content.ReadFromJsonAsync<JsonDocument>(cancellationToken: cancellationToken);
+            if (json is null ||
+                !json.RootElement.TryGetProperty("choices", out var choices) ||
+                choices.ValueKind != JsonValueKind.Array ||
+                choices.GetArrayLength() == 0 ||
+                !choices[0].TryGetProperty("message", out var message) ||
+                !message.TryGetProperty("content", out var content))
+                return null;
+
+            return content.GetString();
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogWarning(ex, "LLM request failed for company {CompanyId}", prompt.CompanyId);
             return null;
         }
-
-        using var json = await response.Content.ReadFromJsonAsync<JsonDocument>(cancellationToken: cancellationToken);
-        return json?.RootElement
-            .GetProperty("choices")[0]
-            .GetProperty("message")
-            .GetProperty("content")
-            .GetString();
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogWarning("LLM request timed out for company {CompanyId}", prompt.CompanyId);
+            return null;
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogWarning(ex, "LLM response was not valid JSON for company {CompanyId}", prompt.CompanyId);
+            return null;
+        }
     }
 }

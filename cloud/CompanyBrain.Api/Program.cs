@@ -6,6 +6,7 @@ using CompanyBrain.Api;
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<CloudStore>();
 builder.Services.AddSingleton<BrainProcessor>();
+builder.Services.AddSingleton<BrainDecisionEngine>();
 builder.Services.AddHttpClient<BrainLlmGateway>();
 builder.Services.AddHostedService<BrainProcessorWorker>();
 
@@ -143,6 +144,61 @@ app.MapPost("/api/brain/v1/companies/{companyId}/analyze", async (HttpRequest re
     return analysis is null
         ? Results.StatusCode(StatusCodes.Status503ServiceUnavailable)
         : Results.Ok(new { companyId, analysis, memoryCount = memories.Count });
+});
+
+app.MapPost("/api/brain/v1/companies/{companyId}/decisions/generate", async (
+    HttpRequest request,
+    string companyId,
+    CloudStore store,
+    BrainDecisionEngine decisionEngine,
+    IConfiguration configuration,
+    CancellationToken cancellationToken) =>
+{
+    if (!HasBrainAdminKey(request, configuration))
+        return Results.Unauthorized();
+
+    if (!IsSafeIdentifier(companyId))
+        return Results.BadRequest();
+
+    var memories = await store.GetMemoriesAsync(companyId, 100, cancellationToken);
+    if (memories.Count == 0)
+        return Results.Ok(new
+        {
+            companyId,
+            decision = (BrainDecision?)null,
+            memoryCount = 0,
+            reason = "No company memories available yet."
+        });
+
+    var decision = await decisionEngine.GenerateAsync(companyId, memories, cancellationToken);
+    if (decision is null)
+        return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+
+    await store.SaveDecisionAsync(decision, cancellationToken);
+    return Results.Ok(new
+    {
+        companyId,
+        decision,
+        memoryCount = memories.Count,
+        externalSideEffect = false
+    });
+});
+
+app.MapGet("/api/brain/v1/companies/{companyId}/decisions", async (
+    HttpRequest request,
+    string companyId,
+    CloudStore store,
+    IConfiguration configuration,
+    CancellationToken cancellationToken) =>
+{
+    if (!HasBrainAdminKey(request, configuration))
+        return Results.Unauthorized();
+
+    if (!IsSafeIdentifier(companyId))
+        return Results.BadRequest();
+
+    var decisions = await store.GetDecisionsAsync(companyId, 100, cancellationToken);
+    return Results.Ok(new { companyId, count = decisions.Count, decisions });
 });
 
 app.MapGet("/api/brain/v1/companies/{companyId}/status", async (HttpRequest request, string companyId, CloudStore store, IConfiguration configuration, CancellationToken cancellationToken) =>

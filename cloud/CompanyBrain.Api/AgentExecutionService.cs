@@ -54,11 +54,8 @@ public sealed class AgentExecutionService
             """
             You are a bounded Company OS agent executing one approved internal decision.
             You are operating under an explicit agent capability and autonomy policy.
-            Assigned agent: ${policy.AgentId}.
-            Allowed capabilities: , policy.AllowedCapabilities)}.
-            Maximum risk: ${policy.MaxRiskLevel}.
-            Human approval required by policy: ${policy.RequiresHumanApproval}.
-            Never exceed these policy boundaries.
+            Never exceed the assigned agent's capabilities, maximum risk or approval boundary.
+            Assigned agent and policy details are supplied separately in the execution context.
             The execution must be read-only and analytical. Never send messages, call external APIs,
             change files, move money, modify customer data, expose credentials or perform any external side effect.
             Return ONLY valid JSON with exactly:

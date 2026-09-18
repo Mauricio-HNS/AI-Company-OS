@@ -363,6 +363,7 @@ Completed in this UI hardening cycle:
 - Runtime Brain decision adapter added
 - Human approval gate added before runtime execution
 - Approved Brain decisions can enter the deterministic execution queue
+- Authenticated runtime synchronization endpoint exposes approved decisions without external side effects
 - Brain execution queue preserves existing runtime state when appending decisions
 - Completed Brain tasks are marked EXECUTED in runtime state
 - LLM decisions constrained to non-side-effect action types
@@ -537,7 +538,8 @@ Remaining hardening work:
 - Automated unit tests for critical runtime paths
 - PostgreSQL production provider
 - Direct cloud-to-Company-Brain agent decision loop
-- Authenticated cloud decision → runtime synchronization
+- Authenticated cloud decision → runtime synchronization contract
+- Runtime pull endpoint for approved Brain decisions
 - Human approval workflow UI
 - Opportunity detection
 - Production experiment management

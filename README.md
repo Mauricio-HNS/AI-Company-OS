@@ -380,6 +380,9 @@ Completed in this UI hardening cycle:
 - Bridge sync rejects envelopes whose CompanyId does not match the authenticated tenant
 - Company Memory now stores source identity, source type and originating device provenance
 - Brain ingestion validates tenant identity before creating memory and rejects mismatched envelopes
+- Brain decision generation now filters out memories with missing or mismatched tenant/source/device provenance
+- Brain decisions persist the exact memory/source/device evidence used to derive each decision
+- Existing SQLite installations migrate memory and decision provenance columns automatically
 - Approved decisions can execute through the LLM with read-only, no-side-effect constraints
 - Agent execution validates structured COMPLETED / BLOCKED results before returning them
 - Decision risk and approval requirements validated before persistence
@@ -431,6 +434,10 @@ Structured Brain decisions          ✓
 Brain decision → approval → queue → execution   ✓
       ↓
 Real agent/LLM execution          ✓
+      ↓
+Tenant/data provenance isolation       ✓
+      ↓
+Decision evidence provenance           ✓
       ↓
 Real integrations                 →
       ↓

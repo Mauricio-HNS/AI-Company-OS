@@ -446,6 +446,8 @@ Evaluation + Replanning            ✓
       ↓
 Next decision / autonomous cycle   ✓
       ↓
+Agent Registry + policy enforcement ✓
+      ↓
 Real integrations                  →
       ↓
 Dashboard 2.0                     →
@@ -580,12 +582,14 @@ Completed foundations:
 - Approved decision resume/execute cycle
 - Bounded Agent Execution with structured COMPLETED / BLOCKED outcomes
 - Autonomous Company Brain cycle with low-risk auto-approval and higher-risk human gating
+- Persistent tenant-scoped Agent Registry with capability and autonomy/risk policies
+- Agent execution is blocked when no active capability policy permits the requested action
 
 Remaining hardening work:
 
 - Automated unit tests for critical runtime paths
 - PostgreSQL production provider
-- Explicit persistent Agent Registry, capabilities and autonomy policies
+- Agent Registry UI and richer per-agent lifecycle management
 - Opportunity detection
 - Production experiment management
 - Real integrations

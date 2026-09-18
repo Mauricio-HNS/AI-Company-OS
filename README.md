@@ -121,7 +121,7 @@ Azure is the **production target architecture**. The current repository implemen
 | Cloud Control Plane | Enrollment, authentication, validation and durable events | Implemented |
 | Company Bridge | Local-first connection to company systems | Implemented foundation |
 | Azure Production Infrastructure | API, PostgreSQL, OpenAI, Blob and Key Vault | Blueprint ready |
-| Real AI Layer | LLM providers, RAG and autonomous reasoning | Next |
+| Real AI Layer | LLM gateway, RAG and autonomous reasoning | In progress |
 | Business Integrations | CRM, ERP, finance, communication and external APIs | Next |
 | Controlled Actions | Real-world side effects behind policy and approval gates | Future production layer |
 
@@ -352,6 +352,11 @@ Completed in this UI hardening cycle:
 - Event-level idempotency added
 - Authenticated Bridge → Cloud synchronization added
 - Azure production cloud blueprint added
+- Real Company Brain event processor added
+- Processed-event tracking and Company Memory persistence added
+- Configurable LLM gateway added
+- Background processing worker added
+- Brain analysis endpoint added
 
 ### Live preview
 
@@ -385,6 +390,10 @@ Device enrollment                 ✓
 Durable cloud persistence         ✓
       ↓
 Azure production blueprint       ✓
+      ↓
+Real Company Brain processor      ✓
+      ↓
+LLM gateway                       ✓
       ↓
 Real agent/LLM execution          →
       ↓
@@ -508,7 +517,8 @@ Remaining hardening work:
 
 - Automated unit tests for critical runtime paths
 - PostgreSQL production provider
-- Direct cloud-to-Company-Brain processing
+- Direct cloud-to-Company-Brain agent decision loop
+- PostgreSQL production provider
 - Human approval workflow UI
 - Opportunity detection
 - Production experiment management
@@ -519,9 +529,10 @@ Remaining hardening work:
 
 ### Phase 5 — Real AI and business integrations
 
-Next.
+In progress.
 
-- LLM providers
+- Production LLM provider configuration
+- Agent decision loop
 - RAG / vector knowledge
 - CRM
 - Marketing platforms

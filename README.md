@@ -371,6 +371,10 @@ Completed in this UI hardening cycle:
 - Completed Brain tasks are marked EXECUTED in runtime state
 - LLM decisions constrained to non-side-effect action types
 - Bounded Agent Execution service added for approved OBSERVE / PLAN decisions
+- Agent execution outcomes persisted durably for recovery and audit
+- Autonomous Company Brain cycle added: memory → decision → controlled approval → agent execution
+- Low-risk decisions can be promoted automatically; higher-risk decisions remain human-gated
+- Brain worker now drives the autonomous cycle continuously while preserving external-side-effect isolation
 - Approved decisions can execute through the LLM with read-only, no-side-effect constraints
 - Agent execution validates structured COMPLETED / BLOCKED results before returning them
 - Decision risk and approval requirements validated before persistence

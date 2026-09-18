@@ -11,6 +11,17 @@ builder.Services.AddHostedService<BrainProcessorWorker>();
 
 var app = builder.Build();
 
+static bool HasBrainAdminKey(HttpRequest request, IConfiguration configuration)
+{
+    var configured = configuration["BrainAdmin:ApiKey"];
+    var provided = request.Headers["X-Brain-Admin-Key"].ToString();
+    return !string.IsNullOrWhiteSpace(configured)
+        && !string.IsNullOrWhiteSpace(provided)
+        && CryptographicOperations.FixedTimeEquals(
+            Encoding.UTF8.GetBytes(configured),
+            Encoding.UTF8.GetBytes(provided));
+}
+
 app.MapGet("/health", () => Results.Ok(new
 {
     status = "ok",
@@ -85,29 +96,47 @@ app.MapPost("/api/bridge/v1/sync", async (HttpRequest request, SyncRequest input
     });
 });
 
-app.MapPost("/api/brain/v1/process", async (BrainProcessor processor, CancellationToken cancellationToken) =>
+app.MapPost("/api/brain/v1/process", async (HttpRequest request, BrainProcessor processor, IConfiguration configuration, CancellationToken cancellationToken) =>
 {
+    if (!HasBrainAdminKey(request, configuration))
+        return Results.Unauthorized();
+
     var processed = await processor.ProcessPendingAsync(cancellationToken);
     return Results.Ok(new { processed });
 });
 
-app.MapPost("/api/brain/v1/companies/{companyId}/analyze", async (string companyId, CloudStore store, BrainLlmGateway llm, CancellationToken cancellationToken) =>
+app.MapPost("/api/brain/v1/companies/{companyId}/analyze", async (HttpRequest request, string companyId, CloudStore store, BrainLlmGateway llm, IConfiguration configuration, CancellationToken cancellationToken) =>
 {
     if (!IsSafeIdentifier(companyId))
         return Results.BadRequest();
 
+    if (!HasBrainAdminKey(request, configuration))
+        return Results.Unauthorized();
+
+    var memories = await store.GetMemoriesAsync(companyId, 100, cancellationToken);
+    if (memories.Count == 0)
+        return Results.Ok(new { companyId, analysis = (string?)null, memoryCount = 0, reason = "No company memories available yet." });
+
+    var facts = string.Join(
+        "\n",
+        memories.Select((memory, index) =>
+            $"{index + 1}. {memory.Statement} | confidence={memory.Confidence:0.00} | observedAt={memory.ObservedAt:O} | source={memory.Source}"));
+
     var prompt = new BrainPrompt(
         companyId,
-        "You are the Company Brain. Analyze business facts conservatively. Separate facts from hypotheses and never invent missing data.",
-        $"Analyze the current company state for companyId={companyId}. Available memory count: {await store.GetMemoryCountAsync(companyId, cancellationToken)}.");
+        "You are the Company Brain. Analyze only the supplied business facts. Separate observed facts, hypotheses, risks and recommended next investigations. Never invent missing data.",
+        $"Company: {companyId}\nCurrent memory facts:\n{facts}");
 
     var analysis = await llm.CompleteAsync(prompt, cancellationToken);
     return analysis is null
         ? Results.StatusCode(StatusCodes.Status503ServiceUnavailable)
-        : Results.Ok(new { companyId, analysis });
+        : Results.Ok(new { companyId, analysis, memoryCount = memories.Count });
 });
 
-app.MapGet("/api/brain/v1/companies/{companyId}/status", async (string companyId, CloudStore store, CancellationToken cancellationToken) =>
+app.MapGet("/api/brain/v1/companies/{companyId}/status", async (HttpRequest request, string companyId, CloudStore store, IConfiguration configuration, CancellationToken cancellationToken) =>
+{
+    if (!HasBrainAdminKey(request, configuration))
+        return Results.Unauthorized();
 {
     if (!IsSafeIdentifier(companyId))
         return Results.BadRequest();

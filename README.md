@@ -378,6 +378,8 @@ Completed in this UI hardening cycle:
 - Agent observations and recommended next steps are fed back into Company Memory for subsequent cycles
 - Tenant/data provenance isolation enforced: devices are not treated as company identity, and data sources require explicit company binding
 - Bridge sync rejects envelopes whose CompanyId does not match the authenticated tenant
+- Company Memory now stores source identity, source type and originating device provenance
+- Brain ingestion validates tenant identity before creating memory and rejects mismatched envelopes
 - Approved decisions can execute through the LLM with read-only, no-side-effect constraints
 - Agent execution validates structured COMPLETED / BLOCKED results before returning them
 - Decision risk and approval requirements validated before persistence

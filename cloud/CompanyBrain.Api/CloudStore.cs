@@ -55,6 +55,18 @@ public sealed class CloudStore
             );
             CREATE INDEX IF NOT EXISTS ix_events_company_received
                 ON events(company_id, received_at);
+            CREATE TABLE IF NOT EXISTS memories (
+                memory_id TEXT PRIMARY KEY,
+                company_id TEXT NOT NULL,
+                statement TEXT NOT NULL,
+                context TEXT NOT NULL,
+                source TEXT NOT NULL,
+                source_id TEXT NOT NULL DEFAULT '',
+                source_type TEXT NOT NULL DEFAULT 'UNKNOWN',
+                device_id TEXT NOT NULL DEFAULT '',
+                observed_at TEXT NOT NULL,
+                confidence REAL NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS brain_decisions (
                 decision_id TEXT PRIMARY KEY,
                 company_id TEXT NOT NULL,
@@ -65,6 +77,7 @@ public sealed class CloudStore
                 confidence REAL NOT NULL,
                 approval_required INTEGER NOT NULL,
                 preconditions TEXT NOT NULL,
+                evidence TEXT NOT NULL DEFAULT '[]',
                 status TEXT NOT NULL,
                 created_at TEXT NOT NULL
             );
@@ -85,8 +98,16 @@ public sealed class CloudStore
         command.ExecuteNonQuery();
 
         using var migration = connection.CreateCommand();
-        migration.CommandText = "ALTER TABLE events ADD COLUMN processed_at TEXT";
+        migration.CommandText = """
+            ALTER TABLE events ADD COLUMN processed_at TEXT;
+            """;
         try { migration.ExecuteNonQuery(); } catch (SqliteException ex) when (ex.SqliteErrorCode == 1) { }
+
+        EnsureColumn(connection, "memories", "source_id", "TEXT NOT NULL DEFAULT ''");
+        EnsureColumn(connection, "memories", "source_type", "TEXT NOT NULL DEFAULT 'UNKNOWN'");
+        EnsureColumn(connection, "memories", "device_id", "TEXT NOT NULL DEFAULT ''");
+
+        EnsureColumn(connection, "brain_decisions", "evidence", "TEXT NOT NULL DEFAULT '[]'");
     }
 
     public async Task<EnrollmentResult?> EnrollAsync(string companyId, string deviceId, string enrollmentToken, string configuredEnrollmentToken, CancellationToken cancellationToken)
@@ -215,24 +236,28 @@ public sealed class CloudStore
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
+    private static void EnsureColumn(SqliteConnection connection, string table, string column, string definition)
+    {
+        using var check = connection.CreateCommand();
+        check.CommandText = $"PRAGMA table_info({table});";
+        using var reader = check.ExecuteReader();
+        while (reader.Read())
+        {
+            if (string.Equals(reader.GetString(1), column, StringComparison.OrdinalIgnoreCase))
+                return;
+        }
+
+        using var alter = connection.CreateCommand();
+        alter.CommandText = $"ALTER TABLE {table} ADD COLUMN {column} {definition};";
+        alter.ExecuteNonQuery();
+    }
+
     public async Task SaveMemoryAsync(BrainMemory memory, CancellationToken cancellationToken)
     {
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync(cancellationToken);
         await using var command = connection.CreateCommand();
         command.CommandText = """
-            CREATE TABLE IF NOT EXISTS memories (
-                memory_id TEXT PRIMARY KEY,
-                company_id TEXT NOT NULL,
-                statement TEXT NOT NULL,
-                context TEXT NOT NULL,
-                source TEXT NOT NULL,
-                source_id TEXT NOT NULL DEFAULT '',
-                source_type TEXT NOT NULL DEFAULT 'UNKNOWN',
-                device_id TEXT NOT NULL DEFAULT '',
-                observed_at TEXT NOT NULL,
-                confidence REAL NOT NULL
-            );
             INSERT OR REPLACE INTO memories(memory_id, company_id, statement, context, source, source_id, source_type, device_id, observed_at, confidence)
             VALUES($id, $company, $statement, $context, $source, $sourceId, $sourceType, $deviceId, $observed, $confidence);
             """;
@@ -256,7 +281,7 @@ public sealed class CloudStore
         await connection.OpenAsync(cancellationToken);
         await using var command = connection.CreateCommand();
         command.CommandText = """
-            SELECT memory_id, company_id, statement, context, source, observed_at, confidence
+            SELECT memory_id, company_id, statement, context, source, source_id, source_type, device_id, observed_at, confidence
             FROM memories
             WHERE company_id = $company
             ORDER BY observed_at DESC
@@ -273,8 +298,11 @@ public sealed class CloudStore
                 reader.GetString(2),
                 reader.GetString(3),
                 reader.GetString(4),
-                DateTimeOffset.Parse(reader.GetString(5)),
-                reader.GetDouble(6)));
+                reader.GetString(5),
+                reader.GetString(6),
+                reader.GetString(7),
+                DateTimeOffset.Parse(reader.GetString(8)),
+                reader.GetDouble(9)));
         }
         return items;
     }
@@ -364,10 +392,10 @@ public sealed class CloudStore
             );
             INSERT OR REPLACE INTO brain_decisions(
                 decision_id, company_id, objective, action, reason, risk_level,
-                confidence, approval_required, preconditions, status, created_at)
+                confidence, approval_required, preconditions, evidence, status, created_at)
             VALUES(
                 $id, $company, $objective, $action, $reason, $risk,
-                $confidence, $approval, $preconditions, $status, $created);
+                $confidence, $approval, $preconditions, $evidence, $status, $created);
             """;
         command.Parameters.AddWithValue("$id", decision.DecisionId);
         command.Parameters.AddWithValue("$company", decision.CompanyId);
@@ -378,6 +406,7 @@ public sealed class CloudStore
         command.Parameters.AddWithValue("$confidence", decision.Confidence);
         command.Parameters.AddWithValue("$approval", decision.ApprovalRequired ? 1 : 0);
         command.Parameters.AddWithValue("$preconditions", System.Text.Json.JsonSerializer.Serialize(decision.Preconditions));
+        command.Parameters.AddWithValue("$evidence", System.Text.Json.JsonSerializer.Serialize(decision.Evidence));
         command.Parameters.AddWithValue("$status", decision.Status);
         command.Parameters.AddWithValue("$created", decision.CreatedAt.ToString("O"));
         await command.ExecuteNonQueryAsync(cancellationToken);
@@ -391,7 +420,7 @@ public sealed class CloudStore
         await using var command = connection.CreateCommand();
         command.CommandText = """
             SELECT decision_id, company_id, objective, action, reason, risk_level,
-                   confidence, approval_required, preconditions, status, created_at
+                   confidence, approval_required, preconditions, evidence, status, created_at
             FROM brain_decisions
             WHERE company_id = $company
             ORDER BY created_at DESC
@@ -403,6 +432,7 @@ public sealed class CloudStore
         while (await reader.ReadAsync(cancellationToken))
         {
             var preconditions = System.Text.Json.JsonSerializer.Deserialize<string[]>(reader.GetString(8)) ?? Array.Empty<string>();
+            var evidence = System.Text.Json.JsonSerializer.Deserialize<BrainDecisionProvenance[]>(reader.GetString(9)) ?? Array.Empty<BrainDecisionProvenance>();
             items.Add(new BrainDecision(
                 reader.GetString(0),
                 reader.GetString(1),
@@ -413,8 +443,9 @@ public sealed class CloudStore
                 reader.GetDouble(6),
                 reader.GetInt32(7) == 1,
                 preconditions,
-                reader.GetString(9),
-                DateTimeOffset.Parse(reader.GetString(10))));
+                evidence,
+                reader.GetString(10),
+                DateTimeOffset.Parse(reader.GetString(11))));
         }
         return items;
     }
@@ -438,10 +469,11 @@ public sealed class CloudStore
             return null;
 
         var preconditions = System.Text.Json.JsonSerializer.Deserialize<string[]>(reader.GetString(8)) ?? Array.Empty<string>();
+        var evidence = System.Text.Json.JsonSerializer.Deserialize<BrainDecisionProvenance[]>(reader.GetString(9)) ?? Array.Empty<BrainDecisionProvenance>();
         return new BrainDecision(
             reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3),
             reader.GetString(4), reader.GetString(5), reader.GetDouble(6), reader.GetInt32(7) == 1,
-            preconditions, reader.GetString(9), DateTimeOffset.Parse(reader.GetString(10)));
+            preconditions, evidence, reader.GetString(10), DateTimeOffset.Parse(reader.GetString(11)));
     }
 
     public async Task<bool> UpdateDecisionStatusAsync(

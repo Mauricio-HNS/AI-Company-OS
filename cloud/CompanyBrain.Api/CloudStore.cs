@@ -484,6 +484,50 @@ public sealed class CloudStore
         return items;
     }
 
+
+    public async Task SaveExecutionResultAsync(AgentExecutionResult result, CancellationToken cancellationToken)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            CREATE TABLE IF NOT EXISTS agent_executions (
+                execution_id TEXT PRIMARY KEY,
+                decision_id TEXT NOT NULL,
+                company_id TEXT NOT NULL,
+                status TEXT NOT NULL,
+                summary TEXT NOT NULL,
+                observations TEXT NOT NULL,
+                next_steps TEXT NOT NULL,
+                executed_at TEXT NOT NULL
+            );
+            INSERT OR REPLACE INTO agent_executions(
+                execution_id, decision_id, company_id, status, summary, observations, next_steps, executed_at)
+            VALUES($execution, $decision, $company, $status, $summary, $observations, $nextSteps, $executed);
+            """;
+        command.Parameters.AddWithValue("$execution", result.ExecutionId);
+        command.Parameters.AddWithValue("$decision", result.DecisionId);
+        command.Parameters.AddWithValue("$company", result.CompanyId);
+        command.Parameters.AddWithValue("$status", result.Status);
+        command.Parameters.AddWithValue("$summary", result.Summary);
+        command.Parameters.AddWithValue("$observations", System.Text.Json.JsonSerializer.Serialize(result.Observations));
+        command.Parameters.AddWithValue("$nextSteps", System.Text.Json.JsonSerializer.Serialize(result.NextSteps));
+        command.Parameters.AddWithValue("$executed", result.ExecutedAt.ToString("O"));
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<string>> GetCompanyIdsAsync(CancellationToken cancellationToken)
+    {
+        var items = new List<string>();
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT DISTINCT company_id FROM memories ORDER BY company_id";
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken)) items.Add(reader.GetString(0));
+        return items;
+    }
+
     private static string Hash(string value)
         => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
 

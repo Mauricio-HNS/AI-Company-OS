@@ -201,6 +201,36 @@ app.MapGet("/api/brain/v1/companies/{companyId}/decisions", async (
     return Results.Ok(new { companyId, count = decisions.Count, decisions });
 });
 
+app.MapGet("/api/brain/v1/companies/{companyId}/runtime/decisions", async (
+    HttpRequest request,
+    string companyId,
+    CloudStore store,
+    IConfiguration configuration,
+    CancellationToken cancellationToken) =>
+{
+    var configured = configuration["BrainRuntime:ApiKey"];
+    var provided = request.Headers["X-Brain-Runtime-Key"].ToString();
+    if (string.IsNullOrWhiteSpace(configured) || string.IsNullOrWhiteSpace(provided) ||
+        !CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(configured), Encoding.UTF8.GetBytes(provided)))
+        return Results.Unauthorized();
+
+    if (!IsSafeIdentifier(companyId))
+        return Results.BadRequest();
+
+    var decisions = await store.GetDecisionsAsync(companyId, 100, cancellationToken);
+    var approved = decisions
+        .Where(decision => decision.Status == "APPROVED")
+        .ToArray();
+
+    return Results.Ok(new
+    {
+        companyId,
+        count = approved.Length,
+        decisions = approved,
+        externalSideEffect = false
+    });
+});
+
 app.MapGet("/api/brain/v1/companies/{companyId}/approvals", async (
     HttpRequest request,
     string companyId,

@@ -358,6 +358,8 @@ Completed in this UI hardening cycle:
 - Background processing worker added
 - Brain analysis endpoint secured with an admin key
 - Brain analysis now consumes persisted Company Memory facts
+- Authenticated Company Memory inspection endpoint added
+- Company Brain remains isolated from external side effects while decision controls are being hardened
 - LLM gateway hardened with timeout and response validation
 - Company Brain CI added for restore/build/publish verification
 

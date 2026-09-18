@@ -375,6 +375,7 @@ Completed in this UI hardening cycle:
 - Autonomous Company Brain cycle added: memory → decision → controlled approval → agent execution
 - Low-risk decisions can be promoted automatically; higher-risk decisions remain human-gated
 - Brain worker now drives the autonomous cycle continuously while preserving external-side-effect isolation
+- Agent observations and recommended next steps are fed back into Company Memory for subsequent cycles
 - Approved decisions can execute through the LLM with read-only, no-side-effect constraints
 - Agent execution validates structured COMPLETED / BLOCKED results before returning them
 - Decision risk and approval requirements validated before persistence

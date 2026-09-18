@@ -12,6 +12,13 @@ builder.Services.AddSingleton<ConnectorRegistry>();
 builder.Services.AddSingleton<LocalSourceDiscovery>();
 builder.Services.AddSingleton<OutboxStore>();
 builder.Services.AddHttpClient<CloudSyncClient>();
+builder.Services.AddSingleton<RuntimeDecisionStore>();
+builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
+{
+    policy.WithOrigins(builder.Configuration.GetSection("Bridge:AllowedWebOrigins").Get<string[]>() ?? Array.Empty<string>())
+        .AllowAnyHeader()
+        .AllowAnyMethod();
+}));
 builder.Services.AddSingleton<ICompanyConnector>(sp =>
 {
     var options = sp.GetRequiredService<IOptions<BridgeOptions>>().Value;
@@ -26,6 +33,7 @@ builder.Services.AddHostedService<BridgeWorker>();
 
 var app = builder.Build();
 app.Urls.Add("http://127.0.0.1:48731");
+app.UseCors();
 
 app.MapGet("/health", (IOptions<BridgeOptions> options) => Results.Ok(new
 {
@@ -36,6 +44,15 @@ app.MapGet("/health", (IOptions<BridgeOptions> options) => Results.Ok(new
     enrolled = options.Value.CompanyId != "un-enrolled" && !string.IsNullOrWhiteSpace(options.Value.CloudApiKey),
     localOnlyApi = true,
     utc = DateTimeOffset.UtcNow
+}));
+
+app.MapGet("/api/v1/runtime/decisions", (IOptions<BridgeOptions> options, RuntimeDecisionStore store) => Results.Ok(new
+{
+    companyId = options.Value.CompanyId,
+    deviceId = options.Value.DeviceId,
+    count = store.Read(options.Value.CompanyId).Count,
+    decisions = store.Read(options.Value.CompanyId),
+    externalSideEffect = false
 }));
 
 app.MapGet("/api/v1/status", (IOptions<BridgeOptions> options, OutboxStore outbox) => Results.Ok(new
@@ -73,7 +90,7 @@ public sealed class BridgeOptions
     public string EnrollmentToken { get; set; } = "";
     public string CloudEndpoint { get; set; } = "https://api.aicompanyos.com";
     public string CloudApiKey { get; set; } = "";
-    public string DataDirectory { get; set; } = @"C:\ProgramData\AI Company OS\Company Bridge";
+    public string DataDirectory { get; set; } = @"C:ProgramDataAI Company OSCompany Bridge";
     public int SyncIntervalSeconds { get; set; } = 60;
     public bool AllowLocalDiscovery { get; set; } = true;
     public string[] DiscoveryPaths { get; set; } = Array.Empty<string>();
@@ -82,6 +99,7 @@ public sealed class BridgeOptions
     public string LocalCsvPath { get; set; } = "";
     public string[] AllowedCsvFields { get; set; } = Array.Empty<string>();
     public string[] AuthorizedConnectors { get; set; } = Array.Empty<string>();
+    public string[] AllowedWebOrigins { get; set; } = Array.Empty<string>();
 }
 
 public sealed class BridgeWorker : BackgroundService
@@ -90,13 +108,15 @@ public sealed class BridgeWorker : BackgroundService
     private readonly OutboxStore _outbox;
     private readonly CloudSyncClient _sync;
     private readonly BridgeOptions _options;
+    private readonly RuntimeDecisionStore _runtimeDecisions;
     private readonly ILogger<BridgeWorker> _logger;
 
-    public BridgeWorker(ConnectorRegistry connectors, OutboxStore outbox, CloudSyncClient sync, IOptions<BridgeOptions> options, ILogger<BridgeWorker> logger)
+    public BridgeWorker(ConnectorRegistry connectors, OutboxStore outbox, CloudSyncClient sync, RuntimeDecisionStore runtimeDecisions, IOptions<BridgeOptions> options, ILogger<BridgeWorker> logger)
     {
         _connectors = connectors;
         _outbox = outbox;
         _sync = sync;
+        _runtimeDecisions = runtimeDecisions;
         _options = options.Value;
         _logger = logger;
     }
@@ -114,6 +134,8 @@ public sealed class BridgeWorker : BackgroundService
                     await _connectors.DiscoverAuthorizedSourcesAsync(stoppingToken);
 
                 await _sync.FlushAsync(_outbox, stoppingToken);
+                if (_options.CompanyId != "un-enrolled" && !string.IsNullOrWhiteSpace(_options.CloudApiKey))
+                    await _sync.PullApprovedDecisionsAsync(_runtimeDecisions, stoppingToken);
             }
             catch (Exception ex)
             {

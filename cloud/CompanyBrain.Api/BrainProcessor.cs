@@ -39,6 +39,8 @@ public sealed class BrainProcessor
                 var payload = root.TryGetProperty("payload", out var p) ? p : root;
                 var sourceId = payload.TryGetProperty("sourceId", out var sourceIdElement) ? sourceIdElement.GetString() : null;
                 var sourceType = payload.TryGetProperty("sourceKind", out var sourceTypeElement) ? sourceTypeElement.GetString() : null;
+                if (string.IsNullOrWhiteSpace(sourceId) || string.IsNullOrWhiteSpace(sourceType))
+                    throw new JsonException("Missing data-source provenance.");
                 var envelopeCompanyId = root.TryGetProperty("CompanyId", out var companyElement) ? companyElement.GetString() : null;
                 if (!string.Equals(envelopeCompanyId, item.CompanyId, StringComparison.Ordinal))
                     throw new JsonException("Envelope tenant mismatch.");
@@ -78,8 +80,9 @@ public sealed class BrainProcessor
                         item.CompanyId,
                         $"{key} = {value}",
                         $"Ingested from bridge event {item.EventId}.",
-                        sourceId ?? "unknown-source",
-                        sourceType ?? "UNKNOWN",
+                        sourceType,
+                        sourceId,
+                        sourceType,
                         item.DeviceId,
                         observedAt,
                         confidence), cancellationToken);

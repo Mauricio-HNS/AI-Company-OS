@@ -241,9 +241,9 @@ public sealed class CloudStore
         command.Parameters.AddWithValue("$statement", memory.Statement);
         command.Parameters.AddWithValue("$context", memory.Context);
         command.Parameters.AddWithValue("$source", memory.Source);
-        command.Parameters.AddWithValue("$sourceId", memory.Source);
-        command.Parameters.AddWithValue("$sourceType", "UNKNOWN");
-        command.Parameters.AddWithValue("$deviceId", "");
+        command.Parameters.AddWithValue("$sourceId", memory.SourceId);
+        command.Parameters.AddWithValue("$sourceType", memory.SourceType);
+        command.Parameters.AddWithValue("$deviceId", memory.DeviceId);
         command.Parameters.AddWithValue("$observed", memory.ObservedAt.ToString("O"));
         command.Parameters.AddWithValue("$confidence", memory.Confidence);
         await command.ExecuteNonQueryAsync(cancellationToken);

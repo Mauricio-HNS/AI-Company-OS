@@ -15,8 +15,13 @@ public sealed record AgentExecutionResult(
 public sealed class AgentExecutionService
 {
     private readonly BrainLlmGateway _llm;
+    private readonly AgentRegistry _agents;
 
-    public AgentExecutionService(BrainLlmGateway llm) => _llm = llm;
+    public AgentExecutionService(BrainLlmGateway llm, AgentRegistry agents)
+    {
+        _llm = llm;
+        _agents = agents;
+    }
 
     public async Task<AgentExecutionResult?> ExecuteAsync(
         BrainDecision decision,
@@ -25,6 +30,19 @@ public sealed class AgentExecutionService
     {
         if (decision.Status != "APPROVED")
             return null;
+
+        if (!_agents.CanExecute(decision, out var policy, out var policyReason))
+        {
+            return new AgentExecutionResult(
+                $"EXE-{Guid.NewGuid():N}",
+                decision.DecisionId,
+                decision.CompanyId,
+                "BLOCKED",
+                policyReason,
+                [$"agent={policy.AgentId}", $"risk={decision.RiskLevel}", $"maxRisk={policy.MaxRiskLevel}"],
+                [],
+                DateTimeOffset.UtcNow);
+        }
 
         var facts = string.Join(
             "\n",
@@ -35,6 +53,12 @@ public sealed class AgentExecutionService
             decision.CompanyId,
             """
             You are a bounded Company OS agent executing one approved internal decision.
+            You are operating under an explicit agent capability and autonomy policy.
+            Assigned agent: ${policy.AgentId}.
+            Allowed capabilities: , policy.AllowedCapabilities)}.
+            Maximum risk: ${policy.MaxRiskLevel}.
+            Human approval required by policy: ${policy.RequiresHumanApproval}.
+            Never exceed these policy boundaries.
             The execution must be read-only and analytical. Never send messages, call external APIs,
             change files, move money, modify customer data, expose credentials or perform any external side effect.
             Return ONLY valid JSON with exactly:

@@ -215,6 +215,36 @@ public sealed class CloudStore
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<BrainMemory>> GetMemoriesAsync(string companyId, int limit, CancellationToken cancellationToken)
+    {
+        var items = new List<BrainMemory>();
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT memory_id, company_id, statement, context, source, observed_at, confidence
+            FROM memories
+            WHERE company_id = $company
+            ORDER BY observed_at DESC
+            LIMIT $limit;
+            """;
+        command.Parameters.AddWithValue("$company", companyId);
+        command.Parameters.AddWithValue("$limit", Math.Clamp(limit, 1, 200));
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            items.Add(new BrainMemory(
+                reader.GetString(0),
+                reader.GetString(1),
+                reader.GetString(2),
+                reader.GetString(3),
+                reader.GetString(4),
+                DateTimeOffset.Parse(reader.GetString(5)),
+                reader.GetDouble(6)));
+        }
+        return items;
+    }
+
     public async Task<int> GetMemoryCountAsync(string companyId, CancellationToken cancellationToken)
     {
         await using var connection = new SqliteConnection(_connectionString);

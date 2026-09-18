@@ -55,6 +55,10 @@ public sealed class CloudStore
                 ON events(company_id, received_at);
             """;
         command.ExecuteNonQuery();
+
+        using var migration = connection.CreateCommand();
+        migration.CommandText = "ALTER TABLE events ADD COLUMN processed_at TEXT";
+        try { migration.ExecuteNonQuery(); } catch (SqliteException ex) when (ex.SqliteErrorCode == 1) { }
     }
 
     public async Task<EnrollmentResult?> EnrollAsync(string companyId, string deviceId, string enrollmentToken, string configuredEnrollmentToken, CancellationToken cancellationToken)

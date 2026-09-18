@@ -65,7 +65,7 @@ public sealed class BrainProcessor
                         observedAt = parsedObserved;
 
                     await _store.SaveMemoryAsync(new BrainMemory(
-                        $"MEM-{item.EventId[..16]}-{Sanitize(key)}",
+                        $"MEM-{item.EventId[..Math.Min(16, item.EventId.Length)]}-{Sanitize(key)}",
                         item.CompanyId,
                         $"{key} = {value}",
                         $"Ingested from bridge event {item.EventId}.",

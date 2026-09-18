@@ -28,7 +28,17 @@ public sealed class AutonomousCycleService
         {
             var decisions = await _store.GetDecisionsAsync(companyId, 20, cancellationToken);
 
-            if (decisions.Any(d => d.Status is "PROPOSED" or "APPROVAL_REQUIRED" or "APPROVED"))
+            // Resume an already-approved decision before generating anything new.
+            var approved = decisions.FirstOrDefault(d => d.Status == "APPROVED");
+            if (approved is not null)
+            {
+                await ExecuteApprovedAsync(approved, cancellationToken);
+                actions++;
+                continue;
+            }
+
+            // Human-gated or newly proposed work must remain pending.
+            if (decisions.Any(d => d.Status is "PROPOSED" or "APPROVAL_REQUIRED"))
                 continue;
 
             var latest = decisions.FirstOrDefault();
@@ -59,57 +69,121 @@ public sealed class AutonomousCycleService
 
                 if (!promoted)
                     continue;
+
+                approved = await _store.GetDecisionAsync(companyId, decision.DecisionId, cancellationToken);
+                if (approved is not null)
+                    await ExecuteApprovedAsync(approved, cancellationToken);
             }
-
-            var approved = await _store.GetDecisionAsync(companyId, decision.DecisionId, cancellationToken);
-            if (approved is null || approved.Status != "APPROVED")
-                continue;
-
-            var execution = await _execution.ExecuteAsync(approved, memories, cancellationToken);
-            if (execution is null)
-                continue;
-
-            await _store.SaveExecutionResultAsync(execution, cancellationToken);
-            await _store.SaveExecutionMemoriesAsync(execution, cancellationToken);
-
-            var evaluation = await _evaluation.EvaluateAsync(
-                approved,
-                execution,
-                memories,
-                cancellationToken);
-
-            if (evaluation is not null)
-            {
-                await _store.SaveEvaluationAsync(evaluation.Value.Evaluation, cancellationToken);
-                if (evaluation.Value.Replan is not null)
-                    await _store.SaveReplanAsync(evaluation.Value.Replan, cancellationToken);
-
-                await _store.SaveMemoryAsync(new BrainMemory(
-                    $"EVAL-{evaluation.Value.Evaluation.EvaluationId}",
-                    companyId,
-                    $"Evaluation: {evaluation.Value.Evaluation.Outcome} | score={evaluation.Value.Evaluation.Score:0.00} | {evaluation.Value.Evaluation.Summary}",
-                    $"Evaluation of decision {approved.DecisionId} and execution {execution.ExecutionId}.",
-                    "evaluation-engine",
-                    evaluation.Value.Evaluation.EvaluationId,
-                    "EVALUATION",
-                    "cloud",
-                    evaluation.Value.Evaluation.EvaluatedAt,
-                    evaluation.Value.Evaluation.Score), cancellationToken);
-            }
-
-            if (execution.Status == "COMPLETED")
+            else
             {
                 await _store.UpdateDecisionStatusAsync(
                     companyId,
                     decision.DecisionId,
-                    "APPROVED",
-                    "EXECUTED",
+                    "PROPOSED",
+                    "APPROVAL_REQUIRED",
                     "autonomous-cycle",
-                    execution.Summary,
+                    "Decision requires human approval.",
                     cancellationToken);
             }
         }
 
         return actions;
+    }
+
+    private async Task ExecuteApprovedAsync(BrainDecision approved, CancellationToken cancellationToken)
+    {
+        var memories = await _store.GetMemoriesAsync(approved.CompanyId, 100, cancellationToken);
+        var execution = await _execution.ExecuteAsync(approved, memories, cancellationToken);
+        if (execution is null)
+            return;
+
+        await _store.SaveExecutionResultAsync(execution, cancellationToken);
+        await _store.SaveExecutionMemoriesAsync(execution, cancellationToken);
+
+        var evaluation = await _evaluation.EvaluateAsync(
+            approved,
+            execution,
+            memories,
+            cancellationToken);
+
+        if (evaluation is not null)
+        {
+            await _store.SaveEvaluationAsync(evaluation.Value.Evaluation, cancellationToken);
+
+            if (evaluation.Value.Replan is not null)
+            {
+                var replan = evaluation.Value.Replan;
+                await _store.SaveReplanAsync(replan, cancellationToken);
+                await CreateNextDecisionFromReplanAsync(approved, replan, cancellationToken);
+            }
+
+            await _store.SaveMemoryAsync(new BrainMemory(
+                $"EVAL-{evaluation.Value.Evaluation.EvaluationId}",
+                approved.CompanyId,
+                $"Evaluation: {evaluation.Value.Evaluation.Outcome} | score={evaluation.Value.Evaluation.Score:0.00} | {evaluation.Value.Evaluation.Summary}",
+                $"Evaluation of decision {approved.DecisionId} and execution {execution.ExecutionId}.",
+                "evaluation-engine",
+                evaluation.Value.Evaluation.EvaluationId,
+                "EVALUATION",
+                "cloud",
+                evaluation.Value.Evaluation.EvaluatedAt,
+                evaluation.Value.Evaluation.Score), cancellationToken);
+        }
+
+        if (execution.Status == "COMPLETED")
+        {
+            await _store.UpdateDecisionStatusAsync(
+                approved.CompanyId,
+                approved.DecisionId,
+                "APPROVED",
+                "EXECUTED",
+                "autonomous-cycle",
+                execution.Summary,
+                cancellationToken);
+        }
+    }
+
+    private async Task CreateNextDecisionFromReplanAsync(
+        BrainDecision parent,
+        ReplanProposal replan,
+        CancellationToken cancellationToken)
+    {
+        var nextDecision = new BrainDecision(
+            $"REPLAN-{replan.ReplanId}",
+            replan.CompanyId,
+            replan.Objective,
+            "PLAN",
+            replan.Strategy,
+            replan.RiskLevel,
+            Math.Clamp(1d - Math.Abs(0.5d - (replan.ApprovalRequired ? 0.5d : 0.8d)), 0d, 1d),
+            replan.ApprovalRequired,
+            replan.Steps,
+            parent.Evidence,
+            "PROPOSED",
+            replan.CreatedAt);
+
+        await _store.SaveDecisionAsync(nextDecision, cancellationToken);
+
+        if (replan.ApprovalRequired)
+        {
+            await _store.UpdateDecisionStatusAsync(
+                replan.CompanyId,
+                nextDecision.DecisionId,
+                "PROPOSED",
+                "APPROVAL_REQUIRED",
+                "replanning-engine",
+                $"Replan generated from evaluation {replan.EvaluationId}.",
+                cancellationToken);
+            return;
+        }
+
+        await _store.UpdateDecisionStatusAsync(
+            replan.CompanyId,
+            nextDecision.DecisionId,
+            "PROPOSED",
+            "APPROVED",
+            "replanning-engine",
+            $"Low-risk replan generated from evaluation {replan.EvaluationId}.",
+            cancellationToken);
     }
 }

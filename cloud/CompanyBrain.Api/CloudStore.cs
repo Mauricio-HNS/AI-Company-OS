@@ -83,6 +83,33 @@ public sealed class CloudStore
             );
             CREATE INDEX IF NOT EXISTS ix_brain_decisions_company_status
                 ON brain_decisions(company_id, status, created_at);
+            CREATE TABLE IF NOT EXISTS evaluations (
+                evaluation_id TEXT PRIMARY KEY,
+                company_id TEXT NOT NULL,
+                decision_id TEXT NOT NULL,
+                execution_id TEXT NOT NULL,
+                outcome TEXT NOT NULL,
+                score REAL NOT NULL,
+                summary TEXT NOT NULL,
+                evidence TEXT NOT NULL,
+                evaluated_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ix_evaluations_company_time
+                ON evaluations(company_id, evaluated_at);
+            CREATE TABLE IF NOT EXISTS replans (
+                replan_id TEXT PRIMARY KEY,
+                company_id TEXT NOT NULL,
+                decision_id TEXT NOT NULL,
+                evaluation_id TEXT NOT NULL,
+                objective TEXT NOT NULL,
+                strategy TEXT NOT NULL,
+                steps TEXT NOT NULL,
+                risk_level TEXT NOT NULL,
+                approval_required INTEGER NOT NULL,
+                created_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ix_replans_company_time
+                ON replans(company_id, created_at);
             CREATE TABLE IF NOT EXISTS brain_decision_audit (
                 audit_id TEXT PRIMARY KEY,
                 decision_id TEXT NOT NULL,
@@ -596,6 +623,52 @@ public sealed class CloudStore
         command.Parameters.AddWithValue("$observations", System.Text.Json.JsonSerializer.Serialize(result.Observations));
         command.Parameters.AddWithValue("$nextSteps", System.Text.Json.JsonSerializer.Serialize(result.NextSteps));
         command.Parameters.AddWithValue("$executed", result.ExecutedAt.ToString("O"));
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+
+    public async Task SaveEvaluationAsync(ExecutionEvaluation evaluation, CancellationToken cancellationToken)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            INSERT OR REPLACE INTO evaluations(
+                evaluation_id, company_id, decision_id, execution_id, outcome, score, summary, evidence, evaluated_at)
+            VALUES($id, $company, $decision, $execution, $outcome, $score, $summary, $evidence, $evaluated);
+            """;
+        command.Parameters.AddWithValue("$id", evaluation.EvaluationId);
+        command.Parameters.AddWithValue("$company", evaluation.CompanyId);
+        command.Parameters.AddWithValue("$decision", evaluation.DecisionId);
+        command.Parameters.AddWithValue("$execution", evaluation.ExecutionId);
+        command.Parameters.AddWithValue("$outcome", evaluation.Outcome);
+        command.Parameters.AddWithValue("$score", evaluation.Score);
+        command.Parameters.AddWithValue("$summary", evaluation.Summary);
+        command.Parameters.AddWithValue("$evidence", System.Text.Json.JsonSerializer.Serialize(evaluation.Evidence));
+        command.Parameters.AddWithValue("$evaluated", evaluation.EvaluatedAt.ToString("O"));
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task SaveReplanAsync(ReplanProposal replan, CancellationToken cancellationToken)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            INSERT OR REPLACE INTO replans(
+                replan_id, company_id, decision_id, evaluation_id, objective, strategy, steps, risk_level, approval_required, created_at)
+            VALUES($id, $company, $decision, $evaluation, $objective, $strategy, $steps, $risk, $approval, $created);
+            """;
+        command.Parameters.AddWithValue("$id", replan.ReplanId);
+        command.Parameters.AddWithValue("$company", replan.CompanyId);
+        command.Parameters.AddWithValue("$decision", replan.DecisionId);
+        command.Parameters.AddWithValue("$evaluation", replan.EvaluationId);
+        command.Parameters.AddWithValue("$objective", replan.Objective);
+        command.Parameters.AddWithValue("$strategy", replan.Strategy);
+        command.Parameters.AddWithValue("$steps", System.Text.Json.JsonSerializer.Serialize(replan.Steps));
+        command.Parameters.AddWithValue("$risk", replan.RiskLevel);
+        command.Parameters.AddWithValue("$approval", replan.ApprovalRequired ? 1 : 0);
+        command.Parameters.AddWithValue("$created", replan.CreatedAt.ToString("O"));
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 

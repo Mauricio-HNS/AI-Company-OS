@@ -28,6 +28,10 @@ public sealed class AutonomousCycleService
             if (decisions.Any(d => d.Status is "PROPOSED" or "APPROVAL_REQUIRED" or "APPROVED"))
                 continue;
 
+            var latest = decisions.FirstOrDefault();
+            if (latest is not null && DateTimeOffset.UtcNow - latest.CreatedAt < TimeSpan.FromMinutes(15))
+                continue;
+
             var memories = await _store.GetMemoriesAsync(companyId, 100, cancellationToken);
             if (memories.Count == 0)
                 continue;

@@ -50,6 +50,28 @@ public sealed class AgentRegistryService
     public Task RegisterAsync(AgentProfile agent, CancellationToken cancellationToken)
         => _store.SaveAgentAsync(agent, cancellationToken);
 
+    public async Task EnsureRuntimeAgentAsync(string companyId, CancellationToken cancellationToken)
+    {
+        var existing = await _store.GetAgentAsync(companyId, "company-brain-runtime", cancellationToken);
+        if (existing is not null)
+            return;
+
+        var now = DateTimeOffset.UtcNow;
+        await _store.SaveAgentAsync(
+            new AgentProfile(
+                "company-brain-runtime",
+                companyId,
+                "Company Brain Runtime Agent",
+                "ACTIVE",
+                [
+                    new AgentCapabilityPolicy("OBSERVE", "LOW", "LOW", true),
+                    new AgentCapabilityPolicy("PLAN", "LOW", "LOW", true)
+                ],
+                now,
+                now),
+            cancellationToken);
+    }
+
     public Task<bool> CanExecuteAsync(
         string companyId,
         string capability,

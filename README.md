@@ -80,6 +80,35 @@ Humans define objectives, constraints, permissions and risk boundaries. Agents o
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
+### Production cloud target
+
+```text
+                         AZURE
+┌───────────────────────────────────────────────────────────────────┐
+│                                                                   │
+│  Azure Container Apps / App Service                               │
+│              │                                                    │
+│              ▼                                                    │
+│       Company Brain API                                           │
+│              │                                                    │
+│      ┌───────┼───────────────┬───────────────┐                    │
+│      ▼       ▼               ▼               ▼                    │
+│ PostgreSQL  Azure OpenAI   Blob Storage   Key Vault               │
+│ Memory +    LLM Gateway    Documents +    Secrets +               │
+│ Events                     Evidence        Credentials             │
+│                                                                   │
+└───────────────────────────────────────────────────────────────────┘
+                              ▲
+                              │ HTTPS
+                              │
+                       Company Bridge
+                              ▲
+                              │
+                    Customer local systems
+```
+
+Azure is the **production target architecture**. The current repository implementation still uses SQLite for development persistence; production Azure resources are not provisioned from source control.
+
 ### Architectural layers
 
 | Layer | Purpose | State |
@@ -91,6 +120,7 @@ Humans define objectives, constraints, permissions and risk boundaries. Agents o
 | Control Systems | Risk, safety, budget, autonomy and audit | Active foundation |
 | Cloud Control Plane | Enrollment, authentication, validation and durable events | Implemented |
 | Company Bridge | Local-first connection to company systems | Implemented foundation |
+| Azure Production Infrastructure | API, PostgreSQL, OpenAI, Blob and Key Vault | Blueprint ready |
 | Real AI Layer | LLM providers, RAG and autonomous reasoning | Next |
 | Business Integrations | CRM, ERP, finance, communication and external APIs | Next |
 | Controlled Actions | Real-world side effects behind policy and approval gates | Future production layer |
@@ -321,6 +351,7 @@ Completed in this UI hardening cycle:
 - Durable SQLite cloud event persistence added
 - Event-level idempotency added
 - Authenticated Bridge → Cloud synchronization added
+- Azure production cloud blueprint added
 
 ### Live preview
 
@@ -352,6 +383,8 @@ Real Company Brain ingress        ✓
 Device enrollment                 ✓
       ↓
 Durable cloud persistence         ✓
+      ↓
+Azure production blueprint       ✓
       ↓
 Real agent/LLM execution          →
       ↓
@@ -414,11 +447,14 @@ bridge/
 ├── installer/
 └── src/CompanyBridge/
 
-cloud/CompanyBrain.Api/
-├── CompanyBrain.Api.csproj
-├── Program.cs
-├── CloudStore.cs
-└── appsettings.json
+cloud/
+├── azure/
+│   └── README.md
+└── CompanyBrain.Api/
+    ├── CompanyBrain.Api.csproj
+    ├── Program.cs
+    ├── CloudStore.cs
+    └── appsettings.json
 ```
 
 The active company route composes through `CompanyRuntimeWorkspaceV2`; the former workspace monolith has been removed.
@@ -502,6 +538,7 @@ Next.
 - .NET 8 Company Bridge
 - .NET 8 Company Brain API
 - SQLite development persistence
+- Azure production blueprint
 - GitHub Pages deployment
 
 ## Safety model

@@ -383,6 +383,9 @@ Completed in this UI hardening cycle:
 - Brain decision generation now filters out memories with missing or mismatched tenant/source/device provenance
 - Brain decisions persist the exact memory/source/device evidence used to derive each decision
 - Existing SQLite installations migrate memory and decision provenance columns automatically
+- Execution outcome evaluation and autonomous replanning added to the continuous Brain cycle
+- Evaluation results and replan proposals are persisted with company/decision/execution identity
+- Replanning remains side-effect-free and approval-gated for HIGH/CRITICAL risk
 - Approved decisions can execute through the LLM with read-only, no-side-effect constraints
 - Agent execution validates structured COMPLETED / BLOCKED results before returning them
 - Decision risk and approval requirements validated before persistence
@@ -438,6 +441,8 @@ Real agent/LLM execution          ✓
 Tenant/data provenance isolation       ✓
       ↓
 Decision evidence provenance           ✓
+      ↓
+Evaluation + Replanning                 ✓
       ↓
 Real integrations                 →
       ↓
@@ -527,6 +532,10 @@ Completed.
 ### Phase 4 — Autonomous operations
 
 In progress.
+
+Latest completed control-loop milestone:
+
+**EXECUTE → OBSERVE → EVALUATE → LEARN → REPLAN**
 
 Completed foundations:
 

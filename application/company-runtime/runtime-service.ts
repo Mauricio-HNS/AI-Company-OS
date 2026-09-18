@@ -1,4 +1,4 @@
-import { applyReplan, approveRuntimeBrainDecision, initializeRuntime, recordTaskResult, rejectRuntimeBrainDecision, startNextReadyTask, type RuntimeState } from '../../lib/company-runtime'
+import { applyReplan, approveRuntimeBrainDecision, enqueueApprovedBrainDecision, initializeRuntime, recordTaskResult, rejectRuntimeBrainDecision, startNextReadyTask, type RuntimeState } from '../../lib/company-runtime'
 import type { AgentProfile, CompanyObjective } from '../../lib/operating-engine'
 
 export type RuntimeOptions = { deadline?: string; budget?: number; constraints?: string[] }
@@ -22,5 +22,8 @@ export const CompanyRuntimeService = {
   },
   rejectDecision(state: RuntimeState, decisionId: string): RuntimeState {
     return rejectRuntimeBrainDecision(state, decisionId)
+  },
+  enqueueApprovedDecision(state: RuntimeState, decisionId: string): RuntimeState {
+    return enqueueApprovedBrainDecision(state, decisionId)
   },
 }

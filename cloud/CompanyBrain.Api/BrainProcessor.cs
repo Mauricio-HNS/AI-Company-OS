@@ -8,6 +8,9 @@ public sealed record BrainMemory(
     string Statement,
     string Context,
     string Source,
+    string SourceId,
+    string SourceType,
+    string DeviceId,
     DateTimeOffset ObservedAt,
     double Confidence);
 
@@ -34,6 +37,12 @@ public sealed class BrainProcessor
                 using var document = JsonDocument.Parse(item.Envelope);
                 var root = document.RootElement;
                 var payload = root.TryGetProperty("payload", out var p) ? p : root;
+                var sourceId = payload.TryGetProperty("sourceId", out var sourceIdElement) ? sourceIdElement.GetString() : null;
+                var sourceType = payload.TryGetProperty("sourceKind", out var sourceTypeElement) ? sourceTypeElement.GetString() : null;
+                var envelopeCompanyId = root.TryGetProperty("CompanyId", out var companyElement) ? companyElement.GetString() : null;
+                if (!string.Equals(envelopeCompanyId, item.CompanyId, StringComparison.Ordinal))
+                    throw new JsonException("Envelope tenant mismatch.");
+
                 var facts = payload.TryGetProperty("facts", out var f) && f.ValueKind == JsonValueKind.Array
                     ? f.EnumerateArray()
                     : Enumerable.Empty<JsonElement>();
@@ -69,6 +78,8 @@ public sealed class BrainProcessor
                         item.CompanyId,
                         $"{key} = {value}",
                         $"Ingested from bridge event {item.EventId}.",
+                        sourceId ?? "unknown-source",
+                        sourceType ?? "UNKNOWN",
                         item.DeviceId,
                         observedAt,
                         confidence), cancellationToken);

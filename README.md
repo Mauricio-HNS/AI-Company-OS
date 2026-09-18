@@ -360,6 +360,9 @@ Completed in this UI hardening cycle:
 - Brain analysis now consumes persisted Company Memory facts
 - Authenticated Company Memory inspection endpoint added
 - Structured Company Brain Decision Layer added
+- Runtime Brain decision adapter added
+- Human approval gate added before runtime execution
+- Approved Brain decisions can enter the deterministic execution queue
 - LLM decisions constrained to non-side-effect action types
 - Decision risk and approval requirements validated before persistence
 - Brain decisions persisted durably with proposal / approval-required status

@@ -155,7 +155,7 @@ public sealed class AutonomousCycleService
             "PLAN",
             replan.Strategy,
             replan.RiskLevel,
-            Math.Clamp(1d - Math.Abs(0.5d - (replan.ApprovalRequired ? 0.5d : 0.8d)), 0d, 1d),
+            parent.Confidence,
             replan.ApprovalRequired,
             replan.Steps,
             parent.Evidence,

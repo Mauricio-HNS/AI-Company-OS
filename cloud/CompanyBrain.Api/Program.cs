@@ -105,6 +105,18 @@ app.MapPost("/api/brain/v1/process", async (HttpRequest request, BrainProcessor 
     return Results.Ok(new { processed });
 });
 
+app.MapGet("/api/brain/v1/companies/{companyId}/memories", async (HttpRequest request, string companyId, CloudStore store, IConfiguration configuration, CancellationToken cancellationToken) =>
+{
+    if (!HasBrainAdminKey(request, configuration))
+        return Results.Unauthorized();
+
+    if (!IsSafeIdentifier(companyId))
+        return Results.BadRequest();
+
+    var memories = await store.GetMemoriesAsync(companyId, 100, cancellationToken);
+    return Results.Ok(new { companyId, count = memories.Count, memories });
+});
+
 app.MapPost("/api/brain/v1/companies/{companyId}/analyze", async (HttpRequest request, string companyId, CloudStore store, BrainLlmGateway llm, IConfiguration configuration, CancellationToken cancellationToken) =>
 {
     if (!IsSafeIdentifier(companyId))

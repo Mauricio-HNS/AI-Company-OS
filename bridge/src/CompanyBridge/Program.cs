@@ -100,6 +100,7 @@ public sealed class BridgeOptions
     public string[] AllowedCsvFields { get; set; } = Array.Empty<string>();
     public string[] AuthorizedConnectors { get; set; } = Array.Empty<string>();
     public string[] AllowedWebOrigins { get; set; } = Array.Empty<string>();
+    public List<DataSourceBinding> DataSources { get; set; } = [];
 }
 
 public sealed class BridgeWorker : BackgroundService

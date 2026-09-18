@@ -59,7 +59,7 @@ export function decisionCanEnterExecution(decision: RuntimeBrainDecision): boole
   return decision.status === 'PROPOSED' || decision.status === 'APPROVED'
 }
 
-export function decisionToTask(decision: RuntimeBrainDecision): {
+export function decisionToTask(decision: RuntimeBrainDecision, objectiveId = decision.companyId): {
   id: string
   title: string
   objectiveId: string
@@ -75,7 +75,7 @@ export function decisionToTask(decision: RuntimeBrainDecision): {
     return {
       id: `BRAIN-${decision.decisionId}`,
       title: decision.objective,
-      objectiveId: decision.companyId,
+      objectiveId,
       requiredCapabilities: ['analytics'],
       priority: 1,
       risk: decision.riskLevel,

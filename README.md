@@ -31,16 +31,16 @@ Humans define objectives, constraints, permissions and risk boundaries. Agents o
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────┐
-│                         AI COMPANY OS                               │
+│                         AI COMPANY OS                                │
 │                                                                      │
-│  HUMAN CONTROL PLANE                                                │
-│  Objectives · Constraints · Permissions · Approvals · Risk Limits   │
+│  HUMAN CONTROL PLANE                                                 │
+│  Objectives · Constraints · Permissions · Approvals · Risk Limits    │
 │                              │                                       │
 │                              ▼                                       │
 │  ┌──────────────────────────────────────────────────────────────┐    │
-│  │                    COMPANY RUNTIME                            │    │
+│  │                    COMPANY RUNTIME                           │    │
 │  │                                                              │    │
-│  │ Objective → Mission → Plan → Delegate → Execute             │    │
+│  │ Objective → Mission → Plan → Delegate → Execute              │    │
 │  │                         │                                    │    │
 │  │                         ▼                                    │    │
 │  │              Observe → Evaluate → Learn → Replan             │    │
@@ -49,7 +49,7 @@ Humans define objectives, constraints, permissions and risk boundaries. Agents o
 │          ┌─────────────────┼──────────────────┐                      │
 │          ▼                 ▼                  ▼                      │
 │    AI WORKFORCE      COMPANY BRAIN      CONTROL SYSTEMS              │
-│    Agents / Skills   Facts / Memory     Risk / Budget / Safety      │
+│    Agents / Skills   Facts / Memory     Risk / Budget / Safety       │
 │                       RAG / Reasoning    Autonomy / Audit            │
 │                            ▲                                         │
 │                            │                                         │
@@ -59,13 +59,13 @@ Humans define objectives, constraints, permissions and risk boundaries. Agents o
 │  │ Enrollment → Device Identity → Authenticated Ingress         │    │
 │  │             → Validation → Idempotency → Durable Store       │    │
 │  └─────────────────────────▲────────────────────────────────────┘    │
-│                            │ HTTPS                                  │
+│                            │ HTTPS                                   │
 └────────────────────────────┼─────────────────────────────────────────┘
                              │
                     outbound HTTPS only
                              │
 ┌────────────────────────────┴─────────────────────────────────────────┐
-│                         CUSTOMER ENVIRONMENT                          │
+│                         CUSTOMER ENVIRONMENT                         │
 │                                                                      │
 │  ERP / SQLite / CSV / Local Systems                                  │
 │             │                                                        │
@@ -95,7 +95,7 @@ Humans define objectives, constraints, permissions and risk boundaries. Agents o
 │      ▼       ▼               ▼               ▼                    │
 │ PostgreSQL  Azure OpenAI   Blob Storage   Key Vault               │
 │ Memory +    LLM Gateway    Documents +    Secrets +               │
-│ Events                     Evidence        Credentials             │
+│ Events                     Evidence        Credentials            │
 │                                                                   │
 └───────────────────────────────────────────────────────────────────┘
                               ▲

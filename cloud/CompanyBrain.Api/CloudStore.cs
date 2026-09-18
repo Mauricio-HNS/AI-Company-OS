@@ -121,6 +121,32 @@ public sealed class CloudStore
             );
             CREATE INDEX IF NOT EXISTS ix_brain_decision_audit_decision
                 ON brain_decision_audit(decision_id, created_at);
+            CREATE TABLE IF NOT EXISTS agents (
+                agent_id TEXT NOT NULL,
+                company_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                status TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (company_id, agent_id)
+            );
+            CREATE INDEX IF NOT EXISTS ix_agents_company_status
+                ON agents(company_id, status);
+
+            CREATE TABLE IF NOT EXISTS agent_capabilities (
+                company_id TEXT NOT NULL,
+                agent_id TEXT NOT NULL,
+                capability TEXT NOT NULL,
+                autonomy_level TEXT NOT NULL,
+                max_risk_level TEXT NOT NULL,
+                enabled INTEGER NOT NULL,
+                PRIMARY KEY (company_id, agent_id, capability),
+                FOREIGN KEY (company_id, agent_id)
+                    REFERENCES agents(company_id, agent_id)
+                    ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS ix_agent_capabilities_company_capability
+                ON agent_capabilities(company_id, capability, enabled);
             """;
         command.ExecuteNonQuery();
 
@@ -594,6 +620,163 @@ public sealed class CloudStore
         return items;
     }
 
+
+    public async Task SaveAgentAsync(AgentProfile agent, CancellationToken cancellationToken)
+    {
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            await using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
+            await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+            await using var agentCommand = connection.CreateCommand();
+            agentCommand.Transaction = transaction;
+            agentCommand.CommandText = """
+                INSERT INTO agents(agent_id, company_id, name, status, created_at, updated_at)
+                VALUES($id, $company, $name, $status, $created, $updated)
+                ON CONFLICT(company_id, agent_id) DO UPDATE SET
+                    name = excluded.name,
+                    status = excluded.status,
+                    updated_at = excluded.updated_at;
+                """;
+            agentCommand.Parameters.AddWithValue("$id", agent.AgentId);
+            agentCommand.Parameters.AddWithValue("$company", agent.CompanyId);
+            agentCommand.Parameters.AddWithValue("$name", agent.Name);
+            agentCommand.Parameters.AddWithValue("$status", agent.Status);
+            agentCommand.Parameters.AddWithValue("$created", agent.CreatedAt.ToString("O"));
+            agentCommand.Parameters.AddWithValue("$updated", agent.UpdatedAt.ToString("O"));
+            await agentCommand.ExecuteNonQueryAsync(cancellationToken);
+
+            await using var delete = connection.CreateCommand();
+            delete.Transaction = transaction;
+            delete.CommandText = "DELETE FROM agent_capabilities WHERE company_id = $company AND agent_id = $agent";
+            delete.Parameters.AddWithValue("$company", agent.CompanyId);
+            delete.Parameters.AddWithValue("$agent", agent.AgentId);
+            await delete.ExecuteNonQueryAsync(cancellationToken);
+
+            foreach (var capability in agent.Capabilities)
+            {
+                await using var capabilityCommand = connection.CreateCommand();
+                capabilityCommand.Transaction = transaction;
+                capabilityCommand.CommandText = """
+                    INSERT INTO agent_capabilities(
+                        company_id, agent_id, capability, autonomy_level, max_risk_level, enabled)
+                    VALUES($company, $agent, $capability, $autonomy, $risk, $enabled);
+                    """;
+                capabilityCommand.Parameters.AddWithValue("$company", agent.CompanyId);
+                capabilityCommand.Parameters.AddWithValue("$agent", agent.AgentId);
+                capabilityCommand.Parameters.AddWithValue("$capability", capability.Capability);
+                capabilityCommand.Parameters.AddWithValue("$autonomy", capability.AutonomyLevel);
+                capabilityCommand.Parameters.AddWithValue("$risk", capability.MaxRiskLevel);
+                capabilityCommand.Parameters.AddWithValue("$enabled", capability.Enabled ? 1 : 0);
+                await capabilityCommand.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    public async Task<AgentProfile?> GetAgentAsync(string companyId, string agentId, CancellationToken cancellationToken)
+    {
+        var agents = await GetAgentsAsync(companyId, cancellationToken);
+        return agents.FirstOrDefault(agent => string.Equals(agent.AgentId, agentId, StringComparison.Ordinal));
+    }
+
+    public async Task<IReadOnlyList<AgentProfile>> GetAgentsAsync(string companyId, CancellationToken cancellationToken)
+    {
+        var agents = new Dictionary<string, AgentProfile>(StringComparer.Ordinal);
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT agent_id, company_id, name, status, created_at, updated_at
+            FROM agents
+            WHERE company_id = $company
+            ORDER BY name;
+            """;
+        command.Parameters.AddWithValue("$company", companyId);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var profile = new AgentProfile(
+                reader.GetString(0),
+                reader.GetString(1),
+                reader.GetString(2),
+                reader.GetString(3),
+                [],
+                DateTimeOffset.Parse(reader.GetString(4)),
+                DateTimeOffset.Parse(reader.GetString(5)));
+            agents[profile.AgentId] = profile;
+        }
+
+        if (agents.Count == 0)
+            return [];
+
+        await using var capabilityCommand = connection.CreateCommand();
+        capabilityCommand.CommandText = """
+            SELECT agent_id, capability, autonomy_level, max_risk_level, enabled
+            FROM agent_capabilities
+            WHERE company_id = $company
+            ORDER BY agent_id, capability;
+            """;
+        capabilityCommand.Parameters.AddWithValue("$company", companyId);
+        await using var capabilityReader = await capabilityCommand.ExecuteReaderAsync(cancellationToken);
+
+        var capabilities = new Dictionary<string, List<AgentCapabilityPolicy>>(StringComparer.Ordinal);
+        while (await capabilityReader.ReadAsync(cancellationToken))
+        {
+            var agentId = capabilityReader.GetString(0);
+            if (!capabilities.TryGetValue(agentId, out var list))
+            {
+                list = [];
+                capabilities[agentId] = list;
+            }
+
+            list.Add(new AgentCapabilityPolicy(
+                capabilityReader.GetString(1),
+                capabilityReader.GetString(2),
+                capabilityReader.GetString(3),
+                capabilityReader.GetInt32(4) == 1));
+        }
+
+        return agents.Values
+            .Select(agent => agent with
+            {
+                Capabilities = capabilities.TryGetValue(agent.AgentId, out var list)
+                    ? list.ToArray()
+                    : []
+            })
+            .ToArray();
+    }
+
+    public async Task<bool> HasAgentCapabilityAsync(
+        string companyId,
+        string capability,
+        string riskLevel,
+        IReadOnlyDictionary<string, int> autonomyRank,
+        IReadOnlyDictionary<string, int> riskRank,
+        CancellationToken cancellationToken)
+    {
+        var agents = await GetAgentsAsync(companyId, cancellationToken);
+        if (!riskRank.TryGetValue(riskLevel, out var requestedRisk))
+            return false;
+
+        return agents.Any(agent =>
+            string.Equals(agent.Status, "ACTIVE", StringComparison.OrdinalIgnoreCase) &&
+            agent.Capabilities.Any(policy =>
+                policy.Enabled &&
+                string.Equals(policy.Capability, capability, StringComparison.OrdinalIgnoreCase) &&
+                autonomyRank.TryGetValue(policy.AutonomyLevel, out var autonomy) &&
+                autonomy >= 1 &&
+                riskRank.TryGetValue(policy.MaxRiskLevel, out var maxRisk) &&
+                requestedRisk <= maxRisk));
+    }
 
     public async Task SaveExecutionResultAsync(AgentExecutionResult result, CancellationToken cancellationToken)
     {

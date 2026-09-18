@@ -5,15 +5,18 @@ public sealed class AutonomousCycleService
     private readonly CloudStore _store;
     private readonly BrainDecisionEngine _decisionEngine;
     private readonly AgentExecutionService _execution;
+    private readonly EvaluationReplanningService _evaluation;
 
     public AutonomousCycleService(
         CloudStore store,
         BrainDecisionEngine decisionEngine,
-        AgentExecutionService execution)
+        AgentExecutionService execution,
+        EvaluationReplanningService evaluation)
     {
         _store = store;
         _decisionEngine = decisionEngine;
         _execution = execution;
+        _evaluation = evaluation;
     }
 
     public async Task<int> RunAsync(CancellationToken cancellationToken)
@@ -68,6 +71,31 @@ public sealed class AutonomousCycleService
 
             await _store.SaveExecutionResultAsync(execution, cancellationToken);
             await _store.SaveExecutionMemoriesAsync(execution, cancellationToken);
+
+            var evaluation = await _evaluation.EvaluateAsync(
+                approved,
+                execution,
+                memories,
+                cancellationToken);
+
+            if (evaluation is not null)
+            {
+                await _store.SaveEvaluationAsync(evaluation.Value.Evaluation, cancellationToken);
+                if (evaluation.Value.Replan is not null)
+                    await _store.SaveReplanAsync(evaluation.Value.Replan, cancellationToken);
+
+                await _store.SaveMemoryAsync(new BrainMemory(
+                    $"EVAL-{evaluation.Value.Evaluation.EvaluationId}",
+                    companyId,
+                    $"Evaluation: {evaluation.Value.Evaluation.Outcome} | score={evaluation.Value.Evaluation.Score:0.00} | {evaluation.Value.Evaluation.Summary}",
+                    $"Evaluation of decision {approved.DecisionId} and execution {execution.ExecutionId}.",
+                    "evaluation-engine",
+                    evaluation.Value.Evaluation.EvaluationId,
+                    "EVALUATION",
+                    "cloud",
+                    evaluation.Value.Evaluation.EvaluatedAt,
+                    evaluation.Value.Evaluation.Score), cancellationToken);
+            }
 
             if (execution.Status == "COMPLETED")
             {

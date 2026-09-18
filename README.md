@@ -30,57 +30,122 @@ Humans define objectives, constraints, permissions and risk boundaries. Agents o
 ## Architecture
 
 ```text
-Company
- ├── Objectives
- ├── Missions
- ├── Tasks
- ├── Agents
- │    ├── Capabilities
- │    ├── Risk limits
- │    └── Autonomy
- ├── Execution Queue
- ├── Experiments
- ├── Evaluation
- ├── Company Memory
- ├── Budget
- ├── Safety Monitor
- ├── Security
- └── Audit / Runtime State
+┌──────────────────────────────────────────────────────────────────────┐
+│                         AI COMPANY OS                               │
+│                                                                      │
+│  HUMAN CONTROL PLANE                                                │
+│  Objectives · Constraints · Permissions · Approvals · Risk Limits   │
+│                              │                                       │
+│                              ▼                                       │
+│  ┌──────────────────────────────────────────────────────────────┐    │
+│  │                    COMPANY RUNTIME                            │    │
+│  │                                                              │    │
+│  │ Objective → Mission → Plan → Delegate → Execute             │    │
+│  │                         │                                    │    │
+│  │                         ▼                                    │    │
+│  │              Observe → Evaluate → Learn → Replan             │    │
+│  └─────────────────────────┬────────────────────────────────────┘    │
+│                            │                                         │
+│          ┌─────────────────┼──────────────────┐                      │
+│          ▼                 ▼                  ▼                      │
+│    AI WORKFORCE      COMPANY BRAIN      CONTROL SYSTEMS              │
+│    Agents / Skills   Facts / Memory     Risk / Budget / Safety      │
+│                       RAG / Reasoning    Autonomy / Audit            │
+│                            ▲                                         │
+│                            │                                         │
+│  ┌─────────────────────────┴────────────────────────────────────┐    │
+│  │                    CLOUD CONTROL PLANE                       │    │
+│  │                                                              │    │
+│  │ Enrollment → Device Identity → Authenticated Ingress         │    │
+│  │             → Validation → Idempotency → Durable Store       │    │
+│  └─────────────────────────▲────────────────────────────────────┘    │
+│                            │ HTTPS                                  │
+└────────────────────────────┼─────────────────────────────────────────┘
+                             │
+                    outbound HTTPS only
+                             │
+┌────────────────────────────┴─────────────────────────────────────────┐
+│                         CUSTOMER ENVIRONMENT                          │
+│                                                                      │
+│  ERP / SQLite / CSV / Local Systems                                  │
+│             │                                                        │
+│             ▼                                                        │
+│       COMPANY BRIDGE                                                 │
+│       Discovery · Read-only Connectors · Local Policy                │
+│       Data Minimization · Local Outbox · Device Identity             │
+│                                                                      │
+│  RAW DATA → BUSINESS FACTS → MINIMIZATION → LOCAL OUTBOX             │
+│                                                                      │
+│  Raw local files/databases remain local unless explicitly authorized.│
+└──────────────────────────────────────────────────────────────────────┘
 ```
+
+### Architectural layers
+
+| Layer | Purpose | State |
+|---|---|---|
+| Human Control Plane | Direction, constraints, permissions and approvals | Active |
+| Company Runtime | Deterministic operating cycle | Active |
+| AI Workforce | Agents, capabilities, delegation and execution | Active foundation |
+| Company Brain | Business facts, memory, reasoning and future RAG | Ingress foundation |
+| Control Systems | Risk, safety, budget, autonomy and audit | Active foundation |
+| Cloud Control Plane | Enrollment, authentication, validation and durable events | Implemented |
+| Company Bridge | Local-first connection to company systems | Implemented foundation |
+| Real AI Layer | LLM providers, RAG and autonomous reasoning | Next |
+| Business Integrations | CRM, ERP, finance, communication and external APIs | Next |
+| Controlled Actions | Real-world side effects behind policy and approval gates | Future production layer |
+
+### End-to-end architecture
+
+```text
+LOCAL COMPANY SYSTEMS
+        ↓
+COMPANY BRIDGE
+        ↓
+CONNECTORS + LOCAL POLICY
+        ↓
+BUSINESS FACTS
+        ↓
+DATA MINIMIZATION
+        ↓
+LOCAL OUTBOX
+        ↓
+HTTPS + DEVICE IDENTITY
+        ↓
+COMPANY BRAIN API
+        ↓
+AUTHENTICATION + VALIDATION
+        ↓
+EVENT IDENTITY + IDEMPOTENCY
+        ↓
+DURABLE CLOUD STORE
+        ↓
+COMPANY BRAIN
+        ↓
+LLM / RAG / AGENTS
+        ↓
+MISSION + PLAN
+        ↓
+RISK + BUDGET + APPROVAL
+        ↓
+CONTROLLED EXECUTION
+        ↓
+OBSERVE + EVALUATE
+        ↓
+COMPANY MEMORY
+        ↓
+REPLAN
+```
+
+This architecture separates the customer's local data boundary, the cloud ingestion boundary, the cognitive layer and the operational control loop. The public Next.js application remains a static presentation layer; the real cloud control plane is implemented separately as a .NET service.
 
 ## Company Bridge — local-first company connection
 
 Company Bridge is the Windows component that connects a real company's local environment to the Company Brain without treating the customer's computer as a cloud data dump.
 
-```text
-CUSTOMER PC
-    │
-    ▼
-Company Bridge Service
-    │
-    ├── Discovery
-    ├── Local connectors
-    ├── Data minimization
-    ├── Local policy
-    ├── Local outbox
-    └── Local API: 127.0.0.1:48731
-             │
-             │ outbound HTTPS only
-             ▼
-      AI Company OS Cloud
-             │
-             ├── Device Enrollment
-             ├── Authenticated Ingress
-             ├── Durable Cloud Store
-             ├── Idempotency
-             └── Company Brain
-```
-
 The Bridge is installed as the Windows service `AI Company OS Company Bridge Service`. A desktop shortcut is only a management entry point; deleting it does not stop the service.
 
 ### Data boundary
-
-The Bridge follows a local-first rule:
 
 ```text
 RAW LOCAL DATA
@@ -100,11 +165,9 @@ Raw files and complete local databases remain on the customer's machine unless a
 
 The first connectors are read-only SQLite and CSV adapters. Connector authorization is empty by default. Generated connectors must follow the governed lifecycle in `bridge/CONNECTOR-BUILDER.md` and cannot be activated merely because AI generated code.
 
-### Real cloud boundary
+## Real cloud boundary
 
 The cloud side is a separate .NET 8 service under `cloud/CompanyBrain.Api/` because the public Next.js application is a static GitHub Pages export.
-
-The current real flow is:
 
 ```text
 Bridge
@@ -125,38 +188,6 @@ Company Brain processing boundary
 ```
 
 Device enrollment is explicit. An enrollment token provisions a device-specific API key; the cloud stores only the API-key hash. The API key is then used for authenticated synchronization. No company can synchronize while remaining `un-enrolled`.
-
-### Company Bridge files
-
-```text
-bridge/
-├── README.md
-├── CONNECTOR-BUILDER.md
-├── installer/
-│   ├── install-company-bridge.ps1
-│   └── package-company-bridge.ps1
-└── src/CompanyBridge/
-    ├── CompanyBridge.csproj
-    ├── Program.cs
-    ├── appsettings.json
-    ├── Connectors/
-    │   ├── ConnectorRegistry.cs
-    │   ├── SqliteConnector.cs
-    │   └── CsvConnector.cs
-    ├── Security/
-    │   └── LocalPolicy.cs
-    └── Sync/
-        ├── OutboxStore.cs
-        └── CloudSyncClient.cs
-
-cloud/CompanyBrain.Api/
-├── CompanyBrain.Api.csproj
-├── Program.cs
-├── CloudStore.cs
-└── appsettings.json
-```
-
-The release package is produced by the packaging script and then signed/distributed. The customer installer does not require the .NET SDK.
 
 ## Runtime engines
 
@@ -255,7 +286,7 @@ The UI exposes:
 - Customers
 - Settings
 
-### Company OS shell status — 2026-09-17
+### Company OS shell status — 2026-09-18
 
 The canonical Company OS presentation shell is active on the company route.
 
@@ -273,10 +304,7 @@ Completed in this UI hardening cycle:
 - Runtime composition kept separate from the presentation shell
 - Company route composition retains `generateStaticParams()` in the Server Component
 - Dashboard includes revenue, conversion rate, AI workforce, active missions, company health, performance, funnel and live activity
-- Navigation model covers Dashboard, AI Workforce, Business, Intelligence and System areas
 - Dashboard, topbar and sidebar typography scaled up for improved readability
-- Dashboard typography standardized to a rem-based SaaS hierarchy
-- `npm run typecheck` remains available as a development validation command
 - Legacy `CompanyRuntimeWorkspace.tsx` monolith removed from the active codebase after the V2 migration
 - Next.js configured for static export with the repository base path `/AI-Company-OS`
 - Missing runtime support modules restored for Agents, Tasks and Missions
@@ -379,6 +407,12 @@ lib/
 ├── experiment-engine.ts
 ├── autonomy-engine.ts
 └── company-memory.ts
+
+bridge/
+├── README.md
+├── CONNECTOR-BUILDER.md
+├── installer/
+└── src/CompanyBridge/
 
 cloud/CompanyBrain.Api/
 ├── CompanyBrain.Api.csproj

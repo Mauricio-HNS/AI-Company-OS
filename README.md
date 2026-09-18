@@ -371,6 +371,7 @@ Completed in this UI hardening cycle:
 - Completed Brain tasks are marked EXECUTED in runtime state
 - LLM decisions constrained to non-side-effect action types
 - Bounded Agent Execution service added for approved OBSERVE / PLAN decisions
+- Explicit Agent Registry added with capability-to-agent mapping and deterministic autonomy/risk policy enforcement
 - Agent execution outcomes persisted durably for recovery and audit
 - Autonomous Company Brain cycle added: memory → decision → controlled approval → agent execution
 - Low-risk decisions can be promoted automatically; higher-risk decisions remain human-gated
@@ -509,6 +510,7 @@ cloud/
 └── CompanyBrain.Api/
     ├── CompanyBrain.Api.csproj
     ├── Program.cs
+    ├── AgentRegistry.cs
     ├── CloudStore.cs
     └── appsettings.json
 ```
@@ -583,7 +585,7 @@ Remaining hardening work:
 - Human approval workflow UI
 - Opportunity detection
 - Production experiment management
-- Agent registry, capabilities and explicit autonomy policies
+- Agent registry, capabilities and explicit autonomy policies ✓
 - Real integrations
 - Dashboard 2.0 visual refinement
 - Module-level component extraction

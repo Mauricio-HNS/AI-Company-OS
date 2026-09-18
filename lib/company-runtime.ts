@@ -57,7 +57,7 @@ export function registerRuntimeBrainDecision(
   state: RuntimeState,
   decision: RuntimeBrainDecision,
 ): RuntimeState {
-  const normalized = registerBrainDecision(decision, state.objective.id)
+  const normalized = registerBrainDecision(decision)
   if (!normalized) return state
   const existing = state.brainDecisions.some(item => item.decisionId === normalized.decisionId)
   if (existing) return state

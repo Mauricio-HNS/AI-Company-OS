@@ -67,6 +67,7 @@ public sealed class AutonomousCycleService
                 continue;
 
             await _store.SaveExecutionResultAsync(execution, cancellationToken);
+            await _store.SaveExecutionMemoriesAsync(execution, cancellationToken);
 
             if (execution.Status == "COMPLETED")
             {

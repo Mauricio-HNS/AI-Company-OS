@@ -46,6 +46,15 @@ export default function CompanyRuntimeProvider({ company, children }: { company:
       return result.metrics
     })
     setRuntime(current => {
+      const approved = current.brainDecisions.find(decision => decision.status === 'APPROVED')
+      if (approved) {
+        const next = CompanyRuntimeService.enqueueApprovedDecision(current, approved.decisionId)
+        if (next !== current) {
+          const action = `Queued brain decision ${approved.decisionId}`
+          setLastAction(action); trackExperience('action', action)
+          return next
+        }
+      }
       const executing = current.plan.tasks.find(task => task.status === 'EXECUTING')
       if (executing) {
         const action = `Completed ${executing.id}`

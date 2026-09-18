@@ -370,6 +370,9 @@ Completed in this UI hardening cycle:
 - Brain execution queue preserves existing runtime state when appending decisions
 - Completed Brain tasks are marked EXECUTED in runtime state
 - LLM decisions constrained to non-side-effect action types
+- Bounded Agent Execution service added for approved OBSERVE / PLAN decisions
+- Approved decisions can execute through the LLM with read-only, no-side-effect constraints
+- Agent execution validates structured COMPLETED / BLOCKED results before returning them
 - Decision risk and approval requirements validated before persistence
 - Brain decisions persisted durably with proposal / approval-required status
 - Authenticated decision generation and inspection endpoints added
@@ -418,7 +421,7 @@ Structured Brain decisions          ✓
       ↓
 Brain decision → approval → queue → execution   ✓
       ↓
-Real agent/LLM execution          →
+Real agent/LLM execution          ✓
       ↓
 Real integrations                 →
       ↓
@@ -540,7 +543,8 @@ Remaining hardening work:
 
 - Automated unit tests for critical runtime paths
 - PostgreSQL production provider
-- Direct cloud-to-Company-Brain agent decision loop
+- Direct cloud-to-Company-Brain agent decision loop ✓
+- Durable agent execution result store
 - Authenticated cloud decision → runtime synchronization contract ✓
 - Runtime pull endpoint for approved Brain decisions ✓
 - Trusted Bridge → browser runtime decision delivery ✓

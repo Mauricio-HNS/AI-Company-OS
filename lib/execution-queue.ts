@@ -64,3 +64,16 @@ export function synchronizeQueue(queue: ExecutionQueue, plan: OperatingPlan, age
     }),
   }
 }
+
+export function enqueueTask(queue: ExecutionQueue, taskId: string, agentId?: string): ExecutionQueue {
+  if (queue.items.some(item => item.taskId === taskId)) return queue
+  return {
+    items: [...queue.items, {
+      taskId,
+      agentId,
+      status: 'READY' as TaskStatus,
+      attempts: 0,
+      enqueuedAt: new Date().toISOString(),
+    }],
+  }
+}

@@ -359,6 +359,11 @@ Completed in this UI hardening cycle:
 - Brain analysis endpoint secured with an admin key
 - Brain analysis now consumes persisted Company Memory facts
 - Authenticated Company Memory inspection endpoint added
+- Structured Company Brain Decision Layer added
+- LLM decisions constrained to non-side-effect action types
+- Decision risk and approval requirements validated before persistence
+- Brain decisions persisted durably with proposal / approval-required status
+- Authenticated decision generation and inspection endpoints added
 - Company Brain remains isolated from external side effects while decision controls are being hardened
 - LLM gateway hardened with timeout and response validation
 - Company Brain CI added for restore/build/publish verification
@@ -399,6 +404,8 @@ Azure production blueprint       ✓
 Real Company Brain processor      ✓
       ↓
 LLM gateway                       ✓
+      ↓
+Structured Brain decisions          ✓
       ↓
 Real agent/LLM execution          →
       ↓

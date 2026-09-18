@@ -32,6 +32,8 @@ public interface ICompanyConnector
     Task<IReadOnlyCollection<BusinessFact>> DiscoverAsync(CancellationToken cancellationToken);
 }
 
+public sealed record DataSourceBinding(string SourceId, string CompanyId);
+
 public sealed record BusinessFact(
     string Type,
     string Entity,
@@ -65,6 +67,14 @@ public sealed class ConnectorRegistry
             if (!_policy.IsConnectorAuthorized(connector.Id))
                 continue;
 
+            var binding = _options.DataSources.FirstOrDefault(item =>
+                string.Equals(item.SourceId, connector.Id, StringComparison.OrdinalIgnoreCase));
+            if (binding is null || !string.Equals(binding.CompanyId, _options.CompanyId, StringComparison.Ordinal))
+            {
+                _logger.LogWarning("Connector {Connector} skipped: no explicit CompanyId binding for the active tenant", connector.Id);
+                continue;
+            }
+
             var descriptor = await connector.DescribeAsync(cancellationToken);
             _logger.LogInformation(
                 "Authorized connector {Connector}: {SourceKind} / {Capabilities}",
@@ -86,6 +96,9 @@ public sealed class ConnectorRegistry
                 new
                 {
                     connector = descriptor.Id,
+                    sourceId = binding.SourceId,
+                    companyId = binding.CompanyId,
+                    deviceId = _options.DeviceId,
                     sourceKind = descriptor.SourceKind.ToString(),
                     capabilities = descriptor.Capabilities,
                     dataClasses = descriptor.DataClasses,

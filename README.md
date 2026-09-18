@@ -356,7 +356,10 @@ Completed in this UI hardening cycle:
 - Processed-event tracking and Company Memory persistence added
 - Configurable LLM gateway added
 - Background processing worker added
-- Brain analysis endpoint added
+- Brain analysis endpoint secured with an admin key
+- Brain analysis now consumes persisted Company Memory facts
+- LLM gateway hardened with timeout and response validation
+- Company Brain CI added for restore/build/publish verification
 
 ### Live preview
 
@@ -518,7 +521,6 @@ Remaining hardening work:
 - Automated unit tests for critical runtime paths
 - PostgreSQL production provider
 - Direct cloud-to-Company-Brain agent decision loop
-- PostgreSQL production provider
 - Human approval workflow UI
 - Opportunity detection
 - Production experiment management

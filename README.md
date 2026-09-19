@@ -27,6 +27,17 @@ REPLAN
 
 Humans define objectives, constraints, permissions and risk boundaries. Agents operate inside those boundaries and every execution produces observable state, evaluation and learning.
 
+## Core objective — operate a real company through the OS
+
+The long-term product rule is that AI Company OS must evolve from an agent-management platform into an operational control plane capable of taking an authorized real company as a client and progressively making that company operable through the OS.
+
+Given explicit authorization and scoped access, the system must be designed to understand the company environment, discover systems and processes, design required integrations, build APIs/bridges/connectors, validate and test them, request and verify authorization, deploy into the authorized customer environment, perform health checks, activate, monitor, detect and correct failures, and roll back when required.
+
+This is a product requirement and architectural north star, not permission for unrestricted autonomous access. Every real-world action must remain tenant-scoped, explicitly authorized, auditable, reversible where possible, and protected by the platform security, risk, budget and safety controls. The OS must never assume that access to one system grants access to another.
+
+A concrete target scenario is: a customer asks the OS to integrate with an existing ERP or business system; the OS discovers the authorized interface, builds the required API/bridge, tests it, prepares the deployment package, deploys it through an approved deployment adapter into the authorized customer environment, verifies health, and then makes the resulting capability available to the appropriate agents.
+
+
 ## Architecture
 
 ```text

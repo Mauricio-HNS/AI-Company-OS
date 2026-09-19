@@ -1,5 +1,6 @@
 using CompanyBridge.Connectors;
 using CompanyBridge.Discovery;
+using CompanyBridge.Execution;
 using CompanyBridge.Security;
 using CompanyBridge.Sync;
 using Microsoft.Extensions.Options;
@@ -13,6 +14,7 @@ builder.Services.AddSingleton<LocalSourceDiscovery>();
 builder.Services.AddSingleton<OutboxStore>();
 builder.Services.AddHttpClient<CloudSyncClient>();
 builder.Services.AddSingleton<RuntimeDecisionStore>();
+builder.Services.AddSingleton<GovernedExecutionService>();
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
 {
     policy.WithOrigins(builder.Configuration.GetSection("Bridge:AllowedWebOrigins").Get<string[]>() ?? Array.Empty<string>())
@@ -79,6 +81,22 @@ app.MapGet("/api/v1/discovery", async (IOptions<BridgeOptions> options, LocalSou
         sourceCount = sources.Count,
         sources
     });
+});
+
+app.MapPost("/api/v1/execution", async (ExecutionRequest request, GovernedExecutionService executor, IOptions<BridgeOptions> options, CancellationToken cancellationToken) =>
+{
+    var policy = new ExecutionPolicy(
+        AllowCodeGeneration: true,
+        AllowSandbox: true,
+        AllowDeployment: false,
+        RequireHumanApprovalForDeployment: true,
+        MaxExecutionSeconds: 300);
+
+    if (!string.Equals(request.CompanyId, options.Value.CompanyId, StringComparison.OrdinalIgnoreCase))
+        return Results.Forbid();
+
+    var result = await executor.ExecuteAsync(request, policy, cancellationToken);
+    return result.Success ? Results.Ok(result) : Results.BadRequest(result);
 });
 
 await app.RunAsync();

@@ -38,6 +38,11 @@ This is a product requirement and architectural north star, not permission for u
 A concrete target scenario is: a customer asks the OS to integrate with an existing ERP or business system; the OS discovers the authorized interface, builds the required API/bridge, tests it, prepares the deployment package, deploys it through an approved deployment adapter into the authorized customer environment, verifies health, and then makes the resulting capability available to the appropriate agents.
 
 
+## Program documentation
+
+The complete product vision, real-company operating scenario, integration/deployment model, governance principles and implementation direction are documented in [`docs/PROGRAM-VISION.md`](docs/PROGRAM-VISION.md).
+
+
 ## Architecture
 
 ```text

@@ -1,14 +1,20 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Options;
 
 namespace CompanyBridge.Execution;
 
 public sealed class GovernedExecutionService
 {
     private readonly ILogger<GovernedExecutionService> _logger;
+    private readonly BridgeOptions _options;
 
-    public GovernedExecutionService(ILogger<GovernedExecutionService> logger) => _logger = logger;
+    public GovernedExecutionService(ILogger<GovernedExecutionService> logger, IOptions<BridgeOptions> options)
+    {
+        _logger = logger;
+        _options = options.Value;
+    }
 
     public async Task<ExecutionResult> ExecuteAsync(
         ExecutionRequest request,
@@ -24,7 +30,19 @@ public sealed class GovernedExecutionService
         if (string.IsNullOrWhiteSpace(request.Objective))
             return Fail(executionId, steps, "Execution objective is required.");
 
-        var workspace = Path.GetFullPath(request.Workspace);
+        if (string.IsNullOrWhiteSpace(request.Workspace) || Path.IsPathRooted(request.Workspace))
+            return Fail(executionId, steps, "Workspace must be a relative execution workspace.");
+
+        var workspaceName = request.Workspace.Trim();
+        if (workspaceName.Contains("..", StringComparison.Ordinal) ||
+            workspaceName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            return Fail(executionId, steps, "Workspace contains an invalid path.");
+
+        var executionRoot = Path.GetFullPath(Path.Combine(_options.DataDirectory, "execution"));
+        var workspace = Path.GetFullPath(Path.Combine(executionRoot, workspaceName));
+        if (!workspace.StartsWith(executionRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+            return Fail(executionId, steps, "Workspace escapes the Bridge execution directory.");
+
         Directory.CreateDirectory(workspace);
 
         foreach (var action in request.Actions.Distinct())
@@ -50,7 +68,7 @@ public sealed class GovernedExecutionService
                     break;
 
                 case ExecutionAction.StageDeployment:
-                    steps.Add("stage: deployment artifact may be prepared");
+                    steps.Add("stage: deployment manifest may be prepared");
                     break;
 
                 case ExecutionAction.Deploy:
@@ -80,10 +98,15 @@ public sealed class GovernedExecutionService
             actions = request.Actions.Distinct().ToArray(),
             createdAt = DateTimeOffset.UtcNow
         }, new JsonSerializerOptions { WriteIndented = true });
-        await File.WriteAllTextAsync(manifestPath, manifest, Encoding.UTF8, cancellationToken);
-        steps.Add("manifest: execution manifest persisted locally");
 
-        _logger.LogInformation("Governed execution {ExecutionId} prepared for company {CompanyId}", executionId, request.CompanyId);
+        await File.WriteAllTextAsync(manifestPath, manifest, Encoding.UTF8, cancellationToken);
+        steps.Add("manifest: execution manifest persisted inside the Bridge execution boundary");
+
+        _logger.LogInformation(
+            "Governed execution {ExecutionId} prepared for company {CompanyId}",
+            executionId,
+            request.CompanyId);
+
         return new ExecutionResult(true, executionId, "prepared", steps, manifestPath);
     }
 

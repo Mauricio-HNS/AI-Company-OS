@@ -148,7 +148,7 @@ public sealed class CloudStore
         EnsureColumn(connection, "memories", "device_id", "TEXT NOT NULL DEFAULT ''");
 
         EnsureColumn(connection, "brain_decisions", "options", "TEXT NOT NULL DEFAULT '[]'");
-        EnsureColumn(connection, "brain_decisions", "evidence", "TEXT NOT NULL DEFAULT '[]');
+        EnsureColumn(connection, "brain_decisions", "evidence", "TEXT NOT NULL DEFAULT '[]'");
 
         using var reviewSchema = connection.CreateCommand();
         reviewSchema.CommandText = """

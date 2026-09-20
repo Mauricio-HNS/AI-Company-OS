@@ -14,6 +14,7 @@ import {
   Users,
   Wallet,
   Zap,
+  Hammer,
 } from 'lucide-react'
 
 export const companyViews = [
@@ -24,6 +25,7 @@ export const companyViews = [
   'Tasks',
   'Marketing',
   'Customers',
+  'Construction',
   'Products',
   'Finance',
   'Intelligence',
@@ -69,6 +71,7 @@ export const companyNavigation: CompanyNavigationGroup[] = [
     items: [
       { label: 'Marketing', icon: Megaphone },
       { label: 'Customers', icon: Users },
+      { label: 'Construction', icon: Hammer },
       { label: 'Products', icon: Package },
       { label: 'Finance', icon: Wallet },
     ],

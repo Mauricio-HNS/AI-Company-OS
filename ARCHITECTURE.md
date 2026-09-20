@@ -124,7 +124,7 @@ The first migration makes `RiskLevel` an OS Core contract consumed by the operat
 The platform is evolving toward three explicit shared layers:
 
 - packages/foundation/ — system-wide contracts and primitives for identity, governance, execution, evidence and observability.
-- packages/capabilities/ — shared operational capabilities such as execution, connectors, memory, planning and deployment; these are introduced only when a capability is genuinely shared. The first shared capabilities are `execution/` and `memory/`.
+- packages/capabilities/ — shared operational capabilities such as execution, connectors, memory, planning and deployment; these are introduced only when a capability is genuinely shared. The shared capabilities now include `execution/`, `memory/` and `connectors/`.
 - packages/sdk/ — extension contracts for agents, connectors, tools and skills once those extension points are stable.
 
 packages/os-core/ is currently a compatibility facade over Foundation. It remains in place to avoid unnecessary churn while consumers migrate. No product-specific business logic is moved merely for structural symmetry.
@@ -139,3 +139,5 @@ Cross-cutting operations will progressively use a composed OS context carrying i
 `packages/capabilities/execution/` owns generic dependency-aware execution queue mechanics. The existing `lib/execution-queue.ts` remains as a compatibility adapter because the current Company Runtime task model includes product-specific planning states. This avoids forcing domain-specific statuses into the platform-wide execution contract.
 
 `packages/capabilities/memory/` owns the generic evidence-backed memory record and lifecycle mechanics: creation, supersession, contestation and expiration handling. The existing `lib/company-memory.ts` remains as a compatibility adapter because Company Brain owns the company-specific storage, ingestion and reasoning around those records.
+
+`packages/capabilities/connectors/` now owns the generic governed connector lifecycle and authorization-gated activation boundary. Existing `domain/company/company-discovery.ts`, Bridge connectors and `lib/integration-control.ts` remain in place because they contain company/domain/provider-specific contracts and behavior. No connector implementation was moved merely for structural symmetry.

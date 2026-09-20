@@ -464,6 +464,8 @@ Durable idea/plan/agent blocking ✓
 Durable decision alternatives ✓
 Functional human review lifecycle ✓
 Human-requested Brain re-analysis ✓
+Strategic trigger/conflict evaluation ✓
+Cloud rate limiting + correlation boundary ✓
       ↓
 Real integrations                 →
       ↓
@@ -614,7 +616,7 @@ Remaining hardening work:
 - Real integrations
 - Dashboard 2.0 visual refinement
 - Module-level component extraction
-- Production observability and rate limiting
+- Production observability and rate limiting ✓
 
 ### Phase 5 — Real AI and business integrations
 

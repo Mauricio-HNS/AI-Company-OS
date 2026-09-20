@@ -1,16 +1,6 @@
-export type CompanyRole = 'OWNER' | 'MANAGER' | 'EMPLOYEE' | 'VIEWER'
+import type { CompanyPermission, CompanyRole } from '@/packages/foundation/governance'
 
-export type CompanyPermission =
-  | 'VIEW_COMPANY'
-  | 'MONITOR_OPERATION'
-  | 'VIEW_FINANCE'
-  | 'MANAGE_STOCK'
-  | 'CREATE_MISSION'
-  | 'RUN_EXPERIMENT'
-  | 'CHANGE_PRICES'
-  | 'APPROVE_SPEND'
-  | 'MANAGE_USERS'
-  | 'EMERGENCY_STOP'
+export type { CompanyPermission, CompanyRole } from '@/packages/foundation/governance'
 
 const ROLE_PERMISSIONS: Record<CompanyRole, CompanyPermission[]> = {
   OWNER: ['VIEW_COMPANY','MONITOR_OPERATION','VIEW_FINANCE','MANAGE_STOCK','CREATE_MISSION','RUN_EXPERIMENT','CHANGE_PRICES','APPROVE_SPEND','MANAGE_USERS','EMERGENCY_STOP'],

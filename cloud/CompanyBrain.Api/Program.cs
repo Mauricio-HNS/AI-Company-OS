@@ -434,6 +434,33 @@ app.MapPost("/api/brain/v1/companies/{companyId}/decisions/{decisionId}/human-ac
     var actor = NormalizeActor(request.Headers["X-Brain-Actor"].ToString());
     var recorded = await store.RecordDecisionActionAsync(companyId, decisionId, input.Action, actor, input.Reason, cancellationToken);
 
+    if (recorded && input.Action is "BLOCK_IDEA" or "BLOCK_PLAN" or "BLOCK_AGENT")
+    {
+        if (input.Action == "BLOCK_AGENT" && string.IsNullOrWhiteSpace(input.AgentId))
+            return Results.BadRequest(new { recorded = false, reason = "agentId is required for BLOCK_AGENT." });
+
+        var fingerprint = input.Fingerprint;
+        if (string.IsNullOrWhiteSpace(fingerprint) && input.OptionId is not null)
+        {
+            var decision = await store.GetDecisionAsync(companyId, decisionId, cancellationToken);
+            var option = decision?.Options.FirstOrDefault(x => x.OptionId == input.OptionId);
+            if (option is not null)
+                fingerprint = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+                    System.Text.Encoding.UTF8.GetBytes($"{option.Title.Trim().ToUpperInvariant()}|{option.Summary.Trim().ToUpperInvariant()}")));
+        }
+
+        if (input.Action != "BLOCK_AGENT" && string.IsNullOrWhiteSpace(fingerprint))
+            return Results.BadRequest(new { recorded = false, reason = "optionId or fingerprint is required for a plan/idea block." });
+
+        recorded = await store.AddDecisionBlockAsync(
+            companyId,
+            input.AgentId,
+            input.Action == "BLOCK_AGENT" ? "AGENT" : input.Action == "BLOCK_IDEA" ? "IDEA" : "PLAN",
+            fingerprint ?? $"AGENT:{input.AgentId}",
+            input.Reason ?? $"Human block: {input.Action}",
+            cancellationToken);
+    }
+
     return Results.Ok(new { recorded, companyId, decisionId, action = input.Action, actor });
 });
 
@@ -473,6 +500,6 @@ static string NormalizeActor(string? value)
         : "brain-admin";
 }
 
-public sealed record ApprovalRequest(bool PreconditionsSatisfied = true, string? Reason = null);\npublic sealed record HumanActionRequest(string Action, string? Reason = null);
+public sealed record ApprovalRequest(bool PreconditionsSatisfied = true, string? Reason = null);\npublic sealed record HumanActionRequest(string Action, string? Reason = null, string? OptionId = null, string? AgentId = null, string? Fingerprint = null);
 public sealed record EnrollmentRequest(string CompanyId, string DeviceId, string EnrollmentToken);
 public sealed record SyncRequest(string CompanyId, string DeviceId, string Envelope);

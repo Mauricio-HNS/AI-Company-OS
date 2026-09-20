@@ -1,4 +1,5 @@
-import type { RiskLevel, TaskStatus } from './operating-engine'
+import type { RiskLevel } from '@/packages/os-core/governance'
+import type { TaskStatus } from './operating-engine'
 
 export type BrainDecisionStatus =
   | 'PROPOSED'

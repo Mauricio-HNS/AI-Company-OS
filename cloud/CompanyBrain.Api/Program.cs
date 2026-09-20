@@ -6,6 +6,7 @@ using CompanyBrain.Api;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<CloudStore>();
+builder.Services.AddSingleton<CompanyDataStore>();
 builder.Services.AddSingleton<BrainProcessor>();
 builder.Services.AddSingleton<BrainDecisionEngine>();
 builder.Services.AddSingleton<AgentRegistry>();
@@ -42,6 +43,7 @@ app.Use(async (context, next) =>
 });
 
 app.UseRateLimiter();
+app.MapCompanyDataApi();
 
 static bool HasBrainAdminKey(HttpRequest request, IConfiguration configuration)
 {

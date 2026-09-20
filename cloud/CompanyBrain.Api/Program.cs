@@ -480,8 +480,7 @@ app.MapPost("/api/brain/v1/companies/{companyId}/decisions/{decisionId}/human-ac
         var fingerprint = input.Fingerprint;
         if (string.IsNullOrWhiteSpace(fingerprint) && input.OptionId is not null)
         {
-            var decision = await store.GetDecisionAsync(companyId, decisionId, cancellationToken);
-            var option = decision?.Options.FirstOrDefault(x => x.OptionId == input.OptionId);
+            var option = decision.Options.FirstOrDefault(x => x.OptionId == input.OptionId);
             if (option is not null)
                 fingerprint = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
                     System.Text.Encoding.UTF8.GetBytes($"{option.Title.Trim().ToUpperInvariant()}|{option.Summary.Trim().ToUpperInvariant()}")));

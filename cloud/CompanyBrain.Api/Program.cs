@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Threading.RateLimiting;
 using CompanyBrain.Api;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,8 +14,34 @@ builder.Services.AddSingleton<EvaluationReplanningService>();
 builder.Services.AddSingleton<AutonomousCycleService>();
 builder.Services.AddHttpClient<BrainLlmGateway>();
 builder.Services.AddHostedService<BrainProcessorWorker>();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 120,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+});
 
 var app = builder.Build();
+
+app.Use(async (context, next) =>
+{
+    var correlationId = context.Request.Headers["X-Correlation-Id"].ToString();
+    if (string.IsNullOrWhiteSpace(correlationId) || correlationId.Length > 100)
+        correlationId = Guid.NewGuid().ToString("N");
+
+    context.Response.Headers["X-Correlation-Id"] = correlationId;
+    await next();
+});
+
+app.UseRateLimiter();
 
 static bool HasBrainAdminKey(HttpRequest request, IConfiguration configuration)
 {

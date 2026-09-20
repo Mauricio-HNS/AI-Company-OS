@@ -304,6 +304,8 @@ Financial capacity is reserved before execution and protected by TTL. Expired re
 
 ### Company Memory
 
+The shared Memory capability owns the generic evidence-backed lifecycle; Company Brain remains responsible for company-specific storage, ingestion and reasoning.
+
 Knowledge is stored with evidence and lifecycle state:
 
 ```text
@@ -551,6 +553,8 @@ Current direction:
 First shared capability extracted:
 - `packages/capabilities/execution/` — generic dependency-aware execution queue mechanics and lifecycle transitions.
 - `lib/execution-queue.ts` remains the Company Runtime compatibility adapter because its current task model contains product-specific planning states.
+- `packages/capabilities/memory/` — generic evidence-backed memory lifecycle and status transitions.
+- `lib/company-memory.ts` remains a compatibility adapter over the shared Memory capability.
 
 ## Development status
 

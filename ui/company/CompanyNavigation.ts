@@ -13,6 +13,7 @@ import {
   Target,
   Users,
   Wallet,
+  FileCheck2,
   Zap,
 } from 'lucide-react'
 
@@ -26,6 +27,7 @@ export const companyViews = [
   'Customers',
   'Products',
   'Finance',
+  'Gestoría',
   'Intelligence',
   'Knowledge',
   'Operations',
@@ -71,6 +73,7 @@ export const companyNavigation: CompanyNavigationGroup[] = [
       { label: 'Customers', icon: Users },
       { label: 'Products', icon: Package },
       { label: 'Finance', icon: Wallet },
+      { label: 'Gestoría', icon: FileCheck2 },
     ],
   },
   {

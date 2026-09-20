@@ -50,6 +50,18 @@ public sealed class GovernedExecutionService
 
         Directory.CreateDirectory(workspace);
 
+        var manifestPath = Path.Combine(workspace, $"execution-{executionId}.json");
+        var initialManifest = JsonSerializer.Serialize(new
+        {
+            executionId,
+            request.CompanyId,
+            request.AgentId,
+            request.Objective,
+            actions = request.Actions.Distinct().ToArray(),
+            createdAt = DateTimeOffset.UtcNow
+        }, new JsonSerializerOptions { WriteIndented = true });
+        await File.WriteAllTextAsync(manifestPath, initialManifest, Encoding.UTF8, cancellationToken);
+
         foreach (var action in request.Actions.Distinct())
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -109,18 +121,6 @@ public sealed class GovernedExecutionService
             }
         }
 
-        var manifestPath = Path.Combine(workspace, $"execution-{executionId}.json");
-        var manifest = JsonSerializer.Serialize(new
-        {
-            executionId,
-            request.CompanyId,
-            request.AgentId,
-            request.Objective,
-            actions = request.Actions.Distinct().ToArray(),
-            createdAt = DateTimeOffset.UtcNow
-        }, new JsonSerializerOptions { WriteIndented = true });
-
-        await File.WriteAllTextAsync(manifestPath, manifest, Encoding.UTF8, cancellationToken);
         steps.Add("manifest: execution manifest persisted inside the Bridge execution boundary");
 
         _logger.LogInformation(

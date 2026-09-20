@@ -1,0 +1,2 @@
+import {NextResponse} from 'next/server'; import {createRecoveryToken,findUser} from '../../../../../lib/auth/store';
+export async function POST(req:Request){const body=await req.json().catch(()=>null);const email=String(body?.email??'').trim().toLowerCase();const user=findUser(email);const res=NextResponse.json({ok:true});if(user){const token=await createRecoveryToken(user.id);res.headers.set('X-Recovery-Development-Token',token)}return res;}

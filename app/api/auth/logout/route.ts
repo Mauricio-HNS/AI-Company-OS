@@ -1,0 +1,2 @@
+import {NextResponse} from 'next/server'; import {revokeSession} from '../../../../lib/auth/store';
+export async function POST(req:Request){const cookie=req.headers.get('cookie')?.match(/(?:^|; )aicos-session=([^;]+)/)?.[1];if(cookie)revokeSession(cookie);const res=NextResponse.json({ok:true});res.cookies.set('aicos-session','',{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax',path:'/',maxAge:0});return res;}

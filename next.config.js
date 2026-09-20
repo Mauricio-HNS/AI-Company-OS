@@ -1,17 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
-  basePath: '/AI-Company-OS',
-  trailingSlash: true,
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  images: {
-    unoptimized: true,
-  },
+  // DASH 1 authentication requires a server runtime. GitHub Pages remains a static preview only.
+  images: { unoptimized: true },
 }
-
 module.exports = nextConfig

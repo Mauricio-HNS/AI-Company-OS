@@ -124,7 +124,7 @@ The first migration makes `RiskLevel` an OS Core contract consumed by the operat
 The platform is evolving toward three explicit shared layers:
 
 - packages/foundation/ — system-wide contracts and primitives for identity, governance, execution, evidence and observability.
-- packages/capabilities/ — shared operational capabilities such as execution, connectors, memory, planning and deployment; these are introduced only when a capability is genuinely shared.
+- packages/capabilities/ — shared operational capabilities such as execution, connectors, memory, planning and deployment; these are introduced only when a capability is genuinely shared. The first capability is `execution/`.
 - packages/sdk/ — extension contracts for agents, connectors, tools and skills once those extension points are stable.
 
 packages/os-core/ is currently a compatibility facade over Foundation. It remains in place to avoid unnecessary churn while consumers migrate. No product-specific business logic is moved merely for structural symmetry.
@@ -132,3 +132,8 @@ packages/os-core/ is currently a compatibility facade over Foundation. It remain
 ### OSContext direction
 
 Cross-cutting operations will progressively use a composed OS context carrying identity, execution, governance and provenance rather than passing unrelated identifiers independently. This will be introduced incrementally to avoid duplicating existing ExecutionContext and CorrelationContext contracts.
+
+
+### First shared capability: Execution
+
+`packages/capabilities/execution/` now owns generic dependency-aware execution queue mechanics. The existing `lib/execution-queue.ts` remains as a compatibility adapter because the current Company Runtime task model includes product-specific planning states. This avoids forcing domain-specific statuses into the platform-wide execution contract.

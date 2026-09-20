@@ -533,6 +533,21 @@ cloud/
 
 The active company route composes through `CompanyRuntimeWorkspaceV2`; the former workspace monolith has been removed.
 
+### Foundation / OS Core
+
+Completed:
+
+- Shared platform foundation created under `packages/foundation/`.
+- Identity, governance, execution, evidence and observability contracts centralized.
+- `packages/os-core/` retained as a compatibility facade during migration.
+- First runtime consumers migrated from OS Core to Foundation.
+- Company authorization contracts centralized without moving business logic out of `lib/`.
+- Composed `OSContext` contract added for tenant, company, actor, execution, governance, correlation and provenance context.
+
+Current direction:
+
+`Foundation → Capabilities → SDK`, with migrations performed incrementally and existing product architecture preserved.
+
 ## Development status
 
 ### Phase 1 — Platform foundation
@@ -602,6 +617,7 @@ Remaining hardening work:
 - Opportunity detection
 - Production experiment management
 - Agent registry, capabilities and explicit autonomy policies ✓
+- Shared Foundation contracts and OSContext ✓
 - Real integrations
 - Dashboard 2.0 visual refinement
 - Module-level component extraction

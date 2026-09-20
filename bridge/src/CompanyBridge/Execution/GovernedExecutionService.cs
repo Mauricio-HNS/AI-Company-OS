@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -23,12 +24,16 @@ public sealed class GovernedExecutionService
     {
         var executionId = Guid.NewGuid().ToString("N");
         var steps = new List<string>();
+        var stopwatch = Stopwatch.StartNew();
 
         if (string.IsNullOrWhiteSpace(request.CompanyId) || string.IsNullOrWhiteSpace(request.AgentId))
             return Fail(executionId, steps, "CompanyId and AgentId are required.");
 
         if (string.IsNullOrWhiteSpace(request.Objective))
             return Fail(executionId, steps, "Execution objective is required.");
+
+        if (request.Actions.Count == 0)
+            return Fail(executionId, steps, "At least one execution action is required.");
 
         if (string.IsNullOrWhiteSpace(request.Workspace) || Path.IsPathRooted(request.Workspace))
             return Fail(executionId, steps, "Workspace must be a relative execution workspace.");
@@ -49,6 +54,9 @@ public sealed class GovernedExecutionService
         {
             cancellationToken.ThrowIfCancellationRequested();
 
+            if (stopwatch.Elapsed.TotalSeconds > policy.MaxExecutionSeconds)
+                return Fail(executionId, steps, "Execution exceeded the local policy time limit.");
+
             switch (action)
             {
                 case ExecutionAction.Discover:
@@ -60,15 +68,28 @@ public sealed class GovernedExecutionService
                     break;
 
                 case ExecutionAction.Validate:
-                    steps.Add("validate: artifact validation requested");
+                    if (!ValidateWorkspace(workspace, out var validationError))
+                        return Fail(executionId, steps, validationError);
+                    steps.Add("validate: execution workspace and manifest validated");
                     break;
 
                 case ExecutionAction.SandboxTest when policy.AllowSandbox:
-                    steps.Add("sandbox: isolated validation requested");
+                    if (!ValidateWorkspace(workspace, out var sandboxError))
+                        return Fail(executionId, steps, sandboxError);
+                    steps.Add("sandbox: pre-deployment validation passed; no external side effects executed");
                     break;
 
                 case ExecutionAction.StageDeployment:
-                    steps.Add("stage: deployment manifest may be prepared");
+                    if (!ValidateWorkspace(workspace, out var stageError))
+                        return Fail(executionId, steps, stageError);
+
+                    var artifact = await CreateDeploymentArtifactAsync(
+                        executionId,
+                        request,
+                        workspace,
+                        cancellationToken);
+
+                    steps.Add($"stage: deployment artifact {artifact.ArtifactId} prepared with SHA-256 {artifact.Sha256}");
                     break;
 
                 case ExecutionAction.Deploy:
@@ -108,6 +129,76 @@ public sealed class GovernedExecutionService
             request.CompanyId);
 
         return new ExecutionResult(true, executionId, "prepared", steps, manifestPath);
+    }
+
+    private static bool ValidateWorkspace(string workspace, out string error)
+    {
+        error = string.Empty;
+        if (!Directory.Exists(workspace))
+        {
+            error = "Execution workspace does not exist.";
+            return false;
+        }
+
+        var files = Directory.GetFiles(workspace, "*", SearchOption.AllDirectories);
+        if (files.Length == 0)
+        {
+            error = "Execution workspace is empty; no artifact can be validated.";
+            return false;
+        }
+
+        foreach (var file in files)
+        {
+            if (!Path.GetFullPath(file).StartsWith(
+                    Path.GetFullPath(workspace) + Path.DirectorySeparatorChar,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                error = "Execution artifact escapes the workspace boundary.";
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static async Task<DeploymentArtifact> CreateDeploymentArtifactAsync(
+        string executionId,
+        ExecutionRequest request,
+        string workspace,
+        CancellationToken cancellationToken)
+    {
+        var manifestPath = Path.Combine(workspace, $"artifact-{executionId}.json");
+        var sourceFiles = Directory.GetFiles(workspace, "*", SearchOption.AllDirectories)
+            .Select(Path.GetFullPath)
+            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+            .Select(path => new
+            {
+                path = Path.GetRelativePath(workspace, path),
+                size = new FileInfo(path).Length
+            })
+            .ToArray();
+
+        var payload = JsonSerializer.Serialize(new
+        {
+            artifactId = $"ART-{executionId}",
+            request.CompanyId,
+            request.AgentId,
+            request.Objective,
+            sourceFiles,
+            createdAt = DateTimeOffset.UtcNow
+        }, new JsonSerializerOptions { WriteIndented = true });
+
+        await File.WriteAllTextAsync(manifestPath, payload, Encoding.UTF8, cancellationToken);
+        var bytes = await File.ReadAllBytesAsync(manifestPath, cancellationToken);
+        var sha256 = Convert.ToHexString(SHA256.HashData(bytes));
+
+        return new DeploymentArtifact(
+            $"ART-{executionId}",
+            request.CompanyId,
+            request.AgentId,
+            manifestPath,
+            sha256,
+            DateTimeOffset.UtcNow);
     }
 
     private static ExecutionResult Fail(string id, List<string> steps, string error) =>

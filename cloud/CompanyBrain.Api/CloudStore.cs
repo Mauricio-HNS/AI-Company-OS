@@ -279,6 +279,34 @@ public sealed class CloudStore
         alter.ExecuteNonQuery();
     }
 
+    public async Task<bool> RecordDecisionActionAsync(string companyId, string decisionId, string action, string actor, string? reason, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(companyId) || string.IsNullOrWhiteSpace(decisionId) || string.IsNullOrWhiteSpace(action))
+            return false;
+
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            await using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+                INSERT INTO brain_decision_audit(audit_id, decision_id, company_id, action, actor, reason, created_at)
+                VALUES($id, $decision, $company, $action, $actor, $reason, $created);
+                """;
+            command.Parameters.AddWithValue("$id", Guid.NewGuid().ToString("N"));
+            command.Parameters.AddWithValue("$decision", decisionId);
+            command.Parameters.AddWithValue("$company", companyId);
+            command.Parameters.AddWithValue("$action", action);
+            command.Parameters.AddWithValue("$actor", actor);
+            command.Parameters.AddWithValue("$reason", (object?)reason ?? DBNull.Value);
+            command.Parameters.AddWithValue("$created", DateTimeOffset.UtcNow.ToString("O"));
+            await command.ExecuteNonQueryAsync(cancellationToken);
+            return true;
+        }
+        finally { _gate.Release(); }
+    }
+
     public async Task SaveMemoryAsync(BrainMemory memory, CancellationToken cancellationToken)
     {
         await using var connection = new SqliteConnection(_connectionString);

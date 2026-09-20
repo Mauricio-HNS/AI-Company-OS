@@ -8,6 +8,18 @@ export type BrainDecisionStatus =
   | 'EXECUTED'
   | 'CANCELLED'
 
+export type BrainDecisionOption = {
+  optionId: string
+  title: string
+  summary: string
+  details: string[]
+  expectedImpact: string
+  risks: string[]
+  cost?: string
+  dependencies: string[]
+  confidence: number
+}
+
 export type RuntimeBrainDecision = {
   decisionId: string
   companyId: string
@@ -18,6 +30,7 @@ export type RuntimeBrainDecision = {
   confidence: number
   approvalRequired: boolean
   preconditions: string[]
+  options: BrainDecisionOption[]
   status: BrainDecisionStatus
   createdAt: string
 }
@@ -26,6 +39,7 @@ export function registerBrainDecision(
   decision: RuntimeBrainDecision,
 ): RuntimeBrainDecision | undefined {
   if (decision.confidence < 0 || decision.confidence > 1) return undefined
+  if ((decision.action === 'PLAN' || decision.action === 'REQUEST_APPROVAL') && decision.options.length < 2) return undefined
   if (decision.riskLevel === 'HIGH' || decision.riskLevel === 'CRITICAL') {
     return { ...decision, approvalRequired: true, status: 'APPROVAL_REQUIRED' }
   }

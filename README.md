@@ -461,6 +461,9 @@ Human Review + Strategic Policy lifecycle contracts ✓
 Decision Center alternatives + human actions ✓
 Human decision actions persisted to audit trail ✓
 Durable idea/plan/agent blocking ✓
+Durable decision alternatives ✓
+Functional human review lifecycle ✓
+Human-requested Brain re-analysis ✓
       ↓
 Real integrations                 →
       ↓
@@ -558,6 +561,8 @@ Latest completed control-loop milestone:
 
 The autonomous loop now persists evaluation/replan state and converts a bounded replan into the next tenant-scoped Brain decision. Low-risk replans can be auto-approved; higher-risk replans remain approval-gated.
 
+Human review is now durable rather than audit-only: selected alternatives, edit/intervention notes and review status are persisted; deleting a plan closes the pending decision; additional-analysis requests enter a durable queue consumed by the Brain worker; accepted decisions remain subject to the existing approval and execution gates.
+
 Completed foundations:
 
 - Deterministic planning
@@ -600,7 +605,9 @@ Remaining hardening work:
 - Runtime pull endpoint for approved Brain decisions ✓
 - Trusted Bridge → browser runtime decision delivery ✓
 - Human approval workflow UI
-- Human Review multiple alternatives and strategic policy lifecycle contracts
+- Human Review multiple alternatives and strategic policy lifecycle contracts ✓
+- Durable human review state and selected-plan persistence ✓
+- Human-requested Brain re-analysis queue ✓
 - Opportunity detection
 - Production experiment management
 - Agent registry, capabilities and explicit autonomy policies ✓

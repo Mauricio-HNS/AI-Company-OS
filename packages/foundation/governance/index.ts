@@ -17,3 +17,23 @@ export type AuthorizationContext = {
   subjectId: string
   permission: Permission
 }
+
+export type CompanyRole = 'OWNER' | 'MANAGER' | 'EMPLOYEE' | 'VIEWER'
+
+export type CompanyPermission =
+  | 'VIEW_COMPANY'
+  | 'MONITOR_OPERATION'
+  | 'VIEW_FINANCE'
+  | 'MANAGE_STOCK'
+  | 'CREATE_MISSION'
+  | 'RUN_EXPERIMENT'
+  | 'CHANGE_PRICES'
+  | 'APPROVE_SPEND'
+  | 'MANAGE_USERS'
+  | 'EMERGENCY_STOP'
+
+export type CompanyAuthorization = {
+  role: CompanyRole
+  permission: CompanyPermission
+  approvalGranted?: boolean
+}

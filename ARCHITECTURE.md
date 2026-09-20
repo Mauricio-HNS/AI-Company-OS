@@ -141,3 +141,5 @@ Cross-cutting operations will progressively use a composed OS context carrying i
 `packages/capabilities/memory/` owns the generic evidence-backed memory record and lifecycle mechanics: creation, supersession, contestation and expiration handling. The existing `lib/company-memory.ts` remains as a compatibility adapter because Company Brain owns the company-specific storage, ingestion and reasoning around those records.
 
 `packages/capabilities/connectors/` now owns the generic governed connector lifecycle and authorization-gated activation boundary. Existing `domain/company/company-discovery.ts`, Bridge connectors and `lib/integration-control.ts` remain in place because they contain company/domain/provider-specific contracts and behavior. No connector implementation was moved merely for structural symmetry.
+
+`packages/capabilities/planning/` now owns generic planning-graph mechanics: dependency-aware ready-task resolution and graph validation. `lib/mission-generator.ts`, `lib/operating-engine.ts` and `lib/replanning-engine.ts` remain responsible for company objectives, mission generation, agent selection, risk policy and replanning heuristics.

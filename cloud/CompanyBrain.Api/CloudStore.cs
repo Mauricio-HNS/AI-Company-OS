@@ -121,6 +121,18 @@ public sealed class CloudStore
             );
             CREATE INDEX IF NOT EXISTS ix_brain_decision_audit_decision
                 ON brain_decision_audit(decision_id, created_at);
+            CREATE TABLE IF NOT EXISTS decision_blocks (
+                block_id TEXT PRIMARY KEY,
+                company_id TEXT NOT NULL,
+                agent_id TEXT,
+                scope TEXT NOT NULL,
+                fingerprint TEXT NOT NULL,
+                reason TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                active INTEGER NOT NULL DEFAULT 1
+            );
+            CREATE INDEX IF NOT EXISTS ix_decision_blocks_company_active
+                ON decision_blocks(company_id, active, scope, fingerprint);
             """;
         command.ExecuteNonQuery();
 
@@ -277,6 +289,69 @@ public sealed class CloudStore
         using var alter = connection.CreateCommand();
         alter.CommandText = $"ALTER TABLE {table} ADD COLUMN {column} {definition};";
         alter.ExecuteNonQuery();
+    }
+
+    public async Task<bool> AddDecisionBlockAsync(string companyId, string? agentId, string scope, string fingerprint, string reason, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(companyId) || string.IsNullOrWhiteSpace(scope) || string.IsNullOrWhiteSpace(fingerprint) || string.IsNullOrWhiteSpace(reason))
+            return false;
+
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            await using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+                INSERT INTO decision_blocks(block_id, company_id, agent_id, scope, fingerprint, reason, created_at, active)
+                VALUES($id, $company, $agent, $scope, $fingerprint, $reason, $created, 1);
+                """;
+            command.Parameters.AddWithValue("$id", Guid.NewGuid().ToString("N"));
+            command.Parameters.AddWithValue("$company", companyId);
+            command.Parameters.AddWithValue("$agent", (object?)agentId ?? DBNull.Value);
+            command.Parameters.AddWithValue("$scope", scope);
+            command.Parameters.AddWithValue("$fingerprint", fingerprint);
+            command.Parameters.AddWithValue("$reason", reason);
+            command.Parameters.AddWithValue("$created", DateTimeOffset.UtcNow.ToString("O"));
+            await command.ExecuteNonQueryAsync(cancellationToken);
+            return true;
+        }
+        finally { _gate.Release(); }
+    }
+
+    public async Task<bool> IsDecisionBlockedAsync(string companyId, string? agentId, string fingerprint, CancellationToken cancellationToken)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT 1 FROM decision_blocks
+            WHERE company_id = $company AND active = 1
+              AND (fingerprint = $fingerprint OR (scope = 'AGENT' AND agent_id = $agent))
+            LIMIT 1;
+            """;
+        command.Parameters.AddWithValue("$company", companyId);
+        command.Parameters.AddWithValue("$fingerprint", fingerprint);
+        command.Parameters.AddWithValue("$agent", (object?)agentId ?? DBNull.Value);
+        return await command.ExecuteScalarAsync(cancellationToken) is not null;
+    }
+
+    public async Task<IReadOnlyList<object>> GetActiveDecisionBlocksAsync(string companyId, CancellationToken cancellationToken)
+    {
+        var items = new List<object>();
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT block_id, company_id, agent_id, scope, fingerprint, reason, created_at
+            FROM decision_blocks WHERE company_id = $company AND active = 1
+            ORDER BY created_at DESC;
+            """;
+        command.Parameters.AddWithValue("$company", companyId);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            items.Add(new { blockId = reader.GetString(0), companyId = reader.GetString(1), agentId = reader.IsDBNull(2) ? null : reader.GetString(2), scope = reader.GetString(3), fingerprint = reader.GetString(4), reason = reader.GetString(5), createdAt = DateTimeOffset.Parse(reader.GetString(6)) });
+        return items;
     }
 
     public async Task<bool> RecordDecisionActionAsync(string companyId, string decisionId, string action, string actor, string? reason, CancellationToken cancellationToken)

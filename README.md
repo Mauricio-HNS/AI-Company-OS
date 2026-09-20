@@ -458,6 +458,7 @@ Decision evidence provenance           ✓
 Evaluation + Replanning                 ✓
       ↓
 Human Review + Strategic Policy lifecycle contracts ✓
+Decision Center alternatives + human actions ✓
       ↓
 Real integrations                 →
       ↓

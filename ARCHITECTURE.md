@@ -98,3 +98,23 @@ Visual rules are centralized in the existing OS design layers. New modules must 
 ## Migration policy
 
 This is an incremental refactor, not a rewrite. Existing engines remain operational while imports are progressively moved behind the domain/application/infrastructure/UI boundaries. Each migration must preserve the working product and keep the build green.
+
+
+## OS Core
+
+AI Company OS now has an explicit shared foundation under `packages/os-core/`.
+
+The OS Core is the authoritative home for platform-wide contracts and primitives that must not be reimplemented independently by Brain, Runtime, Bridge, Workforce, or future components.
+
+Current areas:
+- `identity/` — tenant, company, agent, and user context.
+- `governance/` — risk, approval, policy, and authorization contracts.
+- `execution/` — execution lifecycle and result contracts.
+- `evidence/` — audit and provenance contracts.
+- `observability/` — correlation context and diagnostics primitives.
+
+### Dependency rule
+
+Product-specific modules may depend on OS Core. OS Core must not depend on product-specific modules. Shared code is migrated incrementally only after references and ownership are verified.
+
+The first migration makes `RiskLevel` an OS Core contract consumed by the operating engine and Brain decision layer. Existing business logic remains in its owning modules until each responsibility is explicitly migrated.

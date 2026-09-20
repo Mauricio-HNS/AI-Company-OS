@@ -549,6 +549,8 @@ public sealed class CloudStore
                 confidence REAL NOT NULL,
                 approval_required INTEGER NOT NULL,
                 preconditions TEXT NOT NULL,
+                options TEXT NOT NULL DEFAULT '[]',
+                evidence TEXT NOT NULL DEFAULT '[]',
                 status TEXT NOT NULL,
                 created_at TEXT NOT NULL
             );

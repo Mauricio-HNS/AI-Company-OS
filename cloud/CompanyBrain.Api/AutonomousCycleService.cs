@@ -21,6 +21,38 @@ public sealed class AutonomousCycleService
 
     public async Task<int> RunAsync(CancellationToken cancellationToken)
     {
+        var analysisRequests = await _store.GetPendingAnalysisRequestsAsync(cancellationToken);
+        var analysisActions = 0;
+        foreach (var request in analysisRequests)
+        {
+            try
+            {
+                var memories = await _store.GetMemoriesAsync(request.CompanyId, 100, cancellationToken);
+                var decision = memories.Count == 0
+                    ? null
+                    : await _decisionEngine.GenerateAsync(request.CompanyId, memories, cancellationToken);
+
+                if (decision is not null)
+                {
+                    await _store.SaveDecisionAsync(decision, cancellationToken);
+                    await _store.RecordDecisionActionAsync(
+                        request.CompanyId,
+                        decision.DecisionId,
+                        "ANALYSIS_RESULT",
+                        "company-brain-analysis",
+                        $"Generated in response to request {request.RequestId}: {request.Reason}",
+                        cancellationToken);
+                    analysisActions++;
+                }
+
+                await _store.MarkAnalysisRequestAsync(request.RequestId, decision is null ? "FAILED" : "COMPLETED", cancellationToken);
+            }
+            catch
+            {
+                await _store.MarkAnalysisRequestAsync(request.RequestId, "FAILED", cancellationToken);
+            }
+        }
+
         var companies = await _store.GetCompanyIdsAsync(cancellationToken);
         var actions = 0;
 
@@ -158,6 +190,19 @@ public sealed class AutonomousCycleService
             parent.Confidence,
             replan.ApprovalRequired,
             replan.Steps,
+            new[]
+            {
+                new BrainDecisionOption(
+                    $"REPLAN-OPT-{replan.ReplanId}",
+                    "Execute the evaluated replan",
+                    replan.Strategy,
+                    replan.Steps,
+                    "Derived from the previous evaluation.",
+                    Array.Empty<string>(),
+                    "unknown",
+                    Array.Empty<string>(),
+                    parent.Confidence)
+            },
             parent.Evidence,
             "PROPOSED",
             replan.CreatedAt);

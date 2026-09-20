@@ -8,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<CloudStore>();
 builder.Services.AddSingleton<CompanyDataStore>();
 builder.Services.AddSingleton<CompanyOutputStore>();
+builder.Services.AddSingleton<AutonomyStore>();
 builder.Services.AddSingleton<BrainProcessor>();
 builder.Services.AddSingleton<BrainDecisionEngine>();
 builder.Services.AddSingleton<AgentRegistry>();
@@ -46,6 +47,7 @@ app.Use(async (context, next) =>
 app.UseRateLimiter();
 app.MapCompanyDataApi();
 app.MapCompanyOutputApi();
+app.MapCompanyAutonomyApi();
 
 static bool HasBrainAdminKey(HttpRequest request, IConfiguration configuration)
 {

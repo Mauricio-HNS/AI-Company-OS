@@ -13,6 +13,21 @@ export default function ApprovalsModule() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [notice, setNotice] = useState<string | null>(null)
 
+  const recordAction = async (decisionId: string, action: string, optionId?: string, reason?: string, agentId?: string) => {
+    try {
+      const response = await fetch('/api/company-brain/human-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyId: runtime.companyId ?? '', decisionId, action, optionId, reason, agentId }),
+      })
+      const payload = await response.json()
+      if (!response.ok || !payload.recorded) throw new Error(payload.reason ?? 'Action was not persisted.')
+      setNotice(`Human action ${action} persisted to the audit trail.`)
+    } catch {
+      setNotice(`Human action ${action} could not be persisted. No external execution was authorized.`)
+    }
+  }
+
   return <>
     <div className={styles.pageHead}>
       <div>
@@ -83,13 +98,13 @@ export default function ApprovalsModule() {
             </div>
 
             <div className={styles.headActions}>
-              <button className={styles.primary} disabled={decision.options.length > 0 && !selected[decision.decisionId]} onClick={() => { approveDecision(decision.decisionId); setNotice(`Decision ${decision.decisionId} approved for the selected solution.`) }}><Check size={15}/>Accept solution</button>
-              <button className={styles.secondary} onClick={() => setNotice('Edit mode: the selected solution is ready for human intervention before execution.')}><Edit3 size={15}/>Edit</button>
-              <button className={styles.secondary} onClick={() => setNotice('Intervention recorded as a human-control action. Execution remains blocked until a valid approval.')}><Eye size={15}/>Intervene</button>
-              <button className={styles.secondary} onClick={() => setNotice('The agent was asked for additional analysis. No execution was authorized.')}><MoreHorizontal size={15}/>More analysis</button>
-              <button className={styles.secondary} onClick={() => { rejectDecision(decision.decisionId); setNotice('Plan deleted/rejected. No execution was authorized.') }}><Trash2 size={15}/>Delete plan</button>
-              <button className={styles.secondary} onClick={() => setNotice('Block target recorded for this review scope. Persistent policy storage will be wired to the governance store next.')}><Ban size={15}/>Block</button>
-              <button className={styles.secondary} onClick={() => setNotice('Agent block requested. No execution was authorized.')}><X size={15}/>Block agent</button>
+              <button className={styles.primary} disabled={decision.options.length > 0 && !selected[decision.decisionId]} onClick={() => { void recordAction(decision.decisionId, 'ACCEPT', selected[decision.decisionId], 'Human accepted the selected solution.'); approveDecision(decision.decisionId) }}><Check size={15}/>Accept solution</button>
+              <button className={styles.secondary} onClick={() => void recordAction(decision.decisionId, 'EDIT', selected[decision.decisionId], 'Human requested editing before execution.')}><Edit3 size={15}/>Edit</button>
+              <button className={styles.secondary} onClick={() => void recordAction(decision.decisionId, 'INTERVENE', selected[decision.decisionId], 'Human intervention requested before execution.')}><Eye size={15}/>Intervene</button>
+              <button className={styles.secondary} onClick={() => void recordAction(decision.decisionId, 'REQUEST_MORE_ANALYSIS', selected[decision.decisionId], 'Human requested additional analysis.')}><MoreHorizontal size={15}/>More analysis</button>
+              <button className={styles.secondary} onClick={() => { void recordAction(decision.decisionId, 'DELETE_PLAN', selected[decision.decisionId], 'Human deleted the proposed plan.'); rejectDecision(decision.decisionId) }}><Trash2 size={15}/>Delete plan</button>
+              <button className={styles.secondary} onClick={() => void recordAction(decision.decisionId, 'BLOCK_PLAN', selected[decision.decisionId], 'Human blocked this plan from being proposed again.')}><Ban size={15}/>Block</button>
+              <button className={styles.secondary} onClick={() => void recordAction(decision.decisionId, 'BLOCK_AGENT', undefined, 'Human blocked the decision-producing agent.', 'company-brain-agent')}><X size={15}/>Block agent</button>
             </div>
           </section>
         ))}

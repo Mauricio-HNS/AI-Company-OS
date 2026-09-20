@@ -118,3 +118,17 @@ Current areas:
 Product-specific modules may depend on OS Core. OS Core must not depend on product-specific modules. Shared code is migrated incrementally only after references and ownership are verified.
 
 The first migration makes `RiskLevel` an OS Core contract consumed by the operating engine and Brain decision layer. Existing business logic remains in its owning modules until each responsibility is explicitly migrated.
+
+## Foundation, Capabilities and SDK
+
+The platform is evolving toward three explicit shared layers:
+
+- packages/foundation/ — system-wide contracts and primitives for identity, governance, execution, evidence and observability.
+- packages/capabilities/ — shared operational capabilities such as execution, connectors, memory, planning and deployment; these are introduced only when a capability is genuinely shared.
+- packages/sdk/ — extension contracts for agents, connectors, tools and skills once those extension points are stable.
+
+packages/os-core/ is currently a compatibility facade over Foundation. It remains in place to avoid unnecessary churn while consumers migrate. No product-specific business logic is moved merely for structural symmetry.
+
+### OSContext direction
+
+Cross-cutting operations will progressively use a composed OS context carrying identity, execution, governance and provenance rather than passing unrelated identifiers independently. This will be introduced incrementally to avoid duplicating existing ExecutionContext and CorrelationContext contracts.

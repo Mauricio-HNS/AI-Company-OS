@@ -387,6 +387,7 @@ Completed in this UI hardening cycle:
 - Autonomous Company Brain cycle added: memory → decision → controlled approval → agent execution
 - Low-risk decisions can be promoted automatically; higher-risk decisions remain human-gated
 - Brain worker now drives the autonomous cycle continuously while preserving external-side-effect isolation
+- Company Bridge execution workspaces are confined to the local Bridge data directory; deployment remains policy-disabled
 - Agent observations and recommended next steps are fed back into Company Memory for subsequent cycles
 - Tenant/data provenance isolation enforced: devices are not treated as company identity, and data sources require explicit company binding
 - Bridge sync rejects envelopes whose CompanyId does not match the authenticated tenant

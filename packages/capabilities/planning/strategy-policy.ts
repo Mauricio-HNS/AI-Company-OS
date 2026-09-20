@@ -71,9 +71,13 @@ export function createOperatingStrategy(input: Omit<OperatingStrategy, 'status'>
   return { ...input, status: 'DRAFT' }
 }
 
-export function activateStrategy(strategy: OperatingStrategy, now = new Date()): OperatingStrategy {
+export function activateStrategy(
+  strategy: OperatingStrategy,
+  now = new Date(),
+  context: { observed?: Record<string, number | string>; completedStrategyIds?: string[] } = {},
+): OperatingStrategy {
   if (strategy.status !== 'DRAFT' && strategy.status !== 'SCHEDULED' && strategy.status !== 'PAUSED') return strategy
-  if (!triggerIsSatisfied(strategy.startsWhen, now)) return strategy
+  if (!triggerIsSatisfied(strategy.startsWhen, now, context)) return strategy
   return { ...strategy, status: 'ACTIVE', updatedAt: now.toISOString() }
 }
 
@@ -81,6 +85,7 @@ export function evaluateStrategyEnd(
   strategy: OperatingStrategy,
   now: Date,
   observed: Record<string, number | string> = {},
+  context: { activatedStrategyIds?: string[] } = {},
 ): boolean {
   if (strategy.status !== 'ACTIVE') return false
   if (strategy.endsWhen.conditions.some(condition => condition.type === 'MANUAL' || condition.type === 'NEVER')) {
@@ -89,7 +94,7 @@ export function evaluateStrategyEnd(
   }
   const results = strategy.endsWhen.conditions
     .filter(condition => condition.type !== 'MANUAL' && condition.type !== 'NEVER')
-    .map(condition => endConditionIsSatisfied(condition, now, observed))
+    .map(condition => endConditionIsSatisfied(condition, now, observed, context))
   return results.length > 0 && (strategy.endsWhen.mode === 'ALL' ? results.every(Boolean) : results.some(Boolean))
 }
 
@@ -103,24 +108,63 @@ export function completeStrategy(
 
 export function strategyCanOverride(candidate: OperatingStrategy, current: OperatingStrategy): boolean {
   if (candidate.companyId !== current.companyId) return false
+  if (candidate.id === current.id) return false
+  if (candidate.status === 'CANCELLED' || candidate.status === 'COMPLETED') return false
   return candidate.priority < current.priority
 }
 
-function triggerIsSatisfied(trigger: StrategyTrigger, now: Date): boolean {
+export function detectStrategyConflicts(strategies: OperatingStrategy[]): Array<{
+  companyId: string
+  candidateId: string
+  currentId: string
+  reason: string
+}> {
+  const active = strategies.filter(strategy => strategy.status === 'ACTIVE' || strategy.status === 'SCHEDULED')
+  const conflicts: Array<{ companyId: string; candidateId: string; currentId: string; reason: string }> = []
+
+  for (const candidate of active) {
+    for (const current of active) {
+      if (candidate.id === current.id || candidate.companyId !== current.companyId) continue
+      if (candidate.priority >= current.priority) continue
+      conflicts.push({
+        companyId: candidate.companyId,
+        candidateId: candidate.id,
+        currentId: current.id,
+        reason: 'Higher-priority strategy may override a lower-priority active strategy.',
+      })
+    }
+  }
+
+  return conflicts
+}
+
+function triggerIsSatisfied(
+  trigger: StrategyTrigger,
+  now: Date,
+  context: { observed?: Record<string, number | string>; completedStrategyIds?: string[] },
+): boolean {
   if (trigger.type === 'IMMEDIATE') return true
   if (trigger.type === 'DATE') return new Date(trigger.at).getTime() <= now.getTime()
-  return false
+  if (trigger.type === 'CONDITION') {
+    const actual = context.observed?.[trigger.condition.metric]
+    return actual !== undefined && compare(actual, trigger.condition.operator, trigger.condition.value)
+  }
+  return context.completedStrategyIds?.includes(trigger.strategyId) ?? false
 }
 
 function endConditionIsSatisfied(
   condition: StrategyEndCondition,
   now: Date,
   observed: Record<string, number | string>,
+  context: { activatedStrategyIds?: string[] },
 ): boolean {
   if (condition.type === 'DATE') return new Date(condition.at).getTime() <= now.getTime()
   if (condition.type === 'GOAL' || condition.type === 'CONDITION') {
     const actual = observed[condition.condition.metric]
     return actual !== undefined && compare(actual, condition.condition.operator, condition.condition.value)
+  }
+  if (condition.type === 'STRATEGY_ACTIVATED') {
+    return context.activatedStrategyIds?.includes(condition.strategyId) ?? false
   }
   return false
 }

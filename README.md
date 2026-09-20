@@ -323,6 +323,7 @@ The UI exposes:
 - Operations
 - Security & Control
 - Finance
+- Gestoría & Compliance
 - Products
 - Customers
 - Settings

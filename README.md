@@ -457,6 +457,8 @@ Decision evidence provenance           ✓
       ↓
 Evaluation + Replanning                 ✓
       ↓
+Human Review + Strategic Policy lifecycle contracts ✓
+      ↓
 Real integrations                 →
       ↓
 Dashboard 2.0                     →
@@ -595,6 +597,7 @@ Remaining hardening work:
 - Runtime pull endpoint for approved Brain decisions ✓
 - Trusted Bridge → browser runtime decision delivery ✓
 - Human approval workflow UI
+- Human Review multiple alternatives and strategic policy lifecycle contracts
 - Opportunity detection
 - Production experiment management
 - Agent registry, capabilities and explicit autonomy policies ✓

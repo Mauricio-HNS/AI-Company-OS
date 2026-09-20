@@ -143,7 +143,7 @@ public sealed class BrainDecisionEngine
             var availableOptions = new List<BrainDecisionOptionPayload>();
             foreach (var candidate in candidateOptions)
             {
-                if (!await _store.IsDecisionBlockedAsync(companyId, null, candidate.Fingerprint, cancellationToken))
+                if (!await _store.IsDecisionBlockedAsync(companyId, "company-brain-agent", candidate.Fingerprint, cancellationToken))
                     availableOptions.Add(candidate.Option);
             }
 

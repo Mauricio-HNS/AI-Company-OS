@@ -460,6 +460,7 @@ Evaluation + Replanning                 ✓
 Human Review + Strategic Policy lifecycle contracts ✓
 Decision Center alternatives + human actions ✓
 Human decision actions persisted to audit trail ✓
+Durable idea/plan/agent blocking ✓
       ↓
 Real integrations                 →
       ↓

@@ -54,8 +54,13 @@ public sealed class BrainDecisionEngine
     };
 
     private readonly BrainLlmGateway _llm;
+    private readonly CloudStore _store;
 
-    public BrainDecisionEngine(BrainLlmGateway llm) => _llm = llm;
+    public BrainDecisionEngine(BrainLlmGateway llm, CloudStore store)
+    {
+        _llm = llm;
+        _store = store;
+    }
 
     public async Task<BrainDecision?> GenerateAsync(
         string companyId,
@@ -126,6 +131,31 @@ public sealed class BrainDecisionEngine
                 return null;
 
             var risk = dto.RiskLevel.ToUpperInvariant();
+            var candidateOptions = dto.Options
+                .Take(5)
+                .Select(option => new
+                {
+                    Option = option,
+                    Fingerprint = Fingerprint(option.Title, option.Summary)
+                })
+                .ToArray();
+
+            var availableOptions = new List<BrainDecisionOptionPayload>();
+            foreach (var candidate in candidateOptions)
+            {
+                if (!await _store.IsDecisionBlockedAsync(companyId, null, candidate.Fingerprint, cancellationToken))
+                    availableOptions.Add(candidate.Option);
+            }
+
+            if (availableOptions.Count == 0 && candidateOptions.Length > 0)
+            {
+                _loggerWarning(companyId, "All generated alternatives were blocked.");
+                return null;
+            }
+
+            if ((dto.Action.Equals("PLAN", StringComparison.OrdinalIgnoreCase) || dto.Action.Equals("REQUEST_APPROVAL", StringComparison.OrdinalIgnoreCase))
+                && availableOptions.Count < 2)
+                return null;
             var approvalRequired = dto.ApprovalRequired || risk is "HIGH" or "CRITICAL";
 
             return new BrainDecision(
@@ -138,7 +168,7 @@ public sealed class BrainDecisionEngine
                 dto.Confidence,
                 approvalRequired,
                 dto.Preconditions.Where(x => !string.IsNullOrWhiteSpace(x)).Take(20).Select(x => x.Trim()).ToArray(),
-                dto.Options.Take(5).Select(option => new BrainDecisionOption(
+                availableOptions.Select(option => new BrainDecisionOption(
                     string.IsNullOrWhiteSpace(option.OptionId) ? $"OPT-{Guid.NewGuid():N}" : option.OptionId.Trim(),
                     string.IsNullOrWhiteSpace(option.Title) ? "Alternative" : option.Title.Trim(),
                     string.IsNullOrWhiteSpace(option.Summary) ? "No summary provided." : option.Summary.Trim(),
@@ -161,6 +191,17 @@ public sealed class BrainDecisionEngine
         {
             return null;
         }
+    }
+
+    private static string Fingerprint(string title, string summary)
+    {
+        var normalized = $"{title.Trim().ToUpperInvariant()}|{summary.Trim().ToUpperInvariant()}";
+        return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(normalized)));
+    }
+
+    private void _loggerWarning(string companyId, string message)
+    {
+        // Block evaluation is intentionally silent to the model; operational logging can be added at the service boundary.
     }
 
     private sealed record DecisionPayload(

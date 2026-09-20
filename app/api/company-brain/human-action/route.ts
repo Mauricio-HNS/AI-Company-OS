@@ -12,6 +12,7 @@ export async function POST(request: NextRequest) {
   const reason = body.reason ? String(body.reason) : undefined
   const optionId = body.optionId ? String(body.optionId) : undefined
   const agentId = body.agentId ? String(body.agentId) : undefined
+  const humanNote = body.humanNote ? String(body.humanNote) : undefined
   if (!companyId || !decisionId || !action) return NextResponse.json({ recorded: false, reason: 'companyId, decisionId and action are required.' }, { status: 400 })
 
   const response = await fetch(
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Brain-Admin-Key': adminKey, 'X-Brain-Actor': 'company-os-ui' },
-      body: JSON.stringify({ action, reason, optionId, agentId }),
+      body: JSON.stringify({ action, reason, optionId, agentId, humanNote }),
       cache: 'no-store',
     },
   )

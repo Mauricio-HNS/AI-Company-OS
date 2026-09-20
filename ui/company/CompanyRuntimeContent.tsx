@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 import { Activity, Bot, BrainCircuit, CheckCircle2, ChevronRight, CircleDollarSign, Clock3, Database, Megaphone, Package, PlugZap, Settings, ShieldCheck, Target, Users, Wallet, WalletCards, Zap } from 'lucide-react'
-import styles from '../../app/company/[companyId]/CompanyRuntimeWorkspace.module.css'
+import styles from '../../app/company/[companyId]/CompanyRuntimeWorkspaceV2.module.css'
 import { formatMoney } from '../../lib/business-metrics'
 import { useCompanyRuntime } from '../../app/company/[companyId]/CompanyRuntimeContext'
 import type { CompanyView } from './CompanyNavigation'

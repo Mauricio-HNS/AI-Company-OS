@@ -38,6 +38,11 @@ This is a product requirement and architectural north star, not permission for u
 A concrete target scenario is: a customer asks the OS to integrate with an existing ERP or business system; the OS discovers the authorized interface, builds the required API/bridge, tests it, prepares the deployment package, deploys it through an approved deployment adapter into the authorized customer environment, verifies health, and then makes the resulting capability available to the appropriate agents.
 
 
+## Program documentation
+
+The complete product vision, real-company operating scenario, integration/deployment model, governance principles and implementation direction are documented in [`docs/PROGRAM-VISION.md`](docs/PROGRAM-VISION.md).
+
+
 ## Architecture
 
 ```text
@@ -299,6 +304,8 @@ Financial capacity is reserved before execution and protected by TTL. Expired re
 
 ### Company Memory
 
+The shared Memory capability owns the generic evidence-backed lifecycle; Company Brain remains responsible for company-specific storage, ingestion and reasoning.
+
 Knowledge is stored with evidence and lifecycle state:
 
 ```text
@@ -528,6 +535,30 @@ cloud/
 
 The active company route composes through `CompanyRuntimeWorkspaceV2`; the former workspace monolith has been removed.
 
+### Foundation / OS Core
+
+Completed:
+
+- Shared platform foundation created under `packages/foundation/`.
+- Identity, governance, execution, evidence and observability contracts centralized.
+- `packages/os-core/` retained as a compatibility facade during migration.
+- First runtime consumers migrated from OS Core to Foundation.
+- Company authorization contracts centralized without moving business logic out of `lib/`.
+- Composed `OSContext` contract added for tenant, company, actor, execution, governance, correlation and provenance context.
+
+Current direction:
+
+`Foundation → Capabilities → SDK`, with migrations performed incrementally and existing product architecture preserved.
+
+First shared capability extracted:
+- `packages/capabilities/execution/` — generic dependency-aware execution queue mechanics and lifecycle transitions.
+- `lib/execution-queue.ts` remains the Company Runtime compatibility adapter because its current task model contains product-specific planning states.
+- `packages/capabilities/memory/` — generic evidence-backed memory lifecycle and status transitions.
+- `lib/company-memory.ts` remains a compatibility adapter over the shared Memory capability.
+- `packages/capabilities/connectors/` — governed connector lifecycle and authorization-gated activation.
+- `packages/capabilities/planning/` — generic dependency-aware planning graph mechanics and validation.
+- Existing Bridge/domain connector implementations and Company Runtime planning heuristics remain in their current owners.
+
 ## Development status
 
 ### Phase 1 — Platform foundation
@@ -597,6 +628,7 @@ Remaining hardening work:
 - Opportunity detection
 - Production experiment management
 - Agent registry, capabilities and explicit autonomy policies ✓
+- Shared Foundation contracts and OSContext ✓
 - Real integrations
 - Dashboard 2.0 visual refinement
 - Module-level component extraction

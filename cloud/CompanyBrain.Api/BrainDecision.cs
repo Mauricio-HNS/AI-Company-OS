@@ -2,6 +2,17 @@ using System.Text.Json;
 
 namespace CompanyBrain.Api;
 
+public sealed record BrainDecisionOption(
+    string OptionId,
+    string Title,
+    string Summary,
+    string[] Details,
+    string ExpectedImpact,
+    string[] Risks,
+    string? Cost,
+    string[] Dependencies,
+    double Confidence);
+
 public sealed record BrainDecisionProvenance(
     string MemoryId,
     string CompanyId,
@@ -19,6 +30,7 @@ public sealed record BrainDecision(
     double Confidence,
     bool ApprovalRequired,
     string[] Preconditions,
+    BrainDecisionOption[] Options,
     BrainDecisionProvenance[] Evidence,
     string Status,
     DateTimeOffset CreatedAt);
@@ -76,7 +88,10 @@ public sealed class BrainDecisionEngine
             You are the Company Brain decision layer.
             Return ONLY valid JSON. No markdown, no code fences and no commentary.
             Use exactly these fields:
-            objective, action, reason, riskLevel, confidence, approvalRequired, preconditions.
+            objective, action, reason, riskLevel, confidence, approvalRequired, preconditions, options.
+            options must contain at least two distinct alternatives when action is PLAN or REQUEST_APPROVAL.
+            Each option must contain: optionId, title, summary, details, expectedImpact, risks, cost, dependencies, confidence.
+            Do not invent costs or impacts; use "unknown" when the evidence does not support them.
             action must be one of: OBSERVE, PLAN, REQUEST_APPROVAL, NO_ACTION.
             riskLevel must be one of: LOW, MEDIUM, HIGH, CRITICAL.
             confidence must be a number from 0 to 1.
@@ -103,6 +118,8 @@ public sealed class BrainDecisionEngine
                 string.IsNullOrWhiteSpace(dto.Reason) ||
                 string.IsNullOrWhiteSpace(dto.RiskLevel) ||
                 dto.Preconditions is null ||
+                dto.Options is null ||
+                (dto.Action is not null && (dto.Action.Equals("PLAN", StringComparison.OrdinalIgnoreCase) || dto.Action.Equals("REQUEST_APPROVAL", StringComparison.OrdinalIgnoreCase)) && dto.Options.Length < 2) ||
                 !AllowedActions.Contains(dto.Action) ||
                 !AllowedRiskLevels.Contains(dto.RiskLevel) ||
                 dto.Confidence is < 0 or > 1)
@@ -121,6 +138,16 @@ public sealed class BrainDecisionEngine
                 dto.Confidence,
                 approvalRequired,
                 dto.Preconditions.Where(x => !string.IsNullOrWhiteSpace(x)).Take(20).Select(x => x.Trim()).ToArray(),
+                dto.Options.Take(5).Select(option => new BrainDecisionOption(
+                    string.IsNullOrWhiteSpace(option.OptionId) ? $"OPT-{Guid.NewGuid():N}" : option.OptionId.Trim(),
+                    string.IsNullOrWhiteSpace(option.Title) ? "Alternative" : option.Title.Trim(),
+                    string.IsNullOrWhiteSpace(option.Summary) ? "No summary provided." : option.Summary.Trim(),
+                    (option.Details ?? Array.Empty<string>()).Where(x => !string.IsNullOrWhiteSpace(x)).Take(10).Select(x => x.Trim()).ToArray(),
+                    string.IsNullOrWhiteSpace(option.ExpectedImpact) ? "unknown" : option.ExpectedImpact.Trim(),
+                    (option.Risks ?? Array.Empty<string>()).Where(x => !string.IsNullOrWhiteSpace(x)).Take(10).Select(x => x.Trim()).ToArray(),
+                    string.IsNullOrWhiteSpace(option.Cost) ? "unknown" : option.Cost.Trim(),
+                    (option.Dependencies ?? Array.Empty<string>()).Where(x => !string.IsNullOrWhiteSpace(x)).Take(10).Select(x => x.Trim()).ToArray(),
+                    Math.Clamp(option.Confidence, 0, 1))).ToArray(),
                 verifiedMemories.Select(memory => new BrainDecisionProvenance(
                     memory.MemoryId,
                     memory.CompanyId,
@@ -143,5 +170,17 @@ public sealed class BrainDecisionEngine
         string? RiskLevel,
         double Confidence,
         bool ApprovalRequired,
-        string[]? Preconditions);
+        string[]? Preconditions,
+        BrainDecisionOptionPayload[]? Options);
+
+    private sealed record BrainDecisionOptionPayload(
+        string? OptionId,
+        string? Title,
+        string? Summary,
+        string[]? Details,
+        string? ExpectedImpact,
+        string[]? Risks,
+        string? Cost,
+        string[]? Dependencies,
+        double Confidence);
 }

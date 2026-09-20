@@ -434,6 +434,44 @@ app.MapPost("/api/brain/v1/companies/{companyId}/decisions/{decisionId}/human-ac
     var actor = NormalizeActor(request.Headers["X-Brain-Actor"].ToString());
     var recorded = await store.RecordDecisionActionAsync(companyId, decisionId, input.Action, actor, input.Reason, cancellationToken);
 
+    if (recorded && input.Action is "ACCEPT" or "EDIT" or "INTERVENE")
+    {
+        var reviewStatus = input.Action switch
+        {
+            "ACCEPT" => "ACCEPTED",
+            "EDIT" => "EDITED",
+            _ => "INTERVENED"
+        };
+        recorded = await store.UpsertHumanReviewAsync(
+            companyId, decisionId, input.OptionId, reviewStatus,
+            input.HumanNote ?? input.Reason, cancellationToken);
+    }
+
+    if (recorded && input.Action == "REQUEST_MORE_ANALYSIS")
+    {
+        recorded = await store.UpsertHumanReviewAsync(
+            companyId, decisionId, input.OptionId, "ANALYSIS_REQUESTED",
+            input.HumanNote ?? input.Reason, cancellationToken);
+        if (recorded)
+            recorded = await store.CreateAnalysisRequestAsync(
+                companyId, decisionId,
+                input.HumanNote ?? input.Reason ?? "Additional human analysis requested.",
+                actor, cancellationToken);
+    }
+
+    if (recorded && input.Action == "DELETE_PLAN")
+    {
+        recorded = await store.UpsertHumanReviewAsync(
+            companyId, decisionId, input.OptionId, "DELETED",
+            input.HumanNote ?? input.Reason ?? "Plan deleted by human.",
+            cancellationToken);
+        if (recorded && decision.Status == "APPROVAL_REQUIRED")
+            recorded = await store.UpdateDecisionStatusAsync(
+                companyId, decisionId, "APPROVAL_REQUIRED", "REJECTED",
+                actor, input.Reason ?? "Plan deleted by human.",
+                cancellationToken);
+    }
+
     if (recorded && input.Action is "BLOCK_IDEA" or "BLOCK_PLAN" or "BLOCK_AGENT")
     {
         if (input.Action == "BLOCK_AGENT" && string.IsNullOrWhiteSpace(input.AgentId))
@@ -500,6 +538,12 @@ static string NormalizeActor(string? value)
         : "brain-admin";
 }
 
-public sealed record ApprovalRequest(bool PreconditionsSatisfied = true, string? Reason = null);\npublic sealed record HumanActionRequest(string Action, string? Reason = null, string? OptionId = null, string? AgentId = null, string? Fingerprint = null);
+public sealed record ApprovalRequest(bool PreconditionsSatisfied = true, string? Reason = null);\npublic sealed record HumanActionRequest(
+    string Action,
+    string? Reason = null,
+    string? OptionId = null,
+    string? AgentId = null,
+    string? Fingerprint = null,
+    string? HumanNote = null);
 public sealed record EnrollmentRequest(string CompanyId, string DeviceId, string EnrollmentToken);
 public sealed record SyncRequest(string CompanyId, string DeviceId, string Envelope);

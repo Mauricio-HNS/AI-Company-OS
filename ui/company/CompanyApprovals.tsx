@@ -105,7 +105,8 @@ export default function ApprovalsModule() {
               <button className={styles.secondary} onClick={() => void recordAction(decision.decisionId, 'INTERVENE', selected[decision.decisionId], 'Human intervention requested before execution.')}><Eye size={15}/>Intervene</button>
               <button className={styles.secondary} onClick={() => void recordAction(decision.decisionId, 'REQUEST_MORE_ANALYSIS', selected[decision.decisionId], 'Human requested additional analysis.')}><MoreHorizontal size={15}/>More analysis</button>
               <button className={styles.secondary} onClick={() => { void recordAction(decision.decisionId, 'DELETE_PLAN', selected[decision.decisionId], 'Human deleted the proposed plan.'); rejectDecision(decision.decisionId) }}><Trash2 size={15}/>Delete plan</button>
-              <button className={styles.secondary} onClick={() => void recordAction(decision.decisionId, 'BLOCK_PLAN', selected[decision.decisionId], 'Human blocked this plan from being proposed again.')}><Ban size={15}/>Block</button>
+              <button className={styles.secondary} disabled={!selected[decision.decisionId]} onClick={() => void recordAction(decision.decisionId, 'BLOCK_IDEA', selected[decision.decisionId], 'Human blocked this idea from being proposed again.')}><Ban size={15}/>Block idea</button>
+              <button className={styles.secondary} disabled={!selected[decision.decisionId]} onClick={() => void recordAction(decision.decisionId, 'BLOCK_PLAN', selected[decision.decisionId], 'Human blocked this plan from being proposed again.')}><Ban size={15}/>Block plan</button>
               <button className={styles.secondary} onClick={() => void recordAction(decision.decisionId, 'BLOCK_AGENT', undefined, 'Human blocked the decision-producing agent.', 'company-brain-agent')}><X size={15}/>Block agent</button>
             </div>
           </section>

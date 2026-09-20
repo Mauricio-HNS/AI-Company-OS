@@ -77,6 +77,7 @@ public sealed class CloudStore
                 confidence REAL NOT NULL,
                 approval_required INTEGER NOT NULL,
                 preconditions TEXT NOT NULL,
+                options TEXT NOT NULL DEFAULT '[]',
                 evidence TEXT NOT NULL DEFAULT '[]',
                 status TEXT NOT NULL,
                 created_at TEXT NOT NULL
@@ -146,7 +147,38 @@ public sealed class CloudStore
         EnsureColumn(connection, "memories", "source_type", "TEXT NOT NULL DEFAULT 'UNKNOWN'");
         EnsureColumn(connection, "memories", "device_id", "TEXT NOT NULL DEFAULT ''");
 
-        EnsureColumn(connection, "brain_decisions", "evidence", "TEXT NOT NULL DEFAULT '[]'");
+        EnsureColumn(connection, "brain_decisions", "options", "TEXT NOT NULL DEFAULT '[]'");
+        EnsureColumn(connection, "brain_decisions", "evidence", "TEXT NOT NULL DEFAULT '[]');
+
+        using var reviewSchema = connection.CreateCommand();
+        reviewSchema.CommandText = """
+            CREATE TABLE IF NOT EXISTS human_reviews (
+                review_id TEXT PRIMARY KEY,
+                company_id TEXT NOT NULL,
+                decision_id TEXT NOT NULL,
+                selected_option_id TEXT,
+                status TEXT NOT NULL,
+                note TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ix_human_reviews_company_decision
+                ON human_reviews(company_id, decision_id, updated_at);
+
+            CREATE TABLE IF NOT EXISTS brain_analysis_requests (
+                request_id TEXT PRIMARY KEY,
+                company_id TEXT NOT NULL,
+                decision_id TEXT NOT NULL,
+                reason TEXT NOT NULL,
+                requested_by TEXT NOT NULL,
+                status TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                processed_at TEXT
+            );
+            CREATE INDEX IF NOT EXISTS ix_brain_analysis_requests_pending
+                ON brain_analysis_requests(status, created_at);
+            """;
+        reviewSchema.ExecuteNonQuery();
     }
 
     public async Task<EnrollmentResult?> EnrollAsync(string companyId, string deviceId, string enrollmentToken, string configuredEnrollmentToken, CancellationToken cancellationToken)
@@ -522,10 +554,10 @@ public sealed class CloudStore
             );
             INSERT OR REPLACE INTO brain_decisions(
                 decision_id, company_id, objective, action, reason, risk_level,
-                confidence, approval_required, preconditions, evidence, status, created_at)
+                confidence, approval_required, preconditions, options, evidence, status, created_at)
             VALUES(
                 $id, $company, $objective, $action, $reason, $risk,
-                $confidence, $approval, $preconditions, $evidence, $status, $created);
+                $confidence, $approval, $preconditions, $options, $evidence, $status, $created);
             """;
         command.Parameters.AddWithValue("$id", decision.DecisionId);
         command.Parameters.AddWithValue("$company", decision.CompanyId);
@@ -536,6 +568,7 @@ public sealed class CloudStore
         command.Parameters.AddWithValue("$confidence", decision.Confidence);
         command.Parameters.AddWithValue("$approval", decision.ApprovalRequired ? 1 : 0);
         command.Parameters.AddWithValue("$preconditions", System.Text.Json.JsonSerializer.Serialize(decision.Preconditions));
+        command.Parameters.AddWithValue("$options", System.Text.Json.JsonSerializer.Serialize(decision.Options));
         command.Parameters.AddWithValue("$evidence", System.Text.Json.JsonSerializer.Serialize(decision.Evidence));
         command.Parameters.AddWithValue("$status", decision.Status);
         command.Parameters.AddWithValue("$created", decision.CreatedAt.ToString("O"));
@@ -550,7 +583,7 @@ public sealed class CloudStore
         await using var command = connection.CreateCommand();
         command.CommandText = """
             SELECT decision_id, company_id, objective, action, reason, risk_level,
-                   confidence, approval_required, preconditions, evidence, status, created_at
+                   confidence, approval_required, preconditions, options, evidence, status, created_at
             FROM brain_decisions
             WHERE company_id = $company
             ORDER BY created_at DESC
@@ -562,7 +595,8 @@ public sealed class CloudStore
         while (await reader.ReadAsync(cancellationToken))
         {
             var preconditions = System.Text.Json.JsonSerializer.Deserialize<string[]>(reader.GetString(8)) ?? Array.Empty<string>();
-            var evidence = System.Text.Json.JsonSerializer.Deserialize<BrainDecisionProvenance[]>(reader.GetString(9)) ?? Array.Empty<BrainDecisionProvenance>();
+            var options = System.Text.Json.JsonSerializer.Deserialize<BrainDecisionOption[]>(reader.GetString(9)) ?? Array.Empty<BrainDecisionOption>();
+            var evidence = System.Text.Json.JsonSerializer.Deserialize<BrainDecisionProvenance[]>(reader.GetString(10)) ?? Array.Empty<BrainDecisionProvenance>();
             items.Add(new BrainDecision(
                 reader.GetString(0),
                 reader.GetString(1),
@@ -573,9 +607,10 @@ public sealed class CloudStore
                 reader.GetDouble(6),
                 reader.GetInt32(7) == 1,
                 preconditions,
+                options,
                 evidence,
-                reader.GetString(10),
-                DateTimeOffset.Parse(reader.GetString(11))));
+                reader.GetString(11),
+                DateTimeOffset.Parse(reader.GetString(12))));
         }
         return items;
     }
@@ -599,11 +634,12 @@ public sealed class CloudStore
             return null;
 
         var preconditions = System.Text.Json.JsonSerializer.Deserialize<string[]>(reader.GetString(8)) ?? Array.Empty<string>();
-        var evidence = System.Text.Json.JsonSerializer.Deserialize<BrainDecisionProvenance[]>(reader.GetString(9)) ?? Array.Empty<BrainDecisionProvenance>();
+        var options = System.Text.Json.JsonSerializer.Deserialize<BrainDecisionOption[]>(reader.GetString(9)) ?? Array.Empty<BrainDecisionOption>();
+        var evidence = System.Text.Json.JsonSerializer.Deserialize<BrainDecisionProvenance[]>(reader.GetString(10)) ?? Array.Empty<BrainDecisionProvenance>();
         return new BrainDecision(
             reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3),
             reader.GetString(4), reader.GetString(5), reader.GetDouble(6), reader.GetInt32(7) == 1,
-            preconditions, evidence, reader.GetString(10), DateTimeOffset.Parse(reader.GetString(11)));
+            preconditions, options, evidence, reader.GetString(11), DateTimeOffset.Parse(reader.GetString(12)));
     }
 
     public async Task<bool> UpdateDecisionStatusAsync(
@@ -697,6 +733,116 @@ public sealed class CloudStore
         return items;
     }
 
+
+    public async Task<bool> UpsertHumanReviewAsync(
+        string companyId,
+        string decisionId,
+        string? selectedOptionId,
+        string status,
+        string? note,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(companyId) || string.IsNullOrWhiteSpace(decisionId) || string.IsNullOrWhiteSpace(status))
+            return false;
+
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            await using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+                INSERT INTO human_reviews(review_id, company_id, decision_id, selected_option_id, status, note, created_at, updated_at)
+                VALUES($id, $company, $decision, $option, $status, $note, $created, $updated)
+                ON CONFLICT(review_id) DO UPDATE SET
+                    selected_option_id = excluded.selected_option_id,
+                    status = excluded.status,
+                    note = excluded.note,
+                    updated_at = excluded.updated_at;
+                """;
+            // One durable review record per decision.
+            command.CommandText = """
+                INSERT INTO human_reviews(review_id, company_id, decision_id, selected_option_id, status, note, created_at, updated_at)
+                SELECT COALESCE((SELECT review_id FROM human_reviews WHERE company_id = $company AND decision_id = $decision LIMIT 1), $id),
+                       $company, $decision, $option, $status, $note,
+                       COALESCE((SELECT created_at FROM human_reviews WHERE company_id = $company AND decision_id = $decision LIMIT 1), $created),
+                       $updated
+                ON CONFLICT(review_id) DO UPDATE SET
+                    selected_option_id = excluded.selected_option_id,
+                    status = excluded.status,
+                    note = excluded.note,
+                    updated_at = excluded.updated_at;
+                """;
+            command.Parameters.AddWithValue("$id", Guid.NewGuid().ToString("N"));
+            command.Parameters.AddWithValue("$company", companyId);
+            command.Parameters.AddWithValue("$decision", decisionId);
+            command.Parameters.AddWithValue("$option", (object?)selectedOptionId ?? DBNull.Value);
+            command.Parameters.AddWithValue("$status", status);
+            command.Parameters.AddWithValue("$note", (object?)note ?? DBNull.Value);
+            command.Parameters.AddWithValue("$created", DateTimeOffset.UtcNow.ToString("O"));
+            command.Parameters.AddWithValue("$updated", DateTimeOffset.UtcNow.ToString("O"));
+            await command.ExecuteNonQueryAsync(cancellationToken);
+            return true;
+        }
+        finally { _gate.Release(); }
+    }
+
+    public async Task<bool> CreateAnalysisRequestAsync(string companyId, string decisionId, string reason, string requestedBy, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(companyId) || string.IsNullOrWhiteSpace(decisionId) || string.IsNullOrWhiteSpace(reason))
+            return false;
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            await using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+                INSERT INTO brain_analysis_requests(request_id, company_id, decision_id, reason, requested_by, status, created_at)
+                VALUES($id, $company, $decision, $reason, $requestedBy, 'PENDING', $created);
+                """;
+            command.Parameters.AddWithValue("$id", Guid.NewGuid().ToString("N"));
+            command.Parameters.AddWithValue("$company", companyId);
+            command.Parameters.AddWithValue("$decision", decisionId);
+            command.Parameters.AddWithValue("$reason", reason);
+            command.Parameters.AddWithValue("$requestedBy", requestedBy);
+            command.Parameters.AddWithValue("$created", DateTimeOffset.UtcNow.ToString("O"));
+            await command.ExecuteNonQueryAsync(cancellationToken);
+            return true;
+        }
+        finally { _gate.Release(); }
+    }
+
+    public async Task<IReadOnlyList<(string RequestId, string CompanyId, string DecisionId, string Reason)>> GetPendingAnalysisRequestsAsync(CancellationToken cancellationToken)
+    {
+        var items = new List<(string, string, string, string)>();
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT request_id, company_id, decision_id, reason
+            FROM brain_analysis_requests
+            WHERE status = 'PENDING'
+            ORDER BY created_at
+            LIMIT 20;
+            """;
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            items.Add((reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3)));
+        return items;
+    }
+
+    public async Task MarkAnalysisRequestAsync(string requestId, string status, CancellationToken cancellationToken)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = "UPDATE brain_analysis_requests SET status = $status, processed_at = $processed WHERE request_id = $id AND status = 'PENDING'";
+        command.Parameters.AddWithValue("$status", status);
+        command.Parameters.AddWithValue("$processed", DateTimeOffset.UtcNow.ToString("O"));
+        command.Parameters.AddWithValue("$id", requestId);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
 
     public async Task SaveExecutionResultAsync(AgentExecutionResult result, CancellationToken cancellationToken)
     {

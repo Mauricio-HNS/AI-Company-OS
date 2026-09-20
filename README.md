@@ -548,6 +548,10 @@ Current direction:
 
 `Foundation → Capabilities → SDK`, with migrations performed incrementally and existing product architecture preserved.
 
+First shared capability extracted:
+- `packages/capabilities/execution/` — generic dependency-aware execution queue mechanics and lifecycle transitions.
+- `lib/execution-queue.ts` remains the Company Runtime compatibility adapter because its current task model contains product-specific planning states.
+
 ## Development status
 
 ### Phase 1 — Platform foundation

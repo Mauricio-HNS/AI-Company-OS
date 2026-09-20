@@ -408,6 +408,35 @@ app.MapGet("/api/brain/v1/companies/{companyId}/decisions/{decisionId}/audit", a
     return Results.Ok(new { companyId, decisionId, count = audit.Count, audit });
 });
 
+app.MapPost("/api/brain/v1/companies/{companyId}/decisions/{decisionId}/human-action", async (
+    HttpRequest request,
+    string companyId,
+    string decisionId,
+    HumanActionRequest input,
+    CloudStore store,
+    IConfiguration configuration,
+    CancellationToken cancellationToken) =>
+{
+    if (!HasBrainAdminKey(request, configuration))
+        return Results.Unauthorized();
+
+    if (!IsSafeIdentifier(companyId) || !IsSafeIdentifier(decisionId) || string.IsNullOrWhiteSpace(input.Action))
+        return Results.BadRequest(new { recorded = false, reason = "Invalid human action." });
+
+    var decision = await store.GetDecisionAsync(companyId, decisionId, cancellationToken);
+    if (decision is null)
+        return Results.NotFound();
+
+    var allowed = new[] { "ACCEPT", "EDIT", "INTERVENE", "REQUEST_MORE_ANALYSIS", "DELETE_PLAN", "BLOCK_IDEA", "BLOCK_PLAN", "BLOCK_AGENT" };
+    if (!allowed.Contains(input.Action, StringComparer.Ordinal))
+        return Results.BadRequest(new { recorded = false, reason = "Unsupported human action." });
+
+    var actor = NormalizeActor(request.Headers["X-Brain-Actor"].ToString());
+    var recorded = await store.RecordDecisionActionAsync(companyId, decisionId, input.Action, actor, input.Reason, cancellationToken);
+
+    return Results.Ok(new { recorded, companyId, decisionId, action = input.Action, actor });
+});
+
 app.MapGet("/api/brain/v1/companies/{companyId}/status", async (HttpRequest request, string companyId, CloudStore store, IConfiguration configuration, CancellationToken cancellationToken) =>
 {
     if (!HasBrainAdminKey(request, configuration))
@@ -444,6 +473,6 @@ static string NormalizeActor(string? value)
         : "brain-admin";
 }
 
-public sealed record ApprovalRequest(bool PreconditionsSatisfied = true, string? Reason = null);
+public sealed record ApprovalRequest(bool PreconditionsSatisfied = true, string? Reason = null);\npublic sealed record HumanActionRequest(string Action, string? Reason = null);
 public sealed record EnrollmentRequest(string CompanyId, string DeviceId, string EnrollmentToken);
 public sealed record SyncRequest(string CompanyId, string DeviceId, string Envelope);

@@ -556,7 +556,8 @@ First shared capability extracted:
 - `packages/capabilities/memory/` — generic evidence-backed memory lifecycle and status transitions.
 - `lib/company-memory.ts` remains a compatibility adapter over the shared Memory capability.
 - `packages/capabilities/connectors/` — governed connector lifecycle and authorization-gated activation.
-- Existing Bridge/domain connector implementations remain in their current owners.
+- `packages/capabilities/planning/` — generic dependency-aware planning graph mechanics and validation.
+- Existing Bridge/domain connector implementations and Company Runtime planning heuristics remain in their current owners.
 
 ## Development status
 

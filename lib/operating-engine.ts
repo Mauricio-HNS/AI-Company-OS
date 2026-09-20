@@ -1,4 +1,4 @@
-import type { RiskLevel } from '@/packages/os-core/governance'
+import type { RiskLevel } from '@/packages/foundation/governance'
 export type TaskStatus = 'BACKLOG' | 'PLANNING' | 'READY' | 'BLOCKED' | 'EXECUTING' | 'OBSERVING' | 'COMPLETED' | 'FAILED'
 
 export type CompanyObjective = {

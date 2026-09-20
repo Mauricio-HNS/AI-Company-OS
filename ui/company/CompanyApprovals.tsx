@@ -3,22 +3,22 @@
 import { AlertTriangle, Ban, Check, Edit3, Eye, MoreHorizontal, ShieldCheck, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
 import { useCompanyRuntime } from '../../app/company/[companyId]/CompanyRuntimeContext'
-import styles from '../../app/company/[companyId]/CompanyRuntimeWorkspace.module.css'
+import styles from '../../app/company/[companyId]/CompanyRuntimeWorkspaceV2.module.css'
 
 export default function ApprovalsModule() {
-  const { runtime, approveDecision, rejectDecision } = useCompanyRuntime()
+  const { companyId, runtime, approveDecision } = useCompanyRuntime()
   const pending = runtime.brainDecisions.filter(decision => decision.status === 'APPROVAL_REQUIRED')
 
   const [selected, setSelected] = useState<Record<string, string>>({})
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [notice, setNotice] = useState<string | null>(null)
 
-  const recordAction = async (decisionId: string, action: string, optionId?: string, reason?: string, agentId?: string): Promise<boolean> => {
+  const recordAction = async (decisionId: string, action: string, optionId?: string, reason?: string, agentId?: string, humanNote?: string): Promise<boolean> => {
     try {
       const response = await fetch('/api/company-brain/human-action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyId: runtime.companyId ?? '', decisionId, action, optionId, reason, agentId }),
+        body: JSON.stringify({ companyId, decisionId, action, optionId, reason, agentId, humanNote }),
       })
       const payload = await response.json()
       if (!response.ok || !payload.recorded) throw new Error(payload.reason ?? 'Action was not persisted.')
@@ -101,10 +101,19 @@ export default function ApprovalsModule() {
 
             <div className={styles.headActions}>
               <button className={styles.primary} disabled={decision.options.length > 0 && !selected[decision.decisionId]} onClick={() => { void recordAction(decision.decisionId, 'ACCEPT', selected[decision.decisionId], 'Human accepted the selected solution.').then(recorded => { if (recorded) approveDecision(decision.decisionId) }) }}><Check size={15}/>Accept solution</button>
-              <button className={styles.secondary} onClick={() => void recordAction(decision.decisionId, 'EDIT', selected[decision.decisionId], 'Human requested editing before execution.')}><Edit3 size={15}/>Edit</button>
-              <button className={styles.secondary} onClick={() => void recordAction(decision.decisionId, 'INTERVENE', selected[decision.decisionId], 'Human intervention requested before execution.')}><Eye size={15}/>Intervene</button>
-              <button className={styles.secondary} onClick={() => void recordAction(decision.decisionId, 'REQUEST_MORE_ANALYSIS', selected[decision.decisionId], 'Human requested additional analysis.')}><MoreHorizontal size={15}/>More analysis</button>
-              <button className={styles.secondary} onClick={() => { void recordAction(decision.decisionId, 'DELETE_PLAN', selected[decision.decisionId], 'Human deleted the proposed plan.'); rejectDecision(decision.decisionId) }}><Trash2 size={15}/>Delete plan</button>
+              <button className={styles.secondary} onClick={() => {
+                const note = window.prompt('Describe the change you want in the selected plan:', 'Adjust the selected plan before approval.')
+                if (note?.trim()) void recordAction(decision.decisionId, 'EDIT', selected[decision.decisionId], 'Human requested editing before execution.', undefined, note.trim())
+              }}><Edit3 size={15}/>Edit</button>
+              <button className={styles.secondary} onClick={() => {
+                const note = window.prompt('Describe the intervention or instruction:', 'Pause execution and review the operating constraints.')
+                if (note?.trim()) void recordAction(decision.decisionId, 'INTERVENE', selected[decision.decisionId], 'Human intervention requested before execution.', undefined, note.trim())
+              }}><Eye size={15}/>Intervene</button>
+              <button className={styles.secondary} onClick={() => {
+                const note = window.prompt('What should the Brain analyze further?', 'Re-evaluate the selected alternative using the latest company evidence.')
+                if (note?.trim()) void recordAction(decision.decisionId, 'REQUEST_MORE_ANALYSIS', selected[decision.decisionId], 'Human requested additional analysis.', undefined, note.trim())
+              }}><MoreHorizontal size={15}/>More analysis</button>
+              <button className={styles.secondary} onClick={() => { void recordAction(decision.decisionId, 'DELETE_PLAN', selected[decision.decisionId], 'Human deleted the proposed plan.') }}><Trash2 size={15}/>Delete plan</button>
               <button className={styles.secondary} disabled={!selected[decision.decisionId]} onClick={() => void recordAction(decision.decisionId, 'BLOCK_IDEA', selected[decision.decisionId], 'Human blocked this idea from being proposed again.')}><Ban size={15}/>Block idea</button>
               <button className={styles.secondary} disabled={!selected[decision.decisionId]} onClick={() => void recordAction(decision.decisionId, 'BLOCK_PLAN', selected[decision.decisionId], 'Human blocked this plan from being proposed again.')}><Ban size={15}/>Block plan</button>
               <button className={styles.secondary} onClick={() => void recordAction(decision.decisionId, 'BLOCK_AGENT', undefined, 'Human blocked the decision-producing agent.', 'company-brain-agent')}><X size={15}/>Block agent</button>

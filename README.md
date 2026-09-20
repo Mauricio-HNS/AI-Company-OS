@@ -555,6 +555,8 @@ First shared capability extracted:
 - `lib/execution-queue.ts` remains the Company Runtime compatibility adapter because its current task model contains product-specific planning states.
 - `packages/capabilities/memory/` — generic evidence-backed memory lifecycle and status transitions.
 - `lib/company-memory.ts` remains a compatibility adapter over the shared Memory capability.
+- `packages/capabilities/connectors/` — governed connector lifecycle and authorization-gated activation.
+- Existing Bridge/domain connector implementations remain in their current owners.
 
 ## Development status
 

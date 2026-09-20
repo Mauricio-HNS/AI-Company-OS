@@ -108,7 +108,7 @@ public sealed class BridgeOptions
     public string EnrollmentToken { get; set; } = "";
     public string CloudEndpoint { get; set; } = "https://api.aicompanyos.com";
     public string CloudApiKey { get; set; } = "";
-    public string DataDirectory { get; set; } = @"C:ProgramDataAI Company OSCompany Bridge";
+    public string DataDirectory { get; set; } = @"C:\ProgramData\AI Company OS\Company Bridge";
     public int SyncIntervalSeconds { get; set; } = 60;
     public bool AllowLocalDiscovery { get; set; } = true;
     public string[] DiscoveryPaths { get; set; } = Array.Empty<string>();

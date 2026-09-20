@@ -98,3 +98,27 @@ Visual rules are centralized in the existing OS design layers. New modules must 
 ## Migration policy
 
 This is an incremental refactor, not a rewrite. Existing engines remain operational while imports are progressively moved behind the domain/application/infrastructure/UI boundaries. Each migration must preserve the working product and keep the build green.
+
+## Progressive administrative autonomy
+
+The Company OS is the operational system of the company, but administrative authority remains with the owner or responsible person. Autonomy is granted progressively from observed evidence; it is never assumed by the AI.
+
+```text
+Owner / Responsible
+        ↓
+Company policies, objectives, permissions and limits
+        ↓
+Company OS
+        ↓
+Observe → Analyze → Recommend → Approval → Limited autonomy → Operational autonomy
+        ↓
+Evidence + outcomes + audit
+        ↺
+```
+
+Each company has its own autonomy policy. The policy records the current level, trust evidence, accepted/rejected recommendations and successful/failed executions.
+
+The system may **recommend** an autonomy increase or reduction, but changing the company's administrative level requires explicit owner/admin acceptance. Negative outcomes can cause the system to recommend reducing autonomy.
+
+Autonomy is bounded by permissions and policies. High-impact actions continue to require the appropriate human approval even when lower-risk operational actions are autonomous.
+

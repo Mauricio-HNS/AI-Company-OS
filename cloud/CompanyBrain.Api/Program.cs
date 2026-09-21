@@ -16,6 +16,7 @@ builder.Services.AddSingleton<CompanySalesOrderStore>();
 builder.Services.AddSingleton<CompanyInventoryStore>();
 builder.Services.AddSingleton<CompanyAgendaStore>();
 builder.Services.AddSingleton<CompanyAgendaAdvancedStore>();
+builder.Services.AddSingleton<CompanyCommissionStore>();
 builder.Services.AddSingleton<BrainProcessor>();
 builder.Services.AddSingleton<BrainDecisionEngine>();
 builder.Services.AddSingleton<AgentRegistry>();
@@ -62,6 +63,7 @@ app.MapCompanySalesOrdersApi();
 app.MapCompanyInventoryApi();
 app.MapCompanyAgendaApi();
 app.MapCompanyAgendaAdvancedApi();
+app.MapCompanyCommissionApi();
 
 static bool HasBrainAdminKey(HttpRequest request, IConfiguration configuration)
 {

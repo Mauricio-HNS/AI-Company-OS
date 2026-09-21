@@ -280,7 +280,7 @@ public static class CompanyDocumentEngineApi
             if(string.Equals(input.DocumentType,"INVOICE",StringComparison.OrdinalIgnoreCase))warnings.Add("Invoice legal/fiscal validation requires jurisdiction-specific rules before issuance.");
             return Results.Ok(new DocumentValidationResult(errors.Count==0,errors.ToArray(),warnings.ToArray(),DateTimeOffset.UtcNow));
         });
-        app.MapPost("/api/company/v1/companies/{companyId}/documents/{documentId}/artifacts", async(HttpRequest request,string companyId,string documentId,CompanyDocumentRequest input,CompanyDocumentEngineStore store,CompanyDocumentEngineStore _,IConfiguration config,CancellationToken ct)=>{
+        app.MapPost("/api/company/v1/companies/{companyId}/documents/{documentId}/artifacts", async(HttpRequest request,string companyId,string documentId,CompanyDocumentRequest input,CompanyDocumentEngineStore store,IConfiguration config,CancellationToken ct)=>{
             if(!Key(request,config)||!Safe(companyId)||!Safe(documentId)||string.IsNullOrWhiteSpace(input.Content))return Results.BadRequest();
             var validation=new DocumentValidationResult(true,Array.Empty<string>(),Array.Empty<string>(),DateTimeOffset.UtcNow);
             if(!validation.Valid)return Results.BadRequest(validation);

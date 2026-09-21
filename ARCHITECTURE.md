@@ -31,10 +31,33 @@ AI COMPANY OS
     │   └── Knowledge
     └── System
         ├── Operations
+        │   └── Scheduling Engine
         ├── Integrations
         ├── Security
         └── Settings
 ```
+
+## Scheduling Engine
+
+Scheduling is a generic company capability, not a vertical-specific calendar. It models appointments, reservations, deliveries, visits, services, meetings and tasks against people, rooms, vehicles and equipment.
+
+```text
+Business Intent
+      ↓
+Scheduling Intent
+      ↓
+Resource Availability
+      ↓
+Conflict Detection
+      ↓
+Scheduling Proposal
+      ↓
+Human / AI / Integration confirmation
+      ↓
+Operational Event
+```
+
+The scheduling layer is intentionally decoupled from a traditional calendar UI. A future AI agent can create or update scheduling events as a consequence of orders, services, deliveries, customer requests or missions.
 
 ## Dependency direction
 

@@ -247,7 +247,7 @@ public sealed class CompanySalesOrderStore
             if (order.Status=="CONFIRMED" || order.Status=="INVOICED") return order;
             if (order.Status=="CANCELLED") throw new ArgumentException("Cancelled sales orders cannot be confirmed.");
             if (order.Lines.Any(line => line.ItemKind == "PRODUCT"))
-                await inventory.ReserveForSalesOrderAsync(companyId, orderId, actor, ct);
+                await inventory.ReserveForSalesOrderAsync(companyId, orderId, actor, ct, allowDraft: true);
 
             await using var connection=new SqliteConnection(_connectionString); await connection.OpenAsync(ct);
             await using var command=connection.CreateCommand(); command.CommandText="UPDATE company_sales_orders SET status='CONFIRMED' WHERE company_id=$company AND order_id=$id;";

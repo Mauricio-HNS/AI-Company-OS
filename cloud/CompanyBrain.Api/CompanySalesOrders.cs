@@ -239,13 +239,16 @@ public sealed class CompanySalesOrderStore
         }
     }
 
-    public async Task<SalesOrder> ConfirmAsync(string companyId, string orderId, string actor, CancellationToken ct)
+    public async Task<SalesOrder> ConfirmAsync(string companyId, string orderId, string actor, CompanyInventoryStore inventory, CancellationToken ct)
     {
         await _gate.WaitAsync(ct);
         try {
             var order=await GetAsync(companyId,orderId,ct) ?? throw new ArgumentException("Sales order does not exist in this company.");
             if (order.Status=="CONFIRMED" || order.Status=="INVOICED") return order;
             if (order.Status=="CANCELLED") throw new ArgumentException("Cancelled sales orders cannot be confirmed.");
+            if (order.Lines.Any(line => line.ItemKind == "PRODUCT"))
+                await inventory.ReserveForSalesOrderAsync(companyId, orderId, actor, ct);
+
             await using var connection=new SqliteConnection(_connectionString); await connection.OpenAsync(ct);
             await using var command=connection.CreateCommand(); command.CommandText="UPDATE company_sales_orders SET status='CONFIRMED' WHERE company_id=$company AND order_id=$id;";
             Add(command,"$company",companyId);Add(command,"$id",orderId);await command.ExecuteNonQueryAsync(ct);
@@ -306,7 +309,7 @@ public sealed class CompanySalesOrderStore
     }
 
     public async Task<SalesOrder> IssueInvoiceAsync(
-        string companyId, string orderId, string actor, FiscalBrainStore fiscal, CancellationToken ct)
+        string companyId, string orderId, string actor, FiscalBrainStore fiscal, CompanyInventoryStore inventory, CancellationToken ct)
     {
         await _gate.WaitAsync(ct);
         try
@@ -316,6 +319,9 @@ public sealed class CompanySalesOrderStore
             if (order.Status == "INVOICED") return order;
             if (order.Status == "CANCELLED") throw new ArgumentException("Cancelled sales orders cannot be invoiced.");
             if (order.Status == "DRAFT") throw new ArgumentException("Sales order must be confirmed before invoicing.");
+
+            if (order.Lines.Any(line => line.ItemKind == "PRODUCT"))
+                await inventory.ConsumeSalesOrderReservationsAsync(companyId, orderId, actor, ct);
 
             var invoiceNumber = $"INV-{DateTime.UtcNow:yyyy}-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
             await fiscal.UpsertEntryAsync(companyId, new FiscalEntryInput(
@@ -337,6 +343,31 @@ public sealed class CompanySalesOrderStore
             await command.ExecuteNonQueryAsync(ct);
 
             return order with { Status = "INVOICED" };
+        }
+        finally { _gate.Release(); }
+    }
+
+    public async Task<SalesOrder> CancelAsync(string companyId, string orderId, string actor, CompanyInventoryStore inventory, CancellationToken ct)
+    {
+        await _gate.WaitAsync(ct);
+        try
+        {
+            var order = await GetAsync(companyId, orderId, ct)
+                ?? throw new ArgumentException("Sales order does not exist in this company.");
+            if (order.Status == "CANCELLED") return order;
+            if (order.Status == "INVOICED")
+                throw new ArgumentException("Invoiced sales orders cannot be cancelled.");
+
+            await inventory.ReleaseSalesOrderReservationsAsync(companyId, orderId, actor, ct);
+
+            await using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync(ct);
+            await using var command = connection.CreateCommand();
+            command.CommandText = "UPDATE company_sales_orders SET status='CANCELLED' WHERE company_id=$company AND order_id=$id;";
+            Add(command, "$company", companyId);
+            Add(command, "$id", orderId);
+            await command.ExecuteNonQueryAsync(ct);
+            return order with { Status = "CANCELLED" };
         }
         finally { _gate.Release(); }
     }
@@ -465,12 +496,23 @@ public static class CompanySalesOrdersApi
         });
 
         app.MapPost("/api/company/v1/companies/{companyId}/sales-orders/{orderId}/confirm", async (
-            HttpRequest request,string companyId,string orderId,CompanySalesOrderStore sales,CloudStore audit,IConfiguration configuration,CancellationToken ct) =>
+            HttpRequest request,string companyId,string orderId,CompanySalesOrderStore sales,CompanyInventoryStore inventory,CloudStore audit,IConfiguration configuration,CancellationToken ct) =>
         {
             if (!Authorized(request,configuration) || !Safe(companyId) || !Safe(orderId)) return Results.Unauthorized();
             try {
-                var order=await sales.ConfirmAsync(companyId,orderId,Actor(request),ct);
+                var order=await sales.ConfirmAsync(companyId,orderId,Actor(request),inventory,ct);
                 await audit.AppendAuditJournalAsync(companyId,"SALES_ORDER_CONFIRMED",Actor(request),request.Headers["X-Correlation-Id"].ToString(),"SALES_ORDER",order.OrderId,"Sales order confirmed and ready for invoicing.",JsonSerializer.Serialize(new {order.Number,order.GrossAmount}),ct);
+                return Results.Ok(new {order});
+            } catch(ArgumentException e){return Results.BadRequest(new {error=e.Message});}
+        });
+
+        app.MapPost("/api/company/v1/companies/{companyId}/sales-orders/{orderId}/cancel", async (
+            HttpRequest request,string companyId,string orderId,CompanySalesOrderStore sales,CompanyInventoryStore inventory,CloudStore audit,IConfiguration configuration,CancellationToken ct) =>
+        {
+            if (!Authorized(request,configuration) || !Safe(companyId) || !Safe(orderId)) return Results.Unauthorized();
+            try {
+                var order=await sales.CancelAsync(companyId,orderId,Actor(request),inventory,ct);
+                await audit.AppendAuditJournalAsync(companyId,"SALES_ORDER_CANCELLED",Actor(request),request.Headers["X-Correlation-Id"].ToString(),"SALES_ORDER",order.OrderId,"Sales order cancelled and inventory reservations released.",JsonSerializer.Serialize(new {order.Number,order.GrossAmount}),ct);
                 return Results.Ok(new {order});
             } catch(ArgumentException e){return Results.BadRequest(new {error=e.Message});}
         });
@@ -490,13 +532,16 @@ public static class CompanySalesOrdersApi
         });
 
         app.MapPost("/api/company/v1/companies/{companyId}/sales-orders/{orderId}/invoice", async (
-            HttpRequest request,string companyId,string orderId,CompanySalesOrderStore sales,FiscalBrainStore fiscal,CloudStore audit,IConfiguration configuration,CancellationToken ct) =>
+            HttpRequest request,string companyId,string orderId,CompanySalesOrderStore sales,FiscalBrainStore fiscal,CompanyInventoryStore inventory,CompanyCommissionStore commissions,CloudStore audit,IConfiguration configuration,CancellationToken ct) =>
         {
             if (!Authorized(request,configuration) || !Safe(companyId) || !Safe(orderId)) return Results.Unauthorized();
             try {
-                var order=await sales.IssueInvoiceAsync(companyId,orderId,Actor(request),fiscal,ct);
+                var order=await sales.IssueInvoiceAsync(companyId,orderId,Actor(request),fiscal,inventory,ct);
+                CommissionEntry? commission = null;
+                try { commission = await commissions.CalculateFromInvoicedOrderAsync(companyId, order.OrderId, Actor(request), ct); }
+                catch (ArgumentException) { /* Commission is optional until a matching rule is configured. */ }
                 await audit.AppendAuditJournalAsync(companyId,"SALES_ORDER_INVOICED",Actor(request),request.Headers["X-Correlation-Id"].ToString(),"SALES_ORDER",order.OrderId,"Sales order invoiced and revenue posted to Fiscal Brain.",JsonSerializer.Serialize(new {order.Number,order.GrossAmount,order.Currency}),ct);
-                return Results.Ok(new {order,officialSubmission=false});
+                return Results.Ok(new {order,commission,officialSubmission=false});
             } catch(ArgumentException e){return Results.BadRequest(new {error=e.Message});}
         });
 

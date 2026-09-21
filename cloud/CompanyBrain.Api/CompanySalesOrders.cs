@@ -17,7 +17,9 @@ public sealed record SalesOrderRequest(
     DateTimeOffset OrderedAt,
     string? QuoteId,
     SalesOrderLineRequest[] Lines,
-    string Notes = "");
+    string Notes = "",
+    string? SourceType = null,
+    string? SourceId = null);
 
 public sealed record SalesOrderLine(
     string ItemId,
@@ -47,7 +49,9 @@ public sealed record SalesOrder(
     string Notes,
     string Status,
     DateTimeOffset CreatedAt,
-    string CreatedBy);
+    string CreatedBy,
+    string? SourceType,
+    string? SourceId);
 
 public sealed class CompanySalesOrderStore
 {
@@ -90,7 +94,9 @@ public sealed class CompanySalesOrderStore
                 notes TEXT NOT NULL,
                 status TEXT NOT NULL,
                 created_at TEXT NOT NULL,
-                created_by TEXT NOT NULL
+                created_by TEXT NOT NULL,
+                source_type TEXT,
+                source_id TEXT
             );
             CREATE INDEX IF NOT EXISTS ix_sales_orders_company_date
                 ON company_sales_orders(company_id, ordered_at);
@@ -98,6 +104,16 @@ public sealed class CompanySalesOrderStore
                 ON company_sales_orders(company_id, customer_id, ordered_at);
             """;
         command.ExecuteNonQuery();
+
+        EnsureColumn(connection, "source_type");
+        EnsureColumn(connection, "source_id");
+        using var index = connection.CreateCommand();
+        index.CommandText = """
+            CREATE UNIQUE INDEX IF NOT EXISTS ux_sales_orders_company_source
+                ON company_sales_orders(company_id, source_type, source_id)
+                WHERE source_type IS NOT NULL AND source_id IS NOT NULL;
+            """;
+        index.ExecuteNonQuery();
     }
 
     public async Task<SalesOrder> CreateAsync(
@@ -112,6 +128,12 @@ public sealed class CompanySalesOrderStore
         {
             await using var connection = new SqliteConnection(_connectionString);
             await connection.OpenAsync(cancellationToken);
+
+            if (!string.IsNullOrWhiteSpace(input.SourceType) && !string.IsNullOrWhiteSpace(input.SourceId))
+            {
+                var existing = await GetBySourceAsync(connection, companyId, input.SourceType.Trim(), input.SourceId.Trim(), cancellationToken);
+                if (existing is not null) return existing;
+            }
 
             var customer = await LoadCustomerAsync(connection, companyId, input.CustomerId, cancellationToken)
                 ?? throw new ArgumentException("Customer does not exist in this company.");
@@ -177,16 +199,18 @@ public sealed class CompanySalesOrderStore
                 input.Notes.Trim(),
                 "DRAFT",
                 now,
-                actor);
+                actor,
+                string.IsNullOrWhiteSpace(input.SourceType) ? null : input.SourceType.Trim().ToUpperInvariant(),
+                string.IsNullOrWhiteSpace(input.SourceId) ? null : input.SourceId.Trim());
 
             await using var command = connection.CreateCommand();
             command.CommandText = """
                 INSERT INTO company_sales_orders(
                     order_id, company_id, number, customer_id, customer_name, currency,
                     ordered_at, quote_id, net_amount, tax_amount, gross_amount, lines,
-                    notes, status, created_at, created_by)
+                    notes, status, created_at, created_by, source_type, source_id)
                 VALUES($id,$company,$number,$customer,$customerName,$currency,$ordered,
-                       $quote,$net,$tax,$gross,$lines,$notes,$status,$created,$actor);
+                       $quote,$net,$tax,$gross,$lines,$notes,$status,$created,$actor,$sourceType,$sourceId);
                 """;
             Add(command, "$id", order.OrderId);
             Add(command, "$company", order.CompanyId);
@@ -204,6 +228,8 @@ public sealed class CompanySalesOrderStore
             Add(command, "$status", order.Status);
             Add(command, "$created", order.CreatedAt.ToString("O"));
             Add(command, "$actor", order.CreatedBy);
+            Add(command, "$sourceType", (object?)order.SourceType ?? DBNull.Value);
+            Add(command, "$sourceId", (object?)order.SourceId ?? DBNull.Value);
             await command.ExecuteNonQueryAsync(cancellationToken);
             return order;
         }
@@ -211,6 +237,58 @@ public sealed class CompanySalesOrderStore
         {
             _gate.Release();
         }
+    }
+
+    public async Task<SalesOrder> CreateFromCompletedAppointmentAsync(
+        string companyId, Appointment appointment, string actor, CancellationToken cancellationToken)
+    {
+        if (!string.Equals(appointment.Status, "COMPLETED", StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Only completed appointments can generate a sales order.");
+
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            await using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
+            var existing = await GetBySourceAsync(connection, companyId, "APPOINTMENT", appointment.AppointmentId, cancellationToken);
+            if (existing is not null) return existing;
+
+            var item = await LoadServiceCatalogItemAsync(connection, companyId, appointment.ServiceName, cancellationToken)
+                ?? throw new ArgumentException($"No active SERVICE catalog item matches appointment service '{appointment.ServiceName}'.");
+
+            var request = new SalesOrderRequest(
+                appointment.CustomerId, item.Currency, appointment.Start, null,
+                [new SalesOrderLineRequest(item.ItemId, 1m, item.UnitPrice, 0m, item.TaxRate)],
+                $"Generated from completed appointment {appointment.AppointmentId}.", "APPOINTMENT", appointment.AppointmentId);
+            return await CreateInternalAsync(connection, companyId, request, actor, cancellationToken);
+        }
+        finally { _gate.Release(); }
+    }
+
+    private async Task<SalesOrder> CreateInternalAsync(SqliteConnection connection, string companyId, SalesOrderRequest input, string actor, CancellationToken ct)
+    {
+        var customer = await LoadCustomerAsync(connection, companyId, input.CustomerId, ct)
+            ?? throw new ArgumentException("Customer does not exist in this company.");
+        var lines = new List<SalesOrderLine>();
+        foreach (var requestLine in input.Lines)
+        {
+            var item = await LoadCatalogItemAsync(connection, companyId, requestLine.ItemId, ct)
+                ?? throw new ArgumentException($"Catalog item '{requestLine.ItemId}' does not exist in this company.");
+            if (!item.Active) throw new ArgumentException($"Catalog item '{item.Name}' is inactive.");
+            if (!string.Equals(item.Currency, input.Currency.Trim(), StringComparison.OrdinalIgnoreCase)) throw new ArgumentException($"Currency mismatch for catalog item '{item.Name}'.");
+            var price = decimal.Round(requestLine.UnitPrice, 2, MidpointRounding.AwayFromZero);
+            var baseAmount = decimal.Round(requestLine.Quantity * price - requestLine.Discount, 2, MidpointRounding.AwayFromZero);
+            if (price < 0 || requestLine.Quantity <= 0 || requestLine.Discount < 0 || baseAmount < 0) throw new ArgumentException("Invalid order line values.");
+            var tax = decimal.Round(baseAmount * requestLine.TaxRate / 100m, 2, MidpointRounding.AwayFromZero);
+            lines.Add(new SalesOrderLine(item.ItemId, item.Kind, item.Name, requestLine.Quantity, price, decimal.Round(requestLine.Discount,2,MidpointRounding.AwayFromZero), requestLine.TaxRate, baseAmount, tax, baseAmount + tax));
+        }
+        var net=lines.Sum(x=>x.NetAmount); var taxAmount=lines.Sum(x=>x.TaxAmount); var now=DateTimeOffset.UtcNow;
+        var order=new SalesOrder($"ORD-{Guid.NewGuid():N}",companyId,$"SO-{DateTime.UtcNow:yyyy}-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}",customer.Value.CustomerId,customer.Value.Name,input.Currency.Trim().ToUpperInvariant(),input.OrderedAt,string.IsNullOrWhiteSpace(input.QuoteId)?null:input.QuoteId.Trim(),net,taxAmount,net+taxAmount,lines.ToArray(),input.Notes.Trim(),"DRAFT",now,actor,input.SourceType?.Trim().ToUpperInvariant(),input.SourceId?.Trim());
+        await using var command=connection.CreateCommand(); command.CommandText="""
+            INSERT INTO company_sales_orders(order_id,company_id,number,customer_id,customer_name,currency,ordered_at,quote_id,net_amount,tax_amount,gross_amount,lines,notes,status,created_at,created_by,source_type,source_id)
+            VALUES($id,$company,$number,$customer,$customerName,$currency,$ordered,$quote,$net,$tax,$gross,$lines,$notes,$status,$created,$actor,$sourceType,$sourceId);""";
+        Add(command,"$id",order.OrderId);Add(command,"$company",order.CompanyId);Add(command,"$number",order.Number);Add(command,"$customer",order.CustomerId);Add(command,"$customerName",order.CustomerName);Add(command,"$currency",order.Currency);Add(command,"$ordered",order.OrderedAt.ToString("O"));Add(command,"$quote",(object?)order.QuoteId??DBNull.Value);Add(command,"$net",order.NetAmount.ToString(CultureInfo.InvariantCulture));Add(command,"$tax",order.TaxAmount.ToString(CultureInfo.InvariantCulture));Add(command,"$gross",order.GrossAmount.ToString(CultureInfo.InvariantCulture));Add(command,"$lines",JsonSerializer.Serialize(order.Lines));Add(command,"$notes",order.Notes);Add(command,"$status",order.Status);Add(command,"$created",order.CreatedAt.ToString("O"));Add(command,"$actor",order.CreatedBy);Add(command,"$sourceType",(object?)order.SourceType??DBNull.Value);Add(command,"$sourceId",(object?)order.SourceId??DBNull.Value);
+        await command.ExecuteNonQueryAsync(ct); return order;
     }
 
     public async Task<IReadOnlyList<SalesOrder>> ListAsync(
@@ -227,7 +305,7 @@ public sealed class CompanySalesOrderStore
         command.CommandText = """
             SELECT order_id, company_id, number, customer_id, customer_name, currency,
                    ordered_at, quote_id, net_amount, tax_amount, gross_amount, lines,
-                   notes, status, created_at, created_by
+                   notes, status, created_at, created_by, source_type, source_id
             FROM company_sales_orders
             WHERE company_id = $company
               AND ($customer = '' OR customer_id = $customer)
@@ -274,6 +352,15 @@ public sealed class CompanySalesOrderStore
         return await reader.ReadAsync(ct) ? (reader.GetString(0), reader.GetString(1)) : null;
     }
 
+    private static async Task<(string ItemId, string Kind, string Name, string Currency, bool Active, decimal UnitPrice, decimal TaxRate)?> LoadServiceCatalogItemAsync(SqliteConnection connection, string companyId, string name, CancellationToken ct)
+    {
+        await using var command=connection.CreateCommand(); command.CommandText="""
+            SELECT item_id,kind,name,currency,active,unit_price,tax_rate FROM company_catalog_items
+            WHERE company_id=$company AND kind='SERVICE' AND active=1 AND lower(name)=lower($name)
+            ORDER BY updated_at DESC LIMIT 1;"""; Add(command,"$company",companyId);Add(command,"$name",name.Trim());
+        await using var reader=await command.ExecuteReaderAsync(ct); return await reader.ReadAsync(ct) ? (reader.GetString(0),reader.GetString(1),reader.GetString(2),reader.GetString(3),reader.GetInt32(4)==1,decimal.Parse(reader.GetString(5),CultureInfo.InvariantCulture),decimal.Parse(reader.GetString(6),CultureInfo.InvariantCulture)) : null;
+    }
+
     private static async Task<(string ItemId, string Kind, string Name, string Currency, bool Active)?> LoadCatalogItemAsync(
         SqliteConnection connection, string companyId, string itemId, CancellationToken ct)
     {
@@ -292,7 +379,8 @@ public sealed class CompanySalesOrderStore
         reader.GetString(5), DateTimeOffset.Parse(reader.GetString(6)), reader.IsDBNull(7) ? null : reader.GetString(7),
         decimal.Parse(reader.GetString(8), CultureInfo.InvariantCulture), decimal.Parse(reader.GetString(9), CultureInfo.InvariantCulture),
         decimal.Parse(reader.GetString(10), CultureInfo.InvariantCulture), JsonSerializer.Deserialize<SalesOrderLine[]>(reader.GetString(11)) ?? [],
-        reader.GetString(12), reader.GetString(13), DateTimeOffset.Parse(reader.GetString(14)), reader.GetString(15));
+        reader.GetString(12), reader.GetString(13), DateTimeOffset.Parse(reader.GetString(14)), reader.GetString(15),
+        reader.IsDBNull(16) ? null : reader.GetString(16), reader.IsDBNull(17) ? null : reader.GetString(17));
 
     private static void Validate(SalesOrderRequest input)
     {
@@ -324,6 +412,20 @@ public static class CompanySalesOrdersApi
                 return Results.Created($"/api/company/v1/companies/{companyId}/sales-orders/{order.OrderId}", new { order, externalSendAllowed = false });
             }
             catch (ArgumentException e) { return Results.BadRequest(new { error = e.Message }); }
+        });
+
+        app.MapPost("/api/company/v1/companies/{companyId}/appointments/{appointmentId}/complete-and-bill", async (
+            HttpRequest request,string companyId,string appointmentId,CompanyAgendaStore agenda,CompanySalesOrderStore sales,CloudStore audit,IConfiguration configuration,CancellationToken ct) =>
+        {
+            if (!Authorized(request,configuration) || !Safe(companyId) || !Safe(appointmentId)) return Results.Unauthorized();
+            try {
+                var appointment=await agenda.GetAppointmentAsync(companyId,appointmentId,ct); if (appointment is null) return Results.NotFound();
+                if (string.Equals(appointment.Status,"IN_SERVICE",StringComparison.OrdinalIgnoreCase)) appointment=await agenda.ChangeStatusAsync(companyId,appointmentId,AppointmentStatus.Completed,"Service completed and billing requested.",Actor(request),ct);
+                if (!string.Equals(appointment.Status,"COMPLETED",StringComparison.OrdinalIgnoreCase)) return Results.BadRequest(new { error=$"Appointment must be IN_SERVICE or COMPLETED. Current status: {appointment.Status}." });
+                var order=await sales.CreateFromCompletedAppointmentAsync(companyId,appointment,Actor(request),ct);
+                await audit.AppendAuditJournalAsync(companyId,"APPOINTMENT_BILLED",Actor(request),request.Headers["X-Correlation-Id"].ToString(),"APPOINTMENT",appointment.AppointmentId,"Completed appointment linked to a draft sales order.",JsonSerializer.Serialize(new {appointment.ServiceId,appointment.ServiceName,order.OrderId,order.Number,order.GrossAmount}),ct);
+                return Results.Ok(new {appointment,order,externalSendAllowed=false});
+            } catch(ArgumentException e){return Results.BadRequest(new {error=e.Message});}
         });
 
         app.MapGet("/api/company/v1/companies/{companyId}/sales-orders", async (

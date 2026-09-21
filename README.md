@@ -1,8 +1,461 @@
 # AI Company OS
 
-AI Company OS is an AI-native operating system for companies operated by coordinated agents.
+> **An intelligent ERP operated by real-time AI agents — built to understand, monitor, analyze and execute the processes of an entire company.**
 
-The project is built around one deterministic control loop:
+AI Company OS is a new generation of **AI-native ERP / Company Operating System**. Instead of forcing people to operate dozens of isolated screens, the platform creates a living digital model of the company and deploys specialized AI agents to continuously work with its data, processes, people, documents and operations.
+
+The long-term goal is simple:
+
+> **The company does not merely use the ERP. The ERP works for the company.**
+
+---
+
+## The vision
+
+A traditional ERP stores information and waits for people to act.
+
+AI Company OS continuously:
+
+```text
+UNDERSTAND
+    ↓
+MONITOR
+    ↓
+ANALYZE
+    ↓
+IDENTIFY OPPORTUNITIES & PROBLEMS
+    ↓
+RECOMMEND
+    ↓
+REQUEST APPROVAL WHEN REQUIRED
+    ↓
+EXECUTE AUTHORIZED ACTIONS
+    ↓
+MEASURE RESULTS
+    ↓
+LEARN
+    ↓
+IMPROVE
+    ↺
+```
+
+The objective is not simply to add a chatbot to an ERP. The objective is to build an **AI workforce operating inside a real-time ERP**.
+
+---
+
+## How a real company enters the system
+
+The customer receives an onboarding link and creates the company account.
+
+```text
+CUSTOMER
+   ↓
+COMPANY REGISTRATION
+   ↓
+ONBOARDING
+   ↓
+COMPANY BRIDGE
+   ↓
+AUTHORIZED DISCOVERY
+   ↓
+COMPANY CONTEXT
+   ↓
+COMPANY BRAIN
+   ↓
+RECOMMENDATIONS
+   ↓
+MODULES
+   ↓
+AI WORKFORCE
+   ↓
+PROGRESSIVE AUTONOMY
+```
+
+The **Company Bridge** connects the customer's authorized environment to the central Company OS. It is designed as a local-first boundary rather than a mechanism for blindly uploading an entire computer to the cloud.
+
+The system can progressively understand:
+
+- business structure
+- people and roles
+- customers
+- suppliers
+- products and services
+- financial information
+- documents
+- contracts
+- sales
+- marketing
+- operations
+- existing systems
+- recurring processes
+- company policies
+- management rules
+
+The goal is to build a reliable **digital representation of how that specific company actually operates**.
+
+---
+
+# The Company Brain
+
+The Company Brain is the intelligence and context layer of the platform.
+
+It combines:
+
+```text
+COMPANY DATA
+     +
+BUSINESS FACTS
+     +
+MEMORY
+     +
+DOCUMENTS
+     +
+PROCESSES
+     +
+POLICIES
+     +
+REAL-TIME EVENTS
+     +
+AGENT OBSERVATIONS
+     ↓
+COMPANY BRAIN
+```
+
+The Brain is not supposed to invent how the company works. It continuously builds its understanding from authorized evidence and keeps the resulting knowledge auditable.
+
+---
+
+# AI Workforce
+
+The ERP is operated by specialized agents rather than one giant generic assistant.
+
+Examples:
+
+```text
+AI CFO / Finance Agent
+AI Sales Agent
+AI Marketing Agent
+AI Operations Agent
+AI HR Agent
+AI Procurement Agent
+AI Customer Service Agent
+AI Compliance Agent
+AI Document Agent
+AI Security Agent
+AI Executive Assistant
+```
+
+Agents can collaborate, delegate work and share controlled company context while respecting tenant, permission and policy boundaries.
+
+Each agent is modeled around:
+
+- role
+- capabilities
+- knowledge
+- memory
+- tools
+- permissions
+- objectives
+- tasks
+- policies
+- autonomy level
+- execution history
+- performance
+- audit trail
+
+---
+
+# Real-time ERP
+
+The target architecture combines the intelligence of agents with the operational structure of a complete ERP.
+
+```text
+                         AI COMPANY OS
+                              │
+                 ┌────────────┴────────────┐
+                 │      COMPANY BRAIN      │
+                 └────────────┬────────────┘
+                              │
+          ┌───────────────────┼───────────────────┐
+          ↓                   ↓                   ↓
+       FINANCE              SALES              MARKETING
+          │                   │                   │
+       AI Agent            AI Agent            AI Agent
+          └───────────────────┼───────────────────┘
+                              ↓
+                     AGENT ORCHESTRATOR
+                              │
+          ┌───────────────────┼───────────────────┐
+          ↓                   ↓                   ↓
+         CRM                  HR              OPERATIONS
+          │                   │                   │
+          └───────────────────┼───────────────────┘
+                              ↓
+                        REAL-TIME ERP
+                              │
+          ┌───────────────────┼───────────────────┐
+          ↓                   ↓                   ↓
+       CUSTOMERS          INVENTORY           FINANCE
+       DOCUMENTS          SUPPLIERS            PROJECTS
+       CONTRACTS          PRODUCTS              HR
+```
+
+The ERP layer is intended to grow into a complete business platform covering the operational areas normally found across modern ERP, CRM and business-management systems — but with AI agents operating directly across those capabilities.
+
+---
+
+# Progressive administrative autonomy
+
+The Company OS does not assume unlimited authority from day one.
+
+A company begins with observation and progressively grants capabilities as trust is established.
+
+```text
+LEVEL 0 — OBSERVE
+       ↓
+LEVEL 1 — ANALYZE
+       ↓
+LEVEL 2 — RECOMMEND
+       ↓
+LEVEL 3 — EXECUTE WITH APPROVAL
+       ↓
+LEVEL 4 — LIMITED AUTONOMY
+       ↓
+LEVEL 5 — OPERATIONAL AUTONOMY
+```
+
+The owner or responsible person remains the authority that defines objectives, policies, permissions, budgets and risk boundaries.
+
+The system can recommend increasing or reducing autonomy based on evidence, but **it cannot grant itself additional authority**.
+
+Example:
+
+> “Allow purchases up to €300 to be executed automatically. Purchases above €300 require my approval.”
+
+That becomes an explicit company policy.
+
+---
+
+# The company can teach the AI by voice
+
+The dashboard includes a direct voice entry point for communicating with the Company Brain.
+
+A manager can say:
+
+> “From now on, purchases above €500 require my approval.”
+
+or:
+
+> “Every Friday, prepare a financial and sales report.”
+
+or:
+
+> “Find ways to reduce operational costs without reducing service quality.”
+
+The system interprets the communication and distinguishes between:
+
+```text
+FACT
+DIRECTIVE
+RULE
+TASK
+DECISION
+AUTHORIZATION
+```
+
+Sensitive changes remain pending until the appropriate person confirms them.
+
+Voice is therefore not just speech-to-text. It is another interface for **teaching and operating the company**.
+
+---
+
+# Modules become capabilities the company can activate
+
+The platform is modular.
+
+```text
+CORE
+├── Company Intelligence
+├── Finance
+├── Accounting
+├── CRM
+├── Sales
+├── Marketing
+├── HR
+├── Procurement
+├── Inventory
+├── Projects
+├── Operations
+├── Documents
+├── Contracts
+├── Reporting
+├── Customer Service
+├── Security
+├── Analytics
+└── AI Workforce
+```
+
+The customer can progressively activate capabilities according to the selected plan and level of comfort.
+
+The platform can also identify an unmet need and present the corresponding capability:
+
+> **“We identified an opportunity in your marketing operation. Activate AI Marketing and try it during the available trial period.”**
+
+This makes the product modular both technically and commercially.
+
+---
+
+# Intelligence before automation
+
+The system should first demonstrate value before asking the company to grant more authority.
+
+For example:
+
+> **Company Intelligence found 23 opportunities for improvement.**
+
+It may identify:
+
+- unusual cost increases
+- declining margins
+- inefficient processes
+- missed sales opportunities
+- customer churn signals
+- supplier risks
+- operational anomalies
+- duplicated work
+- document inconsistencies
+- marketing opportunities
+
+For each recommendation, the system should explain:
+
+```text
+WHAT WAS FOUND
+      ↓
+WHY IT MATTERS
+      ↓
+EVIDENCE
+      ↓
+WHAT COULD BE DONE
+      ↓
+EXPECTED IMPACT
+      ↓
+RISKS
+      ↓
+REQUIRED AUTHORITY
+```
+
+This turns AI from a black box into an increasingly trusted operational partner.
+
+---
+
+# Documents, reports and business outputs
+
+AI Company OS is designed to generate professional business artifacts using the company's identity and approved information:
+
+- reports
+- budgets
+- quotations
+- proposals
+- contracts
+- purchase documents
+- financial summaries
+- management reports
+- marketing plans
+- operational plans
+- analysis documents
+
+Outputs can use the company's approved logo, branding, business information and document templates, while workflows can include the appropriate approval and compliance gates.
+
+---
+
+# Company Bridge
+
+The Bridge is the connection between the customer's environment and the central platform.
+
+```text
+CUSTOMER ENVIRONMENT
+        │
+        ├── Existing ERP
+        ├── Databases
+        ├── Files
+        ├── Documents
+        ├── Local applications
+        └── Authorized systems
+                 │
+                 ↓
+          COMPANY BRIDGE
+                 │
+        Local processing
+        Data minimization
+        Connector policy
+        Device identity
+        Local outbox
+                 │
+                 ↓
+              HTTPS
+                 │
+                 ↓
+          COMPANY BRAIN API
+```
+
+The architecture is explicitly designed around tenant isolation, authorization, provenance, auditability and data minimization.
+
+The Bridge does not assume that access to one system means access to every other system.
+
+---
+
+# Governance and safety
+
+AI Company OS is designed for progressively autonomous operation, not uncontrolled autonomy.
+
+Core principles include:
+
+- explicit company authorization
+- tenant isolation
+- permission boundaries
+- capability-level autonomy
+- human approval gates
+- risk assessment
+- budget controls
+- audit trails
+- evidence-backed memory
+- reversible operations where possible
+- independent safety monitoring
+- failure-based autonomy decay
+- controlled external side effects
+
+The system must always distinguish between **knowing**, **recommending** and **being authorized to execute**.
+
+---
+
+# Architecture
+
+```text
+                         HUMAN CONTROL PLANE
+            Objectives · Policies · Permissions · Approvals
+                              │
+                              ↓
+                       ┌──────────────┐
+                       │ COMPANY OS   │
+                       └──────┬───────┘
+                              │
+                 ┌────────────┼────────────┐
+                 ↓            ↓            ↓
+          COMPANY BRAIN   AI WORKFORCE   CONTROL SYSTEMS
+          Memory/RAG      Agents/Skills  Risk/Budget/Safety
+                 │            │            │
+                 └────────────┼────────────┘
+                              ↓
+                       REAL-TIME ERP
+                              │
+                              ↓
+                       COMPANY BRIDGE
+                              │
+                              ↓
+                    CUSTOMER ENVIRONMENT
+```
+
+The operational cycle is deterministic around the agentic layer:
 
 ```text
 OBJECTIVE
@@ -25,665 +478,85 @@ REPLAN
    └──────────► NEXT CYCLE
 ```
 
-Humans define objectives, constraints, permissions and risk boundaries. Agents operate inside those boundaries and every execution produces observable state, evaluation and learning.
+---
 
-## Core objective — operate a real company through the OS
+# Current foundation
 
-The long-term product rule is that AI Company OS must evolve from an agent-management platform into an operational control plane capable of taking an authorized real company as a client and progressively making that company operable through the OS.
+The repository already contains foundations for:
 
-Given explicit authorization and scoped access, the system must be designed to understand the company environment, discover systems and processes, design required integrations, build APIs/bridges/connectors, validate and test them, request and verify authorization, deploy into the authorized customer environment, perform health checks, activate, monitor, detect and correct failures, and roll back when required.
-
-This is a product requirement and architectural north star, not permission for unrestricted autonomous access. Every real-world action must remain tenant-scoped, explicitly authorized, auditable, reversible where possible, and protected by the platform security, risk, budget and safety controls. The OS must never assume that access to one system grants access to another.
-
-A concrete target scenario is: a customer asks the OS to integrate with an existing ERP or business system; the OS discovers the authorized interface, builds the required API/bridge, tests it, prepares the deployment package, deploys it through an approved deployment adapter into the authorized customer environment, verifies health, and then makes the resulting capability available to the appropriate agents.
-
-
-## Architecture
-
-```text
-┌──────────────────────────────────────────────────────────────────────┐
-│                         AI COMPANY OS                               │
-│                                                                      │
-│  HUMAN CONTROL PLANE                                                │
-│  Objectives · Constraints · Permissions · Approvals · Risk Limits   │
-│                              │                                       │
-│                              ▼                                       │
-│  ┌──────────────────────────────────────────────────────────────┐    │
-│  │                    COMPANY RUNTIME                            │    │
-│  │                                                              │    │
-│  │ Objective → Mission → Plan → Delegate → Execute             │    │
-│  │                         │                                    │    │
-│  │                         ▼                                    │    │
-│  │              Observe → Evaluate → Learn → Replan             │    │
-│  └─────────────────────────┬────────────────────────────────────┘    │
-│                            │                                         │
-│          ┌─────────────────┼──────────────────┐                      │
-│          ▼                 ▼                  ▼                      │
-│    AI WORKFORCE      COMPANY BRAIN      CONTROL SYSTEMS              │
-│    Agents / Skills   Facts / Memory     Risk / Budget / Safety      │
-│                       RAG / Reasoning    Autonomy / Audit            │
-│                            ▲                                         │
-│                            │                                         │
-│  ┌─────────────────────────┴────────────────────────────────────┐    │
-│  │                    CLOUD CONTROL PLANE                       │    │
-│  │                                                              │    │
-│  │ Enrollment → Device Identity → Authenticated Ingress         │    │
-│  │             → Validation → Idempotency → Durable Store       │    │
-│  └─────────────────────────▲────────────────────────────────────┘    │
-│                            │ HTTPS                                  │
-└────────────────────────────┼─────────────────────────────────────────┘
-                             │
-                    outbound HTTPS only
-                             │
-┌────────────────────────────┴─────────────────────────────────────────┐
-│                         CUSTOMER ENVIRONMENT                          │
-│                                                                      │
-│  ERP / SQLite / CSV / Local Systems                                  │
-│             │                                                        │
-│             ▼                                                        │
-│       COMPANY BRIDGE                                                 │
-│       Discovery · Read-only Connectors · Local Policy                │
-│       Data Minimization · Local Outbox · Device Identity             │
-│                                                                      │
-│  RAW DATA → BUSINESS FACTS → MINIMIZATION → LOCAL OUTBOX             │
-│                                                                      │
-│  Raw local files/databases remain local unless explicitly authorized.│
-└──────────────────────────────────────────────────────────────────────┘
-```
-
-### Production cloud target
-
-```text
-                         AZURE
-┌───────────────────────────────────────────────────────────────────┐
-│                                                                   │
-│  Azure Container Apps / App Service                               │
-│              │                                                    │
-│              ▼                                                    │
-│       Company Brain API                                           │
-│              │                                                    │
-│      ┌───────┼───────────────┬───────────────┐                    │
-│      ▼       ▼               ▼               ▼                    │
-│ PostgreSQL  Azure OpenAI   Blob Storage   Key Vault               │
-│ Memory +    LLM Gateway    Documents +    Secrets +               │
-│ Events                     Evidence        Credentials             │
-│                                                                   │
-└───────────────────────────────────────────────────────────────────┘
-                              ▲
-                              │ HTTPS
-                              │
-                       Company Bridge
-                              ▲
-                              │
-                    Customer local systems
-```
-
-Azure is the **production target architecture**. The current repository implementation still uses SQLite for development persistence; production Azure resources are not provisioned from source control.
-
-### Architectural layers
-
-| Layer | Purpose | State |
-|---|---|---|
-| Human Control Plane | Direction, constraints, permissions and approvals | Active |
-| Company Runtime | Deterministic operating cycle | Active |
-| AI Workforce | Agents, capabilities, delegation and execution | Active foundation |
-| Company Brain | Business facts, memory, reasoning and future RAG | Ingress foundation |
-| Control Systems | Risk, safety, budget, autonomy and audit | Active foundation |
-| Cloud Control Plane | Enrollment, authentication, validation and durable events | Implemented |
-| Company Bridge | Local-first connection to company systems | Implemented foundation |
-| Azure Production Infrastructure | API, PostgreSQL, OpenAI, Blob and Key Vault | Blueprint ready |
-| Real AI Layer | LLM gateway, RAG and autonomous reasoning | In progress |
-| Business Integrations | CRM, ERP, finance, communication and external APIs | Next |
-| Controlled Actions | Real-world side effects behind policy and approval gates | Future production layer |
-
-### End-to-end architecture
-
-```text
-LOCAL COMPANY SYSTEMS
-        ↓
-COMPANY BRIDGE
-        ↓
-CONNECTORS + LOCAL POLICY
-        ↓
-BUSINESS FACTS
-        ↓
-DATA MINIMIZATION
-        ↓
-LOCAL OUTBOX
-        ↓
-HTTPS + DEVICE IDENTITY
-        ↓
-COMPANY BRAIN API
-        ↓
-AUTHENTICATION + VALIDATION
-        ↓
-EVENT IDENTITY + IDEMPOTENCY
-        ↓
-DURABLE CLOUD STORE
-        ↓
-COMPANY BRAIN
-        ↓
-LLM / RAG / AGENTS
-        ↓
-MISSION + PLAN
-        ↓
-RISK + BUDGET + APPROVAL
-        ↓
-CONTROLLED EXECUTION
-        ↓
-OBSERVE + EVALUATE
-        ↓
-COMPANY MEMORY
-        ↓
-REPLAN
-```
-
-This architecture separates the customer's local data boundary, the cloud ingestion boundary, the cognitive layer and the operational control loop. The public Next.js application remains a static presentation layer; the real cloud control plane is implemented separately as a .NET service.
-
-## Company Bridge — local-first company connection
-
-Company Bridge is the Windows component that connects a real company's local environment to the Company Brain without treating the customer's computer as a cloud data dump.
-
-The Bridge is installed as the Windows service `AI Company OS Company Bridge Service`. A desktop shortcut is only a management entry point; deleting it does not stop the service.
-
-### Data boundary
-
-```text
-RAW LOCAL DATA
-      ↓
-LOCAL PARSING
-      ↓
-BUSINESS FACTS
-      ↓
-MINIMIZATION
-      ↓
-LOCAL OUTBOX
-      ↓
-ONLY REQUIRED DATA → CLOUD
-```
-
-Raw files and complete local databases remain on the customer's machine unless a separate explicit workflow authorizes a specific transfer.
-
-The first connectors are read-only SQLite and CSV adapters. Connector authorization is empty by default. Generated connectors must follow the governed lifecycle in `bridge/CONNECTOR-BUILDER.md` and cannot be activated merely because AI generated code.
-
-## Real cloud boundary
-
-The cloud side is a separate .NET 8 service under `cloud/CompanyBrain.Api/` because the public Next.js application is a static GitHub Pages export.
-
-```text
-Bridge
-  ↓ HTTPS + device identity
-POST /api/bridge/v1/sync
-  ↓
-Device authentication
-  ↓
-JSON validation
-  ↓
-SHA-256 event identity
-  ↓
-SQLite durable persistence
-  ↓
-Idempotent event storage
-  ↓
-Company Brain processing boundary
-```
-
-Device enrollment is explicit. An enrollment token provisions a device-specific API key; the cloud stores only the API-key hash. The API key is then used for authenticated synchronization. No company can synchronize while remaining `un-enrolled`.
-
-## Runtime engines
-
-| Module | Responsibility |
-|---|---|
-| `operating-engine.ts` | Objectives, task graphs, agent selection and risk approval |
-| `mission-generator.ts` | Converts objectives into executable missions |
-| `execution-queue.ts` | Dependency-aware task execution state machine |
-| `company-runtime.ts` | Coordinates the complete operating cycle |
-| `evaluation-engine.ts` | Evaluates results and produces learning records |
-| `statistical-evaluation-engine.ts` | Statistical experiment evaluation and evidence-based verdicts |
-| `replanning-engine.ts` | Creates the next executable plan after evaluation |
-| `risk-engine.ts` | Quantitative impact, reversibility and blast-radius risk |
-| `safety-monitor.ts` | Independent anomaly monitoring and kill-switch decisions |
-| `budget-engine.ts` | Budget reservations, TTL and controlled consumption |
-| `experiment-engine.ts` | Controlled experiment lifecycle and variant isolation |
-| `autonomy-engine.ts` | Capability-level autonomy and failure-based decay |
-| `company-memory.ts` | Evidence-backed knowledge with supersession and contestation |
-
-## Control principles
-
-### Evidence before declaring a winner
-
-Experiments do not become winners from a simple percentage increase. The statistical layer checks sample size, confidence interval and significance before returning:
-
-```text
-SIGNIFICANT_WIN
-SIGNIFICANT_LOSS
-INCONCLUSIVE
-INVALID
-```
-
-### Independent safety monitor
-
-Safety is outside the normal evaluation loop:
-
-```text
-EXECUTION
- ├── Runtime
- └── Safety Monitor
-       ├── NORMAL
-       ├── WARNING
-       ├── PAUSE
-       ├── ABORT_TASK
-       ├── ABORT_EXPERIMENT
-       └── EMERGENCY_STOP
-```
-
-A safety anomaly can stop execution without waiting for the current operating cycle to finish.
-
-### Quantitative risk
-
-Risk is modeled from measurable factors:
-
-```text
-riskScore = impact × (1 - reversibility) × blastRadius
-```
-
-High-impact operations require the appropriate approval boundary.
-
-### Autonomy with decay
-
-Autonomy is granted per capability/domain. Execution failures can reduce autonomy instead of allowing it to increase indefinitely.
-
-### Budget reservations
-
-Financial capacity is reserved before execution and protected by TTL. Expired reservations are released instead of remaining indefinitely locked.
-
-### Company Memory
-
-Knowledge is stored with evidence and lifecycle state:
-
-```text
-ACTIVE → SUPERSEDED
-       ↘ CONTESTED
-```
-
-The system can therefore distinguish current knowledge from historical or disputed knowledge.
-
-## Current UI
-
-The Company Workspace is runtime-driven rather than simulation-driven. The Command Center consumes the same runtime state used by execution, evaluation and replanning.
-
-The UI exposes:
-
-- Command Center
-- AI Workforce
-- Missions
-- Task Graph
-- Intelligence
+- Company OS shell and dashboard
+- Company navigation and module boundaries
+- Company Bridge
+- local-first connectors
+- cloud Company Brain ingress
+- device enrollment
+- tenant/data provenance isolation
+- durable event persistence
 - Company Memory
-- Operations
-- Security & Control
-- Finance
-- Gestoría & Compliance
-- Products
-- Customers
-- Settings
+- structured Brain decisions
+- human approval gates
+- deterministic execution queue
+- Agent Registry
+- bounded agent execution
+- autonomous Brain cycles
+- evaluation and replanning
+- risk and budget controls
+- safety monitoring
+- capability-level autonomy
+- progressive administrative autonomy
+- voice entry for company instructions
+- Azure production architecture blueprint
 
-### Company OS shell status — 2026-09-18
+The implementation is evolving toward the complete production system described above.
 
-The canonical Company OS presentation shell is active on the company route.
+---
 
-Completed in this UI hardening cycle:
+# Technology direction
 
-- Centralized Company navigation model in `ui/company/CompanyNavigation.ts`
-- Reusable collapsible `CompanySidebar`
-- Collapsed sidebar state with compact navigation mode
-- Reusable `CompanyTopbar`
-- User profile menu and session-aware sign-out boundary
-- Canonical `CompanyContent` presentation boundary
-- Extracted runtime-driven dashboard and business modules into `CompanyRuntimeContent`
-- Composed `CompanyRuntimeWorkspaceV2` activated by the company route
-- Server-first `CompanyShell`
-- Runtime composition kept separate from the presentation shell
-- Company route composition retains `generateStaticParams()` in the Server Component
-- Dashboard includes revenue, conversion rate, AI workforce, active missions, company health, performance, funnel and live activity
-- Dashboard, topbar and sidebar typography scaled up for improved readability
-- Legacy `CompanyRuntimeWorkspace.tsx` monolith removed from the active codebase after the V2 migration
-- Next.js configured for static export with the repository base path `/AI-Company-OS`
-- Missing runtime support modules restored for Agents, Tasks and Missions
-- Dynamic Tasks route split into a Server Component route plus Client Component so static export can generate company paths
-- GitHub Pages workflow hardened to build and deploy the static `out` artifact
-- Company Bridge local-first Windows service foundation added
-- Read-only SQLite and CSV connectors added
-- Local minimization and explicit connector authorization added
-- Durable local outbox and outbound-only cloud sync added
-- Governed AI connector-builder lifecycle documented
-- Real .NET cloud ingress service added
-- Explicit device enrollment added
-- Device-specific API keys with hashed cloud storage added
-- Durable SQLite cloud event persistence added
-- Event-level idempotency added
-- Authenticated Bridge → Cloud synchronization added
-- Azure production cloud blueprint added
-- Real Company Brain event processor added
-- Processed-event tracking and Company Memory persistence added
-- Configurable LLM gateway added
-- Background processing worker added
-- Brain analysis endpoint secured with an admin key
-- Brain analysis now consumes persisted Company Memory facts
-- Authenticated Company Memory inspection endpoint added
-- Structured Company Brain Decision Layer added
-- Runtime Brain decision adapter added
-- Human approval gate added before runtime execution
-- Approved Brain decisions can enter the deterministic execution queue
-- Authenticated runtime synchronization endpoint exposes approved decisions without external side effects
-- Trusted Company Bridge pulls approved Brain decisions using device credentials
-- Local Bridge runtime channel exposes approved decisions to the static workspace without exposing cloud secrets
-- Browser runtime adapter merges approved cloud decisions with deterministic runtime state
-- Brain execution queue preserves existing runtime state when appending decisions
-- Completed Brain tasks are marked EXECUTED in runtime state
-- LLM decisions constrained to non-side-effect action types
-- Bounded Agent Execution service added for approved OBSERVE / PLAN decisions
-- Explicit Agent Registry added with capability-to-agent mapping and deterministic autonomy/risk policy enforcement
-- Agent execution outcomes persisted durably for recovery and audit
-- Autonomous Company Brain cycle added: memory → decision → controlled approval → agent execution
-- Low-risk decisions can be promoted automatically; higher-risk decisions remain human-gated
-- Brain worker now drives the autonomous cycle continuously while preserving external-side-effect isolation
-- Company Bridge execution workspaces are confined to the local Bridge data directory; deployment remains policy-disabled
-- Agent observations and recommended next steps are fed back into Company Memory for subsequent cycles
-- Tenant/data provenance isolation enforced: devices are not treated as company identity, and data sources require explicit company binding
-- Bridge sync rejects envelopes whose CompanyId does not match the authenticated tenant
-- Company Memory now stores source identity, source type and originating device provenance
-- Brain ingestion validates tenant identity before creating memory and rejects mismatched envelopes
-- Brain decision generation now filters out memories with missing or mismatched tenant/source/device provenance
-- Brain decisions persist the exact memory/source/device evidence used to derive each decision
-- Existing SQLite installations migrate memory and decision provenance columns automatically
-- Execution outcome evaluation and autonomous replanning added to the continuous Brain cycle
-- Evaluation results and replan proposals are persisted with company/decision/execution identity
-- Replanning remains side-effect-free and approval-gated for HIGH/CRITICAL risk
-- Approved decisions can execute through the LLM with read-only, no-side-effect constraints
-- Agent execution validates structured COMPLETED / BLOCKED results before returning them
-- Decision risk and approval requirements validated before persistence
-- Brain decisions persisted durably with proposal / approval-required status
-- Authenticated decision generation and inspection endpoints added
-- Company Brain remains isolated from external side effects while decision controls are being hardened
-- LLM gateway hardened with timeout and response validation
-- Company Brain CI added for restore/build/publish verification
+Current architecture combines:
 
-### Live preview
+- **.NET 8 / ASP.NET Core** — cloud control plane and Company Brain services
+- **Next.js / TypeScript** — Company OS web interface
+- **SQLite** — current development persistence
+- **Azure** — production cloud target
+- **LLM / RAG / agent infrastructure** — cognitive layer
+- **Company Bridge** — local customer integration boundary
 
-GitHub Pages deployment is configured at:
+Production architecture targets Azure services for API hosting, PostgreSQL, object storage, secrets and the model gateway.
 
-`https://mauricio-hns.github.io/AI-Company-OS/`
+---
 
-The deployment is considered live only after the GitHub Actions build and Pages deployment complete successfully.
+# Product north star
 
-Current sequence:
+AI Company OS is being built toward a future where a company can connect its authorized environment, allow the system to understand how the business works, and progressively delegate operational responsibilities to a coordinated AI workforce.
+
+The ultimate interface is not a collection of disconnected AI tools.
+
+It is **one intelligent company operating system**.
 
 ```text
-Company OS Shell                  ✓
-      ↓
-Sidebar + Topbar integration      ✓
-      ↓
-Content / module boundaries       ✓
-      ↓
-Legacy workspace cleanup          ✓
-      ↓
-Pages build hardening             ✓
-      ↓
-Dashboard typography system       ✓
-      ↓
-Company Bridge foundation         ✓
-      ↓
-Real Company Brain ingress        ✓
-      ↓
-Device enrollment                 ✓
-      ↓
-Durable cloud persistence         ✓
-      ↓
-Azure production blueprint       ✓
-      ↓
-Real Company Brain processor      ✓
-      ↓
-LLM gateway                       ✓
-      ↓
-Structured Brain decisions          ✓
-      ↓
-Brain decision → approval → queue → execution   ✓
-      ↓
-Real agent/LLM execution          ✓
-      ↓
-Tenant/data provenance isolation       ✓
-      ↓
-Decision evidence provenance           ✓
-      ↓
-Evaluation + Replanning                 ✓
-      ↓
-Human Review + Strategic Policy lifecycle contracts ✓
-Decision Center alternatives + human actions ✓
-Human decision actions persisted to audit trail ✓
-Durable idea/plan/agent blocking ✓
-Durable decision alternatives ✓
-Functional human review lifecycle ✓
-Human-requested Brain re-analysis ✓
-Strategic trigger/conflict evaluation ✓
-Cloud rate limiting + correlation boundary ✓
-      ↓
-Real integrations                 →
-      ↓
-Dashboard 2.0                     →
-      ↓
-Experience Intelligence           →
-      ↓
-Production hardening              →
+             HUMAN
+               │
+               ↓
+        COMPANY OBJECTIVES
+               │
+               ↓
+        ┌───────────────┐
+        │ AI COMPANY OS │
+        └───────┬───────┘
+                │
+       UNDERSTAND THE COMPANY
+                ↓
+       MONITOR THE COMPANY
+                ↓
+       ANALYZE THE COMPANY
+                ↓
+       IMPROVE THE COMPANY
+                ↓
+       OPERATE THE COMPANY
+                ↓
+       LEARN FROM THE COMPANY
+                ↺
 ```
 
-Every relevant implementation milestone must update this status section so the repository home remains the source of truth for project progress.
-
-External side effects remain gated while the runtime and safety paths are being hardened.
-
-## Project structure
-
-```text
-app/
-├── company/[companyId]/
-│   ├── CompanyRuntimeContext.tsx
-│   ├── CompanyRuntimeWorkspaceV2.tsx
-│   ├── CompanyRuntimeWorkspaceV2.module.css
-│   ├── CompanySessionGate.tsx
-│   └── domain modules / detail routes
-│
-ui/
-└── company/
-    ├── CompanyShell.tsx
-    ├── CompanyNavigation.ts
-    ├── CompanySidebar.tsx
-    ├── CompanySidebar.module.css
-    ├── CompanyTopbar.tsx
-    ├── CompanyTopbar.module.css
-    ├── CompanyContent.tsx
-    ├── CompanyContent.module.css
-    └── CompanyRuntimeContent.tsx
-
-lib/
-├── company-runtime.ts
-├── company-engine.ts
-├── operations-engine.ts
-├── operating-engine.ts
-├── mission-generator.ts
-├── execution-queue.ts
-├── evaluation-engine.ts
-├── statistical-evaluation-engine.ts
-├── replanning-engine.ts
-├── risk-engine.ts
-├── safety-monitor.ts
-├── budget-engine.ts
-├── experiment-engine.ts
-├── autonomy-engine.ts
-└── company-memory.ts
-
-bridge/
-├── README.md
-├── CONNECTOR-BUILDER.md
-├── installer/
-└── src/CompanyBridge/
-
-cloud/
-├── azure/
-│   └── README.md
-└── CompanyBrain.Api/
-    ├── CompanyBrain.Api.csproj
-    ├── Program.cs
-    ├── AgentRegistry.cs
-    ├── CloudStore.cs
-    └── appsettings.json
-```
-
-The active company route composes through `CompanyRuntimeWorkspaceV2`; the former workspace monolith has been removed.
-
-## Development status
-
-### Phase 1 — Platform foundation
-
-Completed.
-
-### Phase 2 — Agent engine
-
-Completed.
-
-### Phase 3 — Company engine
-
-Completed.
-
-### Phase 4 — Autonomous operations
-
-In progress.
-
-Latest completed control-loop milestone:
-
-**EXECUTE → OBSERVE → EVALUATE → LEARN → REPLAN → NEXT DECISION**
-
-The autonomous loop now persists evaluation/replan state and converts a bounded replan into the next tenant-scoped Brain decision. Low-risk replans can be auto-approved; higher-risk replans remain approval-gated.
-
-Human review is now durable rather than audit-only: selected alternatives, edit/intervention notes and review status are persisted; deleting a plan closes the pending decision; additional-analysis requests enter a durable queue consumed by the Brain worker; accepted decisions remain subject to the existing approval and execution gates.
-
-Completed foundations:
-
-- Deterministic planning
-- Mission generation
-- Capability-based delegation
-- Dependency-aware execution queue
-- Result evaluation
-- Statistical experiment evaluation
-- Learning records
-- Replanning
-- Quantitative risk engine
-- Safety monitor / kill switch
-- Budget reservations with TTL
-- Experiment isolation
-- Capability autonomy and decay
-- Company memory lifecycle
-- Runtime-driven Command Center
-- Company OS presentation architecture
-- Centralized navigation and shell boundaries
-- Active composed Company Workspace
-- Static Pages build hardening
-- Company Bridge local-first ingestion foundation
-- Real authenticated cloud Bridge ingress
-- Device enrollment
-- Durable cloud event persistence
-- Event idempotency
-- Tenant/data provenance isolation across devices and sources
-- Decision evidence provenance
-- Durable evaluation and replan persistence
-- Replan → next decision/task loop
-- Approved decision resume/execute cycle
-
-Remaining hardening work:
-
-- Automated unit tests for critical runtime paths
-- PostgreSQL production provider
-- Direct cloud-to-Company-Brain agent decision loop ✓
-- Durable agent execution result store
-- Authenticated cloud decision → runtime synchronization contract ✓
-- Runtime pull endpoint for approved Brain decisions ✓
-- Trusted Bridge → browser runtime decision delivery ✓
-- Human approval workflow UI
-- Human Review multiple alternatives and strategic policy lifecycle contracts ✓
-- Durable human review state and selected-plan persistence ✓
-- Human-requested Brain re-analysis queue ✓
-- Opportunity detection
-- Production experiment management
-- Agent registry, capabilities and explicit autonomy policies ✓
-- Real integrations
-- Dashboard 2.0 visual refinement
-- Module-level component extraction
-- Production observability and rate limiting ✓
-
-### Phase 5 — Real AI and business integrations
-
-In progress.
-
-- Production LLM provider configuration
-- Agent decision loop
-- RAG / vector knowledge
-- CRM
-- Marketing platforms
-- Financial systems
-- Communication channels
-- Controlled external actions
-
-## Technology
-
-- Next.js 14
-- React 18
-- TypeScript
-- Lucide React
-- .NET 8 Company Bridge
-- .NET 8 Company Brain API
-- SQLite development persistence
-- Azure production blueprint
-- GitHub Pages deployment
-
-## Safety model
-
-The platform now has a real authenticated data-ingestion path, while real external business side effects remain gated.
-
-The intended production sequence is:
-
-```text
-REAL COMPANY DATA
- ↓
-LOCAL MINIMIZATION
- ↓
-LOCAL OUTBOX
- ↓
-AUTHENTICATED CLOUD INGRESS
- ↓
-BRAIN VALIDATION
- ↓
-PLAN
- ↓
-RISK CHECK
- ↓
-BUDGET CHECK
- ↓
-APPROVAL
- ↓
-CONTROLLED EXECUTION
- ↓
-SAFETY MONITOR
- ↓
-MEASUREMENT
- ↓
-EVALUATION
- ↓
-MEMORY
- ↓
-REPLAN
-```
-
-## Vision
-
-> The next generation of software will not only help people operate companies. It will help companies operate themselves.
-
-AI Company OS is being built toward that control plane: humans define direction and boundaries; an AI workforce continuously plans, executes, measures, learns and replans inside them.
+**AI Company OS — the ERP that works for the company.**

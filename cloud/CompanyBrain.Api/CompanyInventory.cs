@@ -454,7 +454,7 @@ public sealed class CompanyInventoryStore
 
 
     public async Task<IReadOnlyList<string>> ReserveForSalesOrderAsync(
-        string companyId, string orderId, string actor, CancellationToken ct)
+        string companyId, string orderId, string actor, CancellationToken ct, bool allowDraft = false)
     {
         await _gate.WaitAsync(ct);
         try
@@ -477,7 +477,7 @@ public sealed class CompanyInventoryStore
             if (!await orderReader.ReadAsync(ct))
                 throw new ArgumentException("Sales order does not exist in this company.");
             var status = orderReader.GetString(1);
-            if (status is not ("CONFIRMED" or "INVOICED"))
+            if (status is not ("CONFIRMED" or "INVOICED") && !(allowDraft && status == "DRAFT"))
                 throw new ArgumentException("Only confirmed sales orders can reserve inventory.");
             var lines = JsonSerializer.Deserialize<SalesOrderLine[]>(orderReader.GetString(0))
                 ?? Array.Empty<SalesOrderLine>();

@@ -25,7 +25,8 @@ AI COMPANY OS
     │   ├── Marketing
     │   ├── Customers
     │   ├── Products
-    │   └── Finance
+    │   ├── Finance
+    │   └── Gestoría & Fiscal Brain
     ├── Intelligence
     │   ├── Intelligence
     │   └── Knowledge
@@ -122,3 +123,14 @@ The system may **recommend** an autonomy increase or reduction, but changing the
 
 Autonomy is bounded by permissions and policies. High-impact actions continue to require the appropriate human approval even when lower-risk operational actions are autonomous.
 
+
+
+## Fiscal Brain
+
+The fiscal layer is a structured accounting/reconciliation subsystem, not an LLM-generated tax narrative.
+
+FISCAL ENTRIES -> PERIOD AGGREGATION -> RECALCULATE NET/TAX/GROSS -> CROSS-CHECK DECLARED TAX -> INCONSISTENCIES -> HUMAN APPROVAL -> AUDIT JOURNAL
+
+Fiscal entries retain company identity, invoice identity, amounts, currency, counterparty, date and optional tax code. Period closes persist calculated totals, declared value, difference, alerts and approval state.
+
+Official submission remains outside this subsystem and requires the appropriate human authorization and future external integration boundary.

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { Bell, Building2, ChevronDown, ChevronRight, Search, Settings, ShieldCheck, UserRound } from 'lucide-react'
 import type { CompanyView } from './CompanyNavigation'
 import styles from './CompanyTopbar.module.css'
+import VoiceAIButton from './VoiceAIButton'
 
 type SessionSummary = {
   displayName?: string
@@ -42,6 +43,7 @@ export default function CompanyTopbar({
         <b>{companyName}</b>
       </div>
       <div className={styles.actions}>
+        <VoiceAIButton companyId={companyId} />
         <button type="button" aria-label="Search"><Search size={17} /></button>
         <button type="button" aria-label="Notifications"><Bell size={17} /><i /></button>
         <div className={styles.profileWrap}>

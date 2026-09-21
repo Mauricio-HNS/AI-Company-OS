@@ -45,7 +45,7 @@ export function buildLedgerSnapshot(
     generatedAt: new Date().toISOString(),
     factCount: facts.length,
     entityCounts,
-    sourceCount: new Set(facts.map(fact => fact.entityKind)).size,
+    sourceCount: facts.length === 0 ? 0 : new Set(facts.map(fact => fact.entityKind)).size,
     lastObservedAt,
   };
 }

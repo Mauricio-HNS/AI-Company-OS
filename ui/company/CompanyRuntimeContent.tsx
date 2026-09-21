@@ -7,6 +7,7 @@ import { formatMoney } from '../../lib/business-metrics'
 import { useCompanyRuntime } from '../../app/company/[companyId]/CompanyRuntimeContext'
 import type { CompanyView } from './CompanyNavigation'
 import ApprovalsModule from './CompanyApprovals'
+import GestoriaModule from './CompanyGestoria'
 
 type Company = { name: string; type: string; revenue: string; profit: string; health: string; agents: number; missions: number; objective: string }
 
@@ -45,6 +46,7 @@ function Module({ company, view }: { company: Company; view: Exclude<CompanyView
   if (view === 'Customers') return <CustomersModule/>
   if (view === 'Products') return <ProductsModule/>
   if (view === 'Finance') return <FinanceModule/>
+  if (view === 'Gestoría') return <GestoriaModule/>
   if (view === 'Intelligence') return <IntelligenceModule/>
   if (view === 'Knowledge') return <KnowledgeModule/>
   if (view === 'Operations') return <OperationsModule/>

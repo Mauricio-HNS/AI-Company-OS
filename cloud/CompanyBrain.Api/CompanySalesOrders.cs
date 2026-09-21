@@ -239,6 +239,20 @@ public sealed class CompanySalesOrderStore
         }
     }
 
+    public async Task<SalesOrder> ConfirmAsync(string companyId, string orderId, string actor, CancellationToken ct)
+    {
+        await _gate.WaitAsync(ct);
+        try {
+            var order=await GetAsync(companyId,orderId,ct) ?? throw new ArgumentException("Sales order does not exist in this company.");
+            if (order.Status=="CONFIRMED" || order.Status=="INVOICED") return order;
+            if (order.Status=="CANCELLED") throw new ArgumentException("Cancelled sales orders cannot be confirmed.");
+            await using var connection=new SqliteConnection(_connectionString); await connection.OpenAsync(ct);
+            await using var command=connection.CreateCommand(); command.CommandText="UPDATE company_sales_orders SET status='CONFIRMED' WHERE company_id=$company AND order_id=$id;";
+            Add(command,"$company",companyId);Add(command,"$id",orderId);await command.ExecuteNonQueryAsync(ct);
+            return order with { Status="CONFIRMED" };
+        } finally { _gate.Release(); }
+    }
+
     public async Task<SalesOrder> CreateFromCompletedAppointmentAsync(
         string companyId, Appointment appointment, string actor, CancellationToken cancellationToken)
     {
@@ -289,6 +303,42 @@ public sealed class CompanySalesOrderStore
             VALUES($id,$company,$number,$customer,$customerName,$currency,$ordered,$quote,$net,$tax,$gross,$lines,$notes,$status,$created,$actor,$sourceType,$sourceId);""";
         Add(command,"$id",order.OrderId);Add(command,"$company",order.CompanyId);Add(command,"$number",order.Number);Add(command,"$customer",order.CustomerId);Add(command,"$customerName",order.CustomerName);Add(command,"$currency",order.Currency);Add(command,"$ordered",order.OrderedAt.ToString("O"));Add(command,"$quote",(object?)order.QuoteId??DBNull.Value);Add(command,"$net",order.NetAmount.ToString(CultureInfo.InvariantCulture));Add(command,"$tax",order.TaxAmount.ToString(CultureInfo.InvariantCulture));Add(command,"$gross",order.GrossAmount.ToString(CultureInfo.InvariantCulture));Add(command,"$lines",JsonSerializer.Serialize(order.Lines));Add(command,"$notes",order.Notes);Add(command,"$status",order.Status);Add(command,"$created",order.CreatedAt.ToString("O"));Add(command,"$actor",order.CreatedBy);Add(command,"$sourceType",(object?)order.SourceType??DBNull.Value);Add(command,"$sourceId",(object?)order.SourceId??DBNull.Value);
         await command.ExecuteNonQueryAsync(ct); return order;
+    }
+
+    public async Task<SalesOrder> IssueInvoiceAsync(
+        string companyId, string orderId, string actor, FiscalBrainStore fiscal, CancellationToken ct)
+    {
+        await _gate.WaitAsync(ct);
+        try
+        {
+            var order = await GetAsync(companyId, orderId, ct)
+                ?? throw new ArgumentException("Sales order does not exist in this company.");
+            if (order.Status == "INVOICED") return order;
+            if (order.Status == "CANCELLED") throw new ArgumentException("Cancelled sales orders cannot be invoiced.");
+            if (order.Status == "DRAFT") throw new ArgumentException("Sales order must be confirmed before invoicing.");
+
+            var invoiceNumber = $"INV-{DateTime.UtcNow:yyyy}-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
+            await fiscal.UpsertEntryAsync(companyId, new FiscalEntryInput(
+                $"SALE-{order.OrderId}",
+                "REVENUE",
+                invoiceNumber,
+                order.NetAmount,
+                order.TaxAmount,
+                order.GrossAmount,
+                order.Currency,
+                order.OrderedAt,
+                order.CustomerName), ct);
+
+            await using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync(ct);
+            await using var command = connection.CreateCommand();
+            command.CommandText = "UPDATE company_sales_orders SET status='INVOICED' WHERE company_id=$company AND order_id=$id;";
+            Add(command, "$company", companyId); Add(command, "$id", orderId);
+            await command.ExecuteNonQueryAsync(ct);
+
+            return order with { Status = "INVOICED" };
+        }
+        finally { _gate.Release(); }
     }
 
     public async Task<IReadOnlyList<SalesOrder>> ListAsync(
@@ -414,6 +464,17 @@ public static class CompanySalesOrdersApi
             catch (ArgumentException e) { return Results.BadRequest(new { error = e.Message }); }
         });
 
+        app.MapPost("/api/company/v1/companies/{companyId}/sales-orders/{orderId}/confirm", async (
+            HttpRequest request,string companyId,string orderId,CompanySalesOrderStore sales,CloudStore audit,IConfiguration configuration,CancellationToken ct) =>
+        {
+            if (!Authorized(request,configuration) || !Safe(companyId) || !Safe(orderId)) return Results.Unauthorized();
+            try {
+                var order=await sales.ConfirmAsync(companyId,orderId,Actor(request),ct);
+                await audit.AppendAuditJournalAsync(companyId,"SALES_ORDER_CONFIRMED",Actor(request),request.Headers["X-Correlation-Id"].ToString(),"SALES_ORDER",order.OrderId,"Sales order confirmed and ready for invoicing.",JsonSerializer.Serialize(new {order.Number,order.GrossAmount}),ct);
+                return Results.Ok(new {order});
+            } catch(ArgumentException e){return Results.BadRequest(new {error=e.Message});}
+        });
+
         app.MapPost("/api/company/v1/companies/{companyId}/appointments/{appointmentId}/complete-and-bill", async (
             HttpRequest request,string companyId,string appointmentId,CompanyAgendaStore agenda,CompanySalesOrderStore sales,CloudStore audit,IConfiguration configuration,CancellationToken ct) =>
         {
@@ -425,6 +486,17 @@ public static class CompanySalesOrdersApi
                 var order=await sales.CreateFromCompletedAppointmentAsync(companyId,appointment,Actor(request),ct);
                 await audit.AppendAuditJournalAsync(companyId,"APPOINTMENT_BILLED",Actor(request),request.Headers["X-Correlation-Id"].ToString(),"APPOINTMENT",appointment.AppointmentId,"Completed appointment linked to a draft sales order.",JsonSerializer.Serialize(new {appointment.ServiceId,appointment.ServiceName,order.OrderId,order.Number,order.GrossAmount}),ct);
                 return Results.Ok(new {appointment,order,externalSendAllowed=false});
+            } catch(ArgumentException e){return Results.BadRequest(new {error=e.Message});}
+        });
+
+        app.MapPost("/api/company/v1/companies/{companyId}/sales-orders/{orderId}/invoice", async (
+            HttpRequest request,string companyId,string orderId,CompanySalesOrderStore sales,FiscalBrainStore fiscal,CloudStore audit,IConfiguration configuration,CancellationToken ct) =>
+        {
+            if (!Authorized(request,configuration) || !Safe(companyId) || !Safe(orderId)) return Results.Unauthorized();
+            try {
+                var order=await sales.IssueInvoiceAsync(companyId,orderId,Actor(request),fiscal,ct);
+                await audit.AppendAuditJournalAsync(companyId,"SALES_ORDER_INVOICED",Actor(request),request.Headers["X-Correlation-Id"].ToString(),"SALES_ORDER",order.OrderId,"Sales order invoiced and revenue posted to Fiscal Brain.",JsonSerializer.Serialize(new {order.Number,order.GrossAmount,order.Currency}),ct);
+                return Results.Ok(new {order,officialSubmission=false});
             } catch(ArgumentException e){return Results.BadRequest(new {error=e.Message});}
         });
 

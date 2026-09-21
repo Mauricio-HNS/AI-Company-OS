@@ -276,6 +276,22 @@ app.MapPost("/api/brain/v1/companies/{companyId}/decisions/{decisionId}/execute"
         return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
 
     await store.SaveExecutionResultAsync(execution, cancellationToken);
+    await store.AppendAuditJournalAsync(
+        companyId,
+        "AGENT_EXECUTION",
+        NormalizeActor(request.Headers["X-Brain-Actor"].ToString()),
+        request.Headers["X-Correlation-Id"].ToString(),
+        "EXECUTION",
+        execution.ExecutionId,
+        execution.Summary,
+        System.Text.Json.JsonSerializer.Serialize(new
+        {
+            decisionId,
+            status = execution.Status,
+            observations = execution.Observations,
+            nextSteps = execution.NextSteps
+        }),
+        cancellationToken);
 
     if (execution.Status == "COMPLETED")
     {
@@ -532,6 +548,23 @@ app.MapPost("/api/brain/v1/companies/{companyId}/decisions/{decisionId}/human-ac
     }
 
     return Results.Ok(new { recorded, companyId, decisionId, action = input.Action, actor });
+});
+
+app.MapGet("/api/brain/v1/companies/{companyId}/audit-journal", async (
+    HttpRequest request,
+    string companyId,
+    CloudStore store,
+    IConfiguration configuration,
+    CancellationToken cancellationToken) =>
+{
+    if (!HasBrainAdminKey(request, configuration))
+        return Results.Unauthorized();
+
+    if (!IsSafeIdentifier(companyId))
+        return Results.BadRequest();
+
+    var entries = await store.GetAuditJournalAsync(companyId, 200, cancellationToken);
+    return Results.Ok(new { companyId, count = entries.Count, entries });
 });
 
 app.MapGet("/api/brain/v1/companies/{companyId}/status", async (HttpRequest request, string companyId, CloudStore store, IConfiguration configuration, CancellationToken cancellationToken) =>

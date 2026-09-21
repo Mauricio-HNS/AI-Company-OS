@@ -8,6 +8,7 @@ public sealed record EnrollmentResult(string CompanyId, string DeviceId, string 
 public sealed record BrainDecisionAudit(string AuditId, string DecisionId, string CompanyId, string Action, string Actor, string? Reason, DateTimeOffset CreatedAt);
 public sealed record StoredEvent(string EventId, string CompanyId, string DeviceId, string Envelope, DateTimeOffset ReceivedAt);
 public sealed record MemoryProvenance(string CompanyId, string DeviceId, string SourceId, string SourceType);
+public sealed record AuditJournalEntry(string AuditId, string CompanyId, string EventType, string Actor, string? CorrelationId, string? EntityType, string? EntityId, string Summary, string Metadata, DateTimeOffset CreatedAt);
 
 public sealed class CloudStore
 {
@@ -122,6 +123,23 @@ public sealed class CloudStore
             );
             CREATE INDEX IF NOT EXISTS ix_brain_decision_audit_decision
                 ON brain_decision_audit(decision_id, created_at);
+            CREATE TABLE IF NOT EXISTS audit_journal (
+                audit_id TEXT PRIMARY KEY,
+                company_id TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                actor TEXT NOT NULL,
+                correlation_id TEXT,
+                entity_type TEXT,
+                entity_id TEXT,
+                summary TEXT NOT NULL,
+                metadata TEXT NOT NULL DEFAULT '{}',
+                created_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ix_audit_journal_company_time
+                ON audit_journal(company_id, created_at);
+            CREATE INDEX IF NOT EXISTS ix_audit_journal_company_entity
+                ON audit_journal(company_id, entity_type, entity_id, created_at);
+
             CREATE TABLE IF NOT EXISTS decision_blocks (
                 block_id TEXT PRIMARY KEY,
                 company_id TEXT NOT NULL,
@@ -921,6 +939,99 @@ public sealed class CloudStore
         command.Parameters.AddWithValue("$approval", replan.ApprovalRequired ? 1 : 0);
         command.Parameters.AddWithValue("$created", replan.CreatedAt.ToString("O"));
         await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task<AuditJournalEntry> AppendAuditJournalAsync(
+        string companyId,
+        string eventType,
+        string actor,
+        string? correlationId,
+        string? entityType,
+        string? entityId,
+        string summary,
+        string? metadata,
+        CancellationToken cancellationToken)
+    {
+        var entry = new AuditJournalEntry(
+            $"AUD-{Guid.NewGuid():N}",
+            companyId,
+            eventType.Trim().ToUpperInvariant(),
+            string.IsNullOrWhiteSpace(actor) ? "system" : actor.Trim(),
+            string.IsNullOrWhiteSpace(correlationId) ? null : correlationId.Trim(),
+            string.IsNullOrWhiteSpace(entityType) ? null : entityType.Trim().ToUpperInvariant(),
+            string.IsNullOrWhiteSpace(entityId) ? null : entityId.Trim(),
+            summary.Trim(),
+            string.IsNullOrWhiteSpace(metadata) ? "{}" : metadata,
+            DateTimeOffset.UtcNow);
+
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            await using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync(cancellationToken);
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+                INSERT INTO audit_journal(
+                    audit_id, company_id, event_type, actor, correlation_id,
+                    entity_type, entity_id, summary, metadata, created_at)
+                VALUES(
+                    $id, $company, $eventType, $actor, $correlationId,
+                    $entityType, $entityId, $summary, $metadata, $created);
+                """;
+            command.Parameters.AddWithValue("$id", entry.AuditId);
+            command.Parameters.AddWithValue("$company", entry.CompanyId);
+            command.Parameters.AddWithValue("$eventType", entry.EventType);
+            command.Parameters.AddWithValue("$actor", entry.Actor);
+            command.Parameters.AddWithValue("$correlationId", (object?)entry.CorrelationId ?? DBNull.Value);
+            command.Parameters.AddWithValue("$entityType", (object?)entry.EntityType ?? DBNull.Value);
+            command.Parameters.AddWithValue("$entityId", (object?)entry.EntityId ?? DBNull.Value);
+            command.Parameters.AddWithValue("$summary", entry.Summary);
+            command.Parameters.AddWithValue("$metadata", entry.Metadata);
+            command.Parameters.AddWithValue("$created", entry.CreatedAt.ToString("O"));
+            await command.ExecuteNonQueryAsync(cancellationToken);
+            return entry;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    public async Task<IReadOnlyList<AuditJournalEntry>> GetAuditJournalAsync(
+        string companyId,
+        int limit,
+        CancellationToken cancellationToken)
+    {
+        var items = new List<AuditJournalEntry>();
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT audit_id, company_id, event_type, actor, correlation_id,
+                   entity_type, entity_id, summary, metadata, created_at
+            FROM audit_journal
+            WHERE company_id = $company
+            ORDER BY created_at DESC
+            LIMIT $limit;
+            """;
+        command.Parameters.AddWithValue("$company", companyId);
+        command.Parameters.AddWithValue("$limit", Math.Clamp(limit, 1, 500));
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            items.Add(new AuditJournalEntry(
+                reader.GetString(0),
+                reader.GetString(1),
+                reader.GetString(2),
+                reader.GetString(3),
+                reader.IsDBNull(4) ? null : reader.GetString(4),
+                reader.IsDBNull(5) ? null : reader.GetString(5),
+                reader.IsDBNull(6) ? null : reader.GetString(6),
+                reader.GetString(7),
+                reader.GetString(8),
+                DateTimeOffset.Parse(reader.GetString(9))));
+        }
+        return items;
     }
 
     public async Task<IReadOnlyList<string>> GetCompanyIdsAsync(CancellationToken cancellationToken)

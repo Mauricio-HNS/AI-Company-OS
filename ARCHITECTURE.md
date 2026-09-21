@@ -125,6 +125,18 @@ Autonomy is bounded by permissions and policies. High-impact actions continue to
 
 
 
+## ERP master data
+
+The operational ERP starts from company-scoped master data:
+
+CUSTOMERS + PRODUCTS + SERVICES -> SALES / PURCHASES / INVENTORY / AGENDA / FINANCE
+
+Customers are persisted with company ownership, type, contact data and lifecycle status. Products and services use a shared catalog model with explicit kind, SKU, pricing, currency, tax rate and active state.
+
+Master-data writes are recorded in the Audit Journal and emit structured Company Brain facts with provenance. Query paths always require the company boundary; cross-company access is not part of the API contract.
+
+The master-data layer is the source of truth for later sales, purchasing, inventory and agenda workflows. It does not grant agents execution authority by itself.
+
 ## Fiscal Brain
 
 The fiscal layer is a structured accounting/reconciliation subsystem, not an LLM-generated tax narrative.

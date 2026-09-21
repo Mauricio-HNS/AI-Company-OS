@@ -452,6 +452,289 @@ public sealed class CompanyInventoryStore
         }
     }
 
+
+    public async Task<IReadOnlyList<string>> ReserveForSalesOrderAsync(
+        string companyId, string orderId, string actor, CancellationToken ct)
+    {
+        await _gate.WaitAsync(ct);
+        try
+        {
+            await using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync(ct);
+            await using var transaction = await connection.BeginTransactionAsync(ct);
+
+            await using var orderCommand = connection.CreateCommand();
+            orderCommand.Transaction = transaction;
+            orderCommand.CommandText = """
+                SELECT lines, status
+                FROM company_sales_orders
+                WHERE company_id=$company AND order_id=$order
+                LIMIT 1;
+                """;
+            Add(orderCommand, "$company", companyId);
+            Add(orderCommand, "$order", orderId);
+            await using var orderReader = await orderCommand.ExecuteReaderAsync(ct);
+            if (!await orderReader.ReadAsync(ct))
+                throw new ArgumentException("Sales order does not exist in this company.");
+            var status = orderReader.GetString(1);
+            if (status is not ("CONFIRMED" or "INVOICED"))
+                throw new ArgumentException("Only confirmed sales orders can reserve inventory.");
+            var lines = JsonSerializer.Deserialize<SalesOrderLine[]>(orderReader.GetString(0))
+                ?? Array.Empty<SalesOrderLine>();
+
+            var reservedItems = new List<string>();
+            foreach (var line in lines.Where(x => x.ItemKind == "PRODUCT" && x.Quantity > 0))
+            {
+                var existing = await FindActiveReservationAsync(
+                    connection, transaction, companyId, "SALES_ORDER", orderId, line.ItemId, ct);
+                if (existing is not null)
+                {
+                    reservedItems.Add(line.ItemId);
+                    continue;
+                }
+
+                var locations = await LoadActiveLocationsAsync(connection, transaction, companyId, ct);
+                var remaining = line.Quantity;
+                foreach (var location in locations)
+                {
+                    var available = await CalculateAvailableAsync(
+                        connection, transaction, companyId, location.LocationId, line.ItemId, ct);
+                    if (available <= 0) continue;
+
+                    var take = Math.Min(available, remaining);
+                    if (take <= 0) continue;
+
+                    await InsertReservationAsync(
+                        connection, transaction, companyId, location.LocationId, line.ItemId,
+                        take, "SALES_ORDER", orderId, actor, ct);
+
+                    remaining -= take;
+                    if (remaining <= 0) break;
+                }
+
+                if (remaining > 0)
+                    throw new ArgumentException(
+                        $"Insufficient available stock for '{line.ItemName}'. Missing: {remaining.ToString(CultureInfo.InvariantCulture)}.");
+
+                reservedItems.Add(line.ItemId);
+            }
+
+            await transaction.CommitAsync(ct);
+            return reservedItems;
+        }
+        finally { _gate.Release(); }
+    }
+
+    public async Task<int> ReleaseSalesOrderReservationsAsync(
+        string companyId, string orderId, string actor, CancellationToken ct)
+    {
+        await _gate.WaitAsync(ct);
+        try
+        {
+            await using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync(ct);
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+                UPDATE company_inventory_reservations
+                SET status='RELEASED'
+                WHERE company_id=$company
+                  AND reference_type='SALES_ORDER'
+                  AND reference_id=$order
+                  AND status='ACTIVE';
+                """;
+            Add(command, "$company", companyId);
+            Add(command, "$order", orderId);
+            return await command.ExecuteNonQueryAsync(ct);
+        }
+        finally { _gate.Release(); }
+    }
+
+    public async Task<int> ConsumeSalesOrderReservationsAsync(
+        string companyId, string orderId, string actor, CancellationToken ct)
+    {
+        await _gate.WaitAsync(ct);
+        try
+        {
+            await using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync(ct);
+            await using var transaction = await connection.BeginTransactionAsync(ct);
+
+            var reservations = new List<(string ReservationId, string LocationId, string ItemId, decimal Quantity)>();
+            await using (var command = connection.CreateCommand())
+            {
+                command.Transaction = transaction;
+                command.CommandText = """
+                    SELECT reservation_id, location_id, item_id, quantity
+                    FROM company_inventory_reservations
+                    WHERE company_id=$company
+                      AND reference_type='SALES_ORDER'
+                      AND reference_id=$order
+                      AND status='ACTIVE';
+                    """;
+                Add(command, "$company", companyId);
+                Add(command, "$order", orderId);
+                await using var reader = await command.ExecuteReaderAsync(ct);
+                while (await reader.ReadAsync(ct))
+                    reservations.Add((
+                        reader.GetString(0),
+                        reader.GetString(1),
+                        reader.GetString(2),
+                        ParseDecimal(reader.GetString(3))));
+            }
+
+            foreach (var reservation in reservations)
+            {
+                var onHand = await CalculateOnHandAsync(
+                    connection, transaction, companyId, reservation.LocationId, reservation.ItemId, ct);
+                if (onHand < reservation.Quantity)
+                    throw new ArgumentException(
+                        $"Cannot consume reservation '{reservation.ReservationId}': stock is below reserved quantity.");
+
+                var item = await LoadProductAsync(
+                    connection, transaction, companyId, reservation.ItemId, ct)
+                    ?? throw new ArgumentException("Reserved inventory item no longer exists or is inactive.");
+
+                await InsertIssueAsync(
+                    connection, transaction, companyId, reservation.LocationId,
+                    reservation.ItemId, item.Value.Name, reservation.Quantity,
+                    "SALES_ORDER", orderId, actor, ct);
+
+                await using var update = connection.CreateCommand();
+                update.Transaction = transaction;
+                update.CommandText = """
+                    UPDATE company_inventory_reservations
+                    SET status='CONSUMED'
+                    WHERE company_id=$company AND reservation_id=$reservation AND status='ACTIVE';
+                    """;
+                Add(update, "$company", companyId);
+                Add(update, "$reservation", reservation.ReservationId);
+                await update.ExecuteNonQueryAsync(ct);
+            }
+
+            await transaction.CommitAsync(ct);
+            return reservations.Count;
+        }
+        finally { _gate.Release(); }
+    }
+
+    private static async Task<List<InventoryLocation>> LoadActiveLocationsAsync(
+        SqliteConnection connection, SqliteTransaction transaction, string companyId, CancellationToken ct)
+    {
+        var result = new List<InventoryLocation>();
+        await using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            SELECT location_id, company_id, name, description, active, created_at, updated_at
+            FROM company_inventory_locations
+            WHERE company_id=$company AND active=1
+            ORDER BY name COLLATE NOCASE;
+            """;
+        Add(command, "$company", companyId);
+        await using var reader = await command.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
+            result.Add(new InventoryLocation(
+                reader.GetString(0), reader.GetString(1), reader.GetString(2),
+                reader.IsDBNull(3) ? null : reader.GetString(3), reader.GetInt32(4) == 1,
+                DateTimeOffset.Parse(reader.GetString(5)), DateTimeOffset.Parse(reader.GetString(6))));
+        return result;
+    }
+
+    private static async Task<(string ReservationId, decimal Quantity)?> FindActiveReservationAsync(
+        SqliteConnection connection, SqliteTransaction transaction, string companyId,
+        string referenceType, string referenceId, string itemId, CancellationToken ct)
+    {
+        await using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            SELECT reservation_id, quantity
+            FROM company_inventory_reservations
+            WHERE company_id=$company AND reference_type=$type AND reference_id=$reference
+              AND item_id=$item AND status='ACTIVE'
+            LIMIT 1;
+            """;
+        Add(command, "$company", companyId);
+        Add(command, "$type", referenceType);
+        Add(command, "$reference", referenceId);
+        Add(command, "$item", itemId);
+        await using var reader = await command.ExecuteReaderAsync(ct);
+        return await reader.ReadAsync(ct)
+            ? (reader.GetString(0), ParseDecimal(reader.GetString(1)))
+            : null;
+    }
+
+    private static async Task InsertReservationAsync(
+        SqliteConnection connection, SqliteTransaction transaction, string companyId,
+        string locationId, string itemId, decimal quantity, string referenceType,
+        string referenceId, string actor, CancellationToken ct)
+    {
+        await using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            INSERT INTO company_inventory_reservations(
+                reservation_id, company_id, location_id, item_id, quantity,
+                reference_type, reference_id, status, created_at, created_by)
+            VALUES($id,$company,$location,$item,$quantity,$type,$reference,'ACTIVE',$created,$actor);
+            """;
+        Add(command, "$id", $"RES-{Guid.NewGuid():N}");
+        Add(command, "$company", companyId);
+        Add(command, "$location", locationId);
+        Add(command, "$item", itemId);
+        Add(command, "$quantity", quantity.ToString(CultureInfo.InvariantCulture));
+        Add(command, "$type", referenceType);
+        Add(command, "$reference", referenceId);
+        Add(command, "$created", DateTimeOffset.UtcNow.ToString("O"));
+        Add(command, "$actor", actor);
+        await command.ExecuteNonQueryAsync(ct);
+    }
+
+    private static async Task<decimal> CalculateOnHandAsync(
+        SqliteConnection connection, SqliteTransaction transaction,
+        string companyId, string locationId, string itemId, CancellationToken ct)
+    {
+        await using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            SELECT COALESCE(SUM(CAST(signed_quantity AS REAL)), 0)
+            FROM company_inventory_movements
+            WHERE company_id=$company AND location_id=$location AND item_id=$item;
+            """;
+        Add(command, "$company", companyId);
+        Add(command, "$location", locationId);
+        Add(command, "$item", itemId);
+        var value = await command.ExecuteScalarAsync(ct);
+        return Convert.ToDecimal(value ?? 0d, CultureInfo.InvariantCulture);
+    }
+
+    private static async Task InsertIssueAsync(
+        SqliteConnection connection, SqliteTransaction transaction, string companyId,
+        string locationId, string itemId, string itemName, decimal quantity,
+        string referenceType, string referenceId, string actor, CancellationToken ct)
+    {
+        await using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            INSERT INTO company_inventory_movements(
+                movement_id, company_id, location_id, item_id, item_name, kind,
+                quantity, signed_quantity, reference_type, reference_id, reason,
+                created_at, created_by)
+            VALUES($id,$company,$location,$item,$itemName,'ISSUE',$quantity,$signed,
+                   $type,$reference,$reason,$created,$actor);
+            """;
+        Add(command, "$id", $"MOV-{Guid.NewGuid():N}");
+        Add(command, "$company", companyId);
+        Add(command, "$location", locationId);
+        Add(command, "$item", itemId);
+        Add(command, "$itemName", itemName);
+        Add(command, "$quantity", quantity.ToString(CultureInfo.InvariantCulture));
+        Add(command, "$signed", (-quantity).ToString(CultureInfo.InvariantCulture));
+        Add(command, "$type", referenceType);
+        Add(command, "$reference", referenceId);
+        Add(command, "$reason", $"Consumed by sales order {referenceId}.");
+        Add(command, "$created", DateTimeOffset.UtcNow.ToString("O"));
+        Add(command, "$actor", actor);
+        await command.ExecuteNonQueryAsync(ct);
+    }
+
     private static async Task<(string ItemId, string Name)?> LoadProductAsync(
         SqliteConnection connection, SqliteTransaction transaction,
         string companyId, string itemId, CancellationToken ct)
@@ -695,6 +978,53 @@ public static class CompanyInventoryApi
             {
                 return Results.BadRequest(new { error = e.Message });
             }
+        });
+
+        app.MapPost("/api/company/v1/companies/{companyId}/inventory/sales-orders/{orderId}/reserve", async (
+            HttpRequest request, string companyId, string orderId,
+            CompanyInventoryStore store, CloudStore audit, IConfiguration configuration, CancellationToken ct) =>
+        {
+            if (!Authorized(request, configuration) || !Safe(companyId) || !Safe(orderId))
+                return Results.Unauthorized();
+            try
+            {
+                var items = await store.ReserveForSalesOrderAsync(companyId, orderId, Actor(request), ct);
+                await audit.AppendAuditJournalAsync(companyId, "SALES_ORDER_INVENTORY_RESERVED", Actor(request),
+                    Correlation(request), "SALES_ORDER", orderId, "Sales order inventory reserved.",
+                    JsonSerializer.Serialize(new { items }), ct);
+                return Results.Ok(new { reserved = true, items });
+            }
+            catch (ArgumentException e) { return Results.BadRequest(new { reserved = false, error = e.Message }); }
+        });
+
+        app.MapPost("/api/company/v1/companies/{companyId}/inventory/sales-orders/{orderId}/release", async (
+            HttpRequest request, string companyId, string orderId,
+            CompanyInventoryStore store, CloudStore audit, IConfiguration configuration, CancellationToken ct) =>
+        {
+            if (!Authorized(request, configuration) || !Safe(companyId) || !Safe(orderId))
+                return Results.Unauthorized();
+            var released = await store.ReleaseSalesOrderReservationsAsync(companyId, orderId, Actor(request), ct);
+            await audit.AppendAuditJournalAsync(companyId, "SALES_ORDER_INVENTORY_RELEASED", Actor(request),
+                Correlation(request), "SALES_ORDER", orderId, "Sales order inventory reservations released.",
+                JsonSerializer.Serialize(new { released }), ct);
+            return Results.Ok(new { released });
+        });
+
+        app.MapPost("/api/company/v1/companies/{companyId}/inventory/sales-orders/{orderId}/consume", async (
+            HttpRequest request, string companyId, string orderId,
+            CompanyInventoryStore store, CloudStore audit, IConfiguration configuration, CancellationToken ct) =>
+        {
+            if (!Authorized(request, configuration) || !Safe(companyId) || !Safe(orderId))
+                return Results.Unauthorized();
+            try
+            {
+                var consumed = await store.ConsumeSalesOrderReservationsAsync(companyId, orderId, Actor(request), ct);
+                await audit.AppendAuditJournalAsync(companyId, "SALES_ORDER_INVENTORY_CONSUMED", Actor(request),
+                    Correlation(request), "SALES_ORDER", orderId, "Sales order inventory consumed.",
+                    JsonSerializer.Serialize(new { consumed }), ct);
+                return Results.Ok(new { consumed });
+            }
+            catch (ArgumentException e) { return Results.BadRequest(new { consumed = false, error = e.Message }); }
         });
 
         app.MapGet("/api/company/v1/companies/{companyId}/inventory/balances", async (

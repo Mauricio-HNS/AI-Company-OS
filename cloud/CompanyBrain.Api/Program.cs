@@ -85,15 +85,8 @@ app.MapPost("/api/bridge/v1/enroll", async (EnrollmentRequest input, CloudStore 
     if (string.IsNullOrWhiteSpace(configuredToken))
         return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
 
-    var result = await store.EnrollAsync(
-        input.CompanyId,
-        input.DeviceId,
-        input.EnrollmentToken,
-        configuredToken,
-        cancellationToken);
-
-    if (result is null)
-        return Results.Unauthorized();
+    var result = await store.EnrollAsync(input.CompanyId, input.DeviceId, input.EnrollmentToken, configuredToken, cancellationToken);
+    if (result is null) return Results.Unauthorized();
 
     return Results.Ok(new
     {
@@ -120,11 +113,9 @@ app.MapPost("/api/bridge/v1/sync", async (HttpRequest request, SyncRequest input
         using var document = JsonDocument.Parse(input.Envelope);
         if (document.RootElement.ValueKind != JsonValueKind.Object)
             return Results.BadRequest(new { accepted = false, reason = "Envelope must be a JSON object" });
-
         if (!document.RootElement.TryGetProperty("CompanyId", out var envelopeCompany)
             || !string.Equals(envelopeCompany.GetString(), input.CompanyId, StringComparison.Ordinal))
             return Results.BadRequest(new { accepted = false, reason = "Envelope CompanyId does not match the authenticated bridge tenant" });
-
         if (document.RootElement.TryGetProperty("Payload", out var payload)
             && payload.ValueKind == JsonValueKind.Object
             && payload.TryGetProperty("companyId", out var payloadCompany)
@@ -136,17 +127,14 @@ app.MapPost("/api/bridge/v1/sync", async (HttpRequest request, SyncRequest input
         return Results.BadRequest(new { accepted = false, reason = "Envelope contains invalid JSON" });
     }
 
-    var eventId = Convert.ToHexString(SHA256.HashData(
-        Encoding.UTF8.GetBytes(input.CompanyId + "\n" + input.DeviceId + "\n" + input.Envelope)));
-
-    var accepted = await store.AppendEventIfNewAsync(
-        new StoredEvent(eventId, input.CompanyId, input.DeviceId, input.Envelope, DateTimeOffset.UtcNow),
-        cancellationToken);
-
-    return Results.Ok(new { accepted, eventId });
+    var eventId = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(input.CompanyId + "\n" + input.DeviceId + "\n" + input.Envelope)));
+    var accepted = await store.AppendEventIfNewAsync(new StoredEvent(eventId, input.CompanyId, input.DeviceId, input.Envelope, DateTimeOffset.UtcNow), cancellationToken);
+    return Results.Ok(new { accepted, duplicate = !accepted, eventId, receivedAt = DateTimeOffset.UtcNow });
 });
 
-static bool IsSafeIdentifier(string value)
+app.Run();
+
+static bool IsSafeIdentifier(string? value)
     => !string.IsNullOrWhiteSpace(value)
        && value.Length <= 100
        && value.All(c => char.IsLetterOrDigit(c) || c is '-' or '_' or '.');

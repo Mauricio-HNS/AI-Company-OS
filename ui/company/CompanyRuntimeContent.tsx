@@ -19,13 +19,37 @@ export default function CompanyRuntimeContent({ company, view, setView }: Props)
 function Dashboard({ company, setView }: { company: Company; setView: (v: CompanyView) => void }) {
   const { running, setRunning, metrics, progress, counts, metricEvent, lastAction } = useCompanyRuntime()
   return <>
-    <PageHead eyebrow="COMPANY OVERVIEW" title="Dashboard" text={<>Operational intelligence for <b>{company.name}</b>.</>}><span className={styles.live}><i/>LIVE</span><button className={styles.secondary} onClick={() => setView('Missions')}><Target size={15}/>View missions</button><button className={styles.primary} onClick={() => setRunning(!running)}><Activity size={15}/>{running ? 'AI running' : 'AI paused'}</button></PageHead>
+    <PageHead eyebrow="COMPANY COMMAND CENTER" title="O que precisa acontecer agora?" text={<>Você define a intenção. O AI Company OS decide quais sistemas, agentes e processos precisam agir.</>}>
+      <span className={styles.live}><i/>LIVE</span>
+      <button className={styles.primary} onClick={() => setRunning(!running)}><Activity size={15}/>{running ? 'AI running' : 'AI paused'}</button>
+    </PageHead>
+    <section className={styles.director} style={{marginBottom:18}}>
+      <div><small>AI DIRECTOR</small><b>{running ? 'A empresa está sendo conduzida continuamente.' : 'A operação está pausada.'}</b><span>{running ? 'Agentes monitoram eventos, executam tarefas e pedem sua intervenção somente quando necessário.' : 'Retome a operação quando quiser.'}</span></div>
+      <strong><i className={running ? styles.pulse : ''}/>{running ? 'WORKING' : 'PAUSED'}</strong>
+    </section>
+    <section className={styles.panel} style={{marginBottom:18}}>
+      <small style={{letterSpacing:'.12em',color:'var(--os-muted)'}}>INTENÇÃO DA EMPRESA</small>
+      <h2 style={{margin:'8px 0 6px'}}>Fale com sua empresa</h2>
+      <p style={{margin:'0 0 14px',color:'var(--os-muted)'}}>Escreva um objetivo. O sistema transforma a intenção em plano, tarefas, agentes, agenda, comunicação e acompanhamento.</p>
+      <div style={{display:'flex',gap:10,alignItems:'center',padding:'13px 15px',border:'1px solid rgba(255,255,255,.08)',borderRadius:12,background:'rgba(255,255,255,.025)'}}>
+        <BrainCircuit size={17}/><span style={{flex:1,color:'#b9cbd0'}}>Ex.: “Aumente as vendas este mês sem ultrapassar €300 de marketing.”</span>
+        <button className={styles.secondary} onClick={() => setView('Marketing')}>Começar</button>
+      </div>
+    </section>
     <div className={styles.kpis}>
-      <Kpi label="Revenue" value={formatMoney(metrics.revenue)} change="Runtime result" icon={<CircleDollarSign/>}/><Kpi label="Conversion Rate" value={`${metrics.conversionRate}%`} change={`${metrics.conversionDelta >= 0 ? '+' : ''}${metrics.conversionDelta}% live`} icon={<Target/>}/><Kpi label="AI Workforce" value={String(company.agents)} change={`${counts.executing} executing`} icon={<Bot/>}/><Kpi label="Active Missions" value={String(company.missions)} change={`${progress}% execution`} icon={<Zap/>}/><Kpi label="Company Health" value={company.health} change="Operational" icon={<Activity/>}/>
+      <Kpi label="Revenue" value={formatMoney(metrics.revenue)} change="Runtime result" icon={<CircleDollarSign/>}/>
+      <Kpi label="Customers" value={String(metrics.conversions)} change="Current conversions" icon={<Users/>}/>
+      <Kpi label="AI Workforce" value={String(company.agents)} change={String(counts.executing) + ' executing'} icon={<Bot/>}/>
+      <Kpi label="Company Health" value={company.health} change="Operational" icon={<Activity/>}/>
     </div>
-    <div className={styles.grid}><section className={styles.panel}><Head title="COMPANY PERFORMANCE" text="Revenue & conversion" action="Intelligence" onClick={() => setView('Intelligence')}/><MetricChart history={metrics.history}/></section><section className={styles.panel}><Head title="AI WORKFORCE" text="Agents at work" action="View all" onClick={() => setView('Agents')}/><Agent n="AI Director" r="Orchestration & strategy" s="Working" v="98%"/><Agent n="Growth Agent" r="Marketing & acquisition" s="Working" v="91%"/><Agent n="Sales Agent" r="Pipeline & conversion" s="Working" v="87%"/><Agent n="Analyst Agent" r="Intelligence & insight" s="Idle" v="76%"/></section></div>
-    <div className={styles.grid2}><section className={styles.panel}><Head title="COMMERCIAL FUNNEL" text="Live business movement" action="Marketing" onClick={() => setView('Marketing')}/><Funnel metrics={metrics}/></section><section className={styles.panel}><Head title="RECENT ACTIVITY" text="What is happening now" action="Intelligence" onClick={() => setView('Intelligence')}/><ActivityRow text={metricEvent} status="LIVE"/><ActivityRow text={lastAction} status="RUNTIME"/><ActivityRow text={`${metrics.conversions} conversions from ${metrics.opportunities} opportunities`} status="METRIC"/><ActivityRow text={`${counts.completed} tasks completed by runtime`} status="DONE"/></section></div>
-    <div className={styles.director}><div><small>AI DIRECTOR</small><b>{running ? 'Autonomous operation is active' : 'Operation paused by administrator'}</b><span>{running ? 'Runtime evaluates missions, agents and business outcomes continuously.' : 'Resume operation when ready.'}</span></div><strong><i className={running ? styles.pulse : ''}/>{running ? 'WORKING' : 'PAUSED'}</strong></div>
+    <div className={styles.grid}>
+      <section className={styles.panel}><Head title="WHAT IS HAPPENING" text="Live company activity" action="" onClick={()=>{}}/><ActivityRow text={metricEvent} status="LIVE"/><ActivityRow text={lastAction} status="RUNTIME"/><ActivityRow text={String(counts.completed) + ' tasks completed by the runtime'} status="DONE"/></section>
+      <section className={styles.panel}><Head title="WHAT NEEDS YOU" text="Human decisions only" action="" onClick={()=>{}}/><div className={styles.callout}><ShieldCheck size={16}/><span>No critical approval is waiting right now.</span></div><p style={{color:'var(--os-muted)',fontSize:12,marginTop:12}}>When an action requires permission, budget approval or a policy decision, it appears here.</p></section>
+    </div>
+    <div className={styles.grid2}>
+      <section className={styles.panel}><Head title="BUSINESS SIGNAL" text="Commercial movement" action="Marketing" onClick={() => setView('Marketing')}/><Funnel metrics={metrics}/></section>
+      <section className={styles.panel}><Head title="AI WORKFORCE" text="Autonomous execution" action="Agents" onClick={() => setView('Agents')}/><Agent n="AI Director" r="Orchestration & strategy" s="Working" v="98%"/><Agent n="Growth Agent" r="Marketing & acquisition" s="Working" v="91%"/><Agent n="Sales Agent" r="Pipeline & conversion" s="Working" v="87%"/></section>
+    </div>
   </>
 }
 

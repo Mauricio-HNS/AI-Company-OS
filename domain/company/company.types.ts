@@ -1,4 +1,4 @@
-export type CompanyId = 'alpha' | 'beta' | 'gamma'
+export type CompanyId = 'alpha' | 'beta' | 'gamma' | 'salon'
 
 export type Company = {
   id: CompanyId

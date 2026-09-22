@@ -26,6 +26,7 @@ function viewFromPath(pathname: string, companyId: string): CompanyView {
     schedule: 'Operations',
     intelligence: 'Intelligence',
     settings: 'Settings',
+    salon: 'Salon',
   }
 
   return map[segment] ?? 'Dashboard'
@@ -39,6 +40,7 @@ function pathForView(companyId: string, view: CompanyView): string {
     Operations: 'operations',
     Intelligence: 'intelligence',
     Settings: 'settings',
+    Salon: 'salon',
   }
   return `/company/${companyId}${map[view] ? `/${map[view]}` : ''}`
 }

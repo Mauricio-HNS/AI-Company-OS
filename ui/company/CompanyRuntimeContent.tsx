@@ -7,6 +7,7 @@ import { formatMoney } from '../../lib/business-metrics'
 import { useCompanyRuntime } from '../../app/company/[companyId]/CompanyRuntimeContext'
 import type { CompanyView } from './CompanyNavigation'
 import ApprovalsModule from './CompanyApprovals'
+import SalonModule from './SalonModule'
 
 type Company = { name: string; type: string; revenue: string; profit: string; health: string; agents: number; missions: number; objective: string }
 

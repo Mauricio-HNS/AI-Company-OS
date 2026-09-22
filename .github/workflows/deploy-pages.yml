@@ -1,4 +1,4 @@
-name: Deploy AI Company OS Preview to GitHub Pages
+name: Deploy AI Company OS to GitHub Pages
 
 on:
   push:
@@ -20,10 +20,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Upload static preview
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build Next.js static export
+        env:
+          GITHUB_ACTIONS: true
+        run: npm run build
+      - name: Upload Next.js export
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./site
+          path: ./out
 
   deploy:
     environment:

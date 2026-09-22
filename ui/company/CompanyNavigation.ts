@@ -18,20 +18,10 @@ import {
 
 export const companyViews = [
   'Dashboard',
-  'Discovery',
   'Agents',
-  'Missions',
-  'Tasks',
   'Marketing',
-  'Customers',
-  'Products',
-  'Finance',
-  'Intelligence',
-  'Knowledge',
   'Operations',
-  'Integrations',
-  'Security',
-  'Approvals',
+  'Intelligence',
   'Settings',
 ] as const
 
@@ -49,47 +39,12 @@ export type CompanyNavigationGroup = {
 }
 
 export const companyNavigation: CompanyNavigationGroup[] = [
-  {
-    title: '',
-    items: [
-      { label: 'Dashboard', icon: LayoutDashboard },
-      { label: 'Discovery', icon: Compass },
-    ],
-  },
-  {
-    title: 'AI WORKFORCE',
-    items: [
-      { label: 'Agents', icon: Bot, badge: 'agents' },
-      { label: 'Missions', icon: Target },
-      { label: 'Tasks', icon: Zap },
-    ],
-  },
-  {
-    title: 'BUSINESS',
-    items: [
-      { label: 'Marketing', icon: Megaphone },
-      { label: 'Customers', icon: Users },
-      { label: 'Products', icon: Package },
-      { label: 'Finance', icon: Wallet },
-    ],
-  },
-  {
-    title: 'INTELLIGENCE',
-    items: [
-      { label: 'Intelligence', icon: Activity },
-      { label: 'Knowledge', icon: BrainCircuit },
-    ],
-  },
-  {
-    title: 'SYSTEM',
-    items: [
-      { label: 'Operations', icon: Activity },
-      { label: 'Integrations', icon: PlugZap },
-      { label: 'Security', icon: ShieldCheck },
-      { label: 'Approvals', icon: ShieldCheck },
-      { label: 'Settings', icon: Settings },
-    ],
-  },
+  { title: '', items: [{ label: 'Dashboard', icon: LayoutDashboard }] },
+  { title: 'AI WORKFORCE', items: [{ label: 'Agents', icon: Bot, badge: 'agents' }] },
+  { title: 'BUSINESS', items: [{ label: 'Marketing', icon: Megaphone }] },
+  { title: 'OPERATIONS', items: [{ label: 'Operations', icon: Activity }] },
+  { title: 'INTELLIGENCE', items: [{ label: 'Intelligence', icon: BrainCircuit }] },
+  { title: 'SYSTEM', items: [{ label: 'Settings', icon: Settings }] },
 ]
 
 export function isCompanyView(value: string): value is CompanyView {

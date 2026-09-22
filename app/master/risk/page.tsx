@@ -1,0 +1,6 @@
+'use client';
+
+import MasterSidebar from '../../../ui/master/MasterSidebar';
+import '../master.css';
+
+export default function MasterRiskPage(){return <main className="masterShell"><MasterSidebar active="risk"/><section className="masterMain"><header className="masterHeader"><div><div className="masterEyebrow">MASTER CONTROL / RISK & POLICIES</div><h1>Risk & Policies</h1><p>Global rules that constrain autonomous execution across every company.</p></div></header><section className="masterBottomGrid"><div className="masterPanel"><div className="panelTitle"><div><h2>Safety controls</h2><span>Current global state</span></div></div><div className="controlItem"><span>Tenant isolation</span><b>ENFORCED</b></div><div className="controlItem"><span>Human approval for sensitive actions</span><b>REQUIRED</b></div><div className="controlItem"><span>Real-money execution</span><b>OFF</b></div><div className="controlItem"><span>Critical alerts</span><b className="safe">0</b></div></div><div className="masterPanel"><div className="panelTitle"><div><h2>Policy model</h2><span>Decisions stay auditable</span></div></div><p>Agents can plan and execute within their permissions. Sensitive actions pause for a human decision and remain traceable to the originating company and mission.</p></div></section></section></main>}

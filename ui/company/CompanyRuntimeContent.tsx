@@ -5,7 +5,7 @@ import { Activity, Bot, BrainCircuit, CheckCircle2, ChevronRight, CircleDollarSi
 import styles from '../../app/company/[companyId]/CompanyRuntimeWorkspace.module.css'
 import { formatMoney } from '../../lib/business-metrics'
 import { useCompanyRuntime } from '../../app/company/[companyId]/CompanyRuntimeContext'
-import type { CompanyView } from './CompanyNavigation'
+import type { CompanyView } from './company-navigation'
 import ApprovalsModule from './CompanyApprovals'
 import SalonModule from './SalonModule'
 

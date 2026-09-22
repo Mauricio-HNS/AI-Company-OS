@@ -121,3 +121,23 @@ Visual rules are centralized in the existing OS design layers. New modules must 
 ## Migration policy
 
 This is an incremental refactor, not a rewrite. Existing engines remain operational while imports are progressively moved behind the domain/application/infrastructure/UI boundaries. Each migration must preserve the working product and keep the build green.
+
+## Intent-first UX
+
+The Company OS exposes decisions rather than internal software machinery. Top-level navigation stays intentionally small; repetitive work is handled by the AI workforce and appears as activity, outcomes or exceptions instead of buttons.
+
+```text
+Human intention
+      ↓
+Company Command Center
+      ↓
+AI Director
+      ↓
+Agents / business systems / operations
+      ↓
+Execution
+      ↓
+Human only when a decision, approval or exception is required
+```
+
+A capability remains available when it represents a meaningful control surface. Internal entities such as customers, products, finance, knowledge, tasks and approvals should not automatically become permanent top-level navigation items.

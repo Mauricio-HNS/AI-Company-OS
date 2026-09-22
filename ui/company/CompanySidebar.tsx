@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Building2, ChevronDown, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
-import { companyNavigation, type CompanyView } from './CompanyNavigation'
+import { companyNavigation, type CompanyView } from './company-navigation'
 import styles from './CompanySidebar.module.css'
 
 type CompanySummary = { name: string; type: string; agents: number }

@@ -3,17 +3,9 @@ import {
   Activity,
   BrainCircuit,
   Bot,
-  Compass,
   LayoutDashboard,
   Megaphone,
-  Package,
-  PlugZap,
   Settings,
-  ShieldCheck,
-  Target,
-  Users,
-  Wallet,
-  Zap,
 } from 'lucide-react'
 
 export const companyViews = [

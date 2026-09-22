@@ -12,3 +12,5 @@ export const companyNavigation: NavigationGroup[] = [
   { title: 'INTELLIGENCE', items: [{ label: 'Intelligence', icon: Activity }, { label: 'Knowledge', icon: BrainCircuit }] },
   { title: 'SYSTEM', items: [{ label: 'Operations', icon: PlugZap }, { label: 'Integrations', icon: PlugZap }, { label: 'Security', icon: ShieldCheck }, { label: 'Settings', icon: Settings }] },
 ]
+
+export const companyViews: CompanyView[] = companyNavigation.flatMap(group => group.items.map(item => item.label))

@@ -7,8 +7,6 @@ import './requests.css';
 type Priority = 'P0' | 'P1' | 'P2' | 'P3' | 'P4';
 type Status = 'DIAGNOSTIC' | 'EXECUTING' | 'WAITING_APPROVAL' | 'COMPLETED';
 type RequestItem = { id:string; client:string; category:string; priority:Priority; impact:'LOW'|'MEDIUM'|'HIGH'; sla:string; summary:string; domain:string; environment:string; status:Status; authorized:boolean; action:string };
-const companies = ['alpha','beta','gamma'];
-export function generateStaticParams(){ return companies.map(companyId => ({companyId})); }
 const requests: RequestItem[] = [
   { id:'REQ-28491', client:'Empresa Alpha', category:'FINANCE', priority:'P1', impact:'HIGH', sla:'01h 42m', summary:'Revisar divergência no pagamento mensal e identificar a causa.', domain:'FINANCE', environment:'FINANCIAL', status:'WAITING_APPROVAL', authorized:false, action:'Ajustar lançamento financeiro acima do limite permitido' },
   { id:'REQ-28488', client:'Empresa Beta', category:'SUPPORT', priority:'P2', impact:'MEDIUM', sla:'03h 18m', summary:'Cliente reporta falha intermitente no fluxo de onboarding.', domain:'SUPPORT', environment:'CUSTOMER', status:'EXECUTING', authorized:true, action:'Executar diagnóstico e atualizar configuração permitida' },

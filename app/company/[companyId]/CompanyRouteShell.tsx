@@ -19,24 +19,13 @@ function viewFromPath(pathname: string, companyId: string): CompanyView {
   const segment = pathname.slice(prefix.length).split('/').filter(Boolean)[0]
   if (!segment) return 'Dashboard'
 
-  const map: Record<string, CompanyView> = {
-    discovery: 'Discovery',
+  const map: Partial<Record<string, CompanyView>> = {
     agents: 'Agents',
-    missions: 'Missions',
-    tasks: 'Tasks',
     marketing: 'Marketing',
-    customers: 'Customers',
-    products: 'Products',
-    finance: 'Finance',
-    intelligence: 'Intelligence',
-    knowledge: 'Knowledge',
     operations: 'Operations',
-    integrations: 'Integrations',
-    security: 'Security',
-    settings: 'Settings',
     schedule: 'Operations',
-    requests: 'Approvals',
-    command: 'Approvals',
+    intelligence: 'Intelligence',
+    settings: 'Settings',
   }
 
   return map[segment] ?? 'Dashboard'
@@ -45,20 +34,10 @@ function viewFromPath(pathname: string, companyId: string): CompanyView {
 function pathForView(companyId: string, view: CompanyView): string {
   const map: Record<CompanyView, string> = {
     Dashboard: '',
-    Discovery: 'discovery',
     Agents: 'agents',
-    Missions: 'missions',
-    Tasks: 'tasks',
     Marketing: 'marketing',
-    Customers: 'customers',
-    Products: 'products',
-    Finance: 'finance',
-    Intelligence: 'intelligence',
-    Knowledge: 'knowledge',
     Operations: 'operations',
-    Integrations: 'integrations',
-    Security: 'security',
-    Approvals: 'requests',
+    Intelligence: 'intelligence',
     Settings: 'settings',
   }
   return `/company/${companyId}${map[view] ? `/${map[view]}` : ''}`

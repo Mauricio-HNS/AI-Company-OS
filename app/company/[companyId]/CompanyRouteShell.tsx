@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import type { CompanySession } from '../../../lib/company-access-control'
-import { companyViews, type CompanyView } from '../../../ui/company/CompanyNavigation'
+import { companyViews, type CompanyView } from '../../../ui/company/company-navigation'
 import CompanySidebar from '../../../ui/company/CompanySidebar'
 import CompanyTopbar from '../../../ui/company/CompanyTopbar'
 import styles from './CompanyRuntimeWorkspaceV2.module.css'

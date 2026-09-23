@@ -3,7 +3,6 @@ import cors from "cors";
 import bcrypt from "bcryptjs";
 import multer from "multer";
 import { MASTER_EMAIL, MASTER_PASSWORD } from "./config/env.js";
-import { UPLOAD_DIR } from "./config/paths.js";
 import { db } from "./db/index.js";
 import { auth, master, sign } from "./auth/index.js";
 import { audit } from "./audit/index.js";

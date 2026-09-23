@@ -1,4 +1,4 @@
-import test from "node:test";
+import test, { after } from "node:test";
 import assert from "node:assert/strict";
 import { app, db } from "../app.js";
 import { id, now } from "../core/utils.js";
@@ -189,4 +189,4 @@ test("end-to-end company lifecycle completes successfully", async (t) => {
 
 const e2eServer = app.listen(0);
 const port = e2eServer.address().port;
-process.on("exit", () => e2eServer.close());
+after(() => e2eServer.close());

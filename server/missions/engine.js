@@ -52,7 +52,7 @@ function executePlan(planId, actorId) {
     if(s.requires_approval || s.cap_approval || gate.decision!=="ALLOW") {
       const reason=gate.reason||"Governance gate: aprovação necessária antes do efeito.";
       db.prepare("UPDATE ai_plan_steps SET status='PENDING_APPROVAL',result=?,updated_at=? WHERE id=?").run(reason,started,s.id);
-      db.prepare("INSERT INTO ai_execution_runs VALUES (?,?,?,?,?,?,?,?,?,?,?,?)").run(id(),plan.id,s.id,plan.company_id,s.capability_key,"PENDING_APPROVAL",s.risk_level||"MEDIUM",JSON.stringify(companySnapshot(plan.company_id)),"{}",JSON.stringify({decision:gate.decision,reason}),reason,started,null);
+      db.prepare("INSERT INTO ai_execution_runs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)").run(id(),plan.id,s.id,plan.company_id,s.capability_key,"PENDING_APPROVAL",s.risk_level||"MEDIUM",JSON.stringify(companySnapshot(plan.company_id)),"{}",JSON.stringify({decision:gate.decision,reason}),reason,started,null);
       blocked++; continue;
     }
     let execution;
@@ -62,7 +62,7 @@ function executePlan(planId, actorId) {
     }
     const finished=now();
     db.prepare("UPDATE ai_plan_steps SET status=?,result=?,updated_at=? WHERE id=?").run(execution.status,execution.result,finished,s.id);
-    db.prepare("INSERT INTO ai_execution_runs VALUES (?,?,?,?,?,?,?,?,?,?,?,?)").run(id(),plan.id,s.id,plan.company_id,s.capability_key,execution.status,s.risk_level||"LOW",JSON.stringify(execution.input||{}),JSON.stringify(execution.output||{}),JSON.stringify(execution.verification||{}),execution.status==="FAILED"?execution.result:"",started,finished);
+    db.prepare("INSERT INTO ai_execution_runs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)").run(id(),plan.id,s.id,plan.company_id,s.capability_key,execution.status,s.risk_level||"LOW",JSON.stringify(execution.input||{}),JSON.stringify(execution.output||{}),JSON.stringify(execution.verification||{}),execution.status==="FAILED"?execution.result:"",started,finished);
     if(execution.status==="COMPLETED") executed++; else if(execution.status==="FAILED") failed++;
   }
   const finalStatus=failed ? "EXECUTION_FAILED" : blocked ? "PARTIALLY_EXECUTED" : (steps.length&&executed===steps.length ? "EXECUTED" : "EXECUTION_PENDING_ADAPTER");

@@ -520,9 +520,11 @@ function executePlan(planId, actorId) {
   let executed=0,blocked=0,failed=0;
   for(const s of steps) {
     const started=now();
-    if(s.requires_approval || s.cap_approval) {
-      db.prepare("UPDATE ai_plan_steps SET status='PENDING_APPROVAL',result=?,updated_at=? WHERE id=?").run("Governance gate: aprovação necessária antes do efeito.",started,s.id);
-      db.prepare("INSERT INTO ai_execution_runs VALUES (?,?,?,?,?,?,?,?,?,?,?,?)").run(id(),plan.id,s.id,plan.company_id,s.capability_key,"PENDING_APPROVAL","MEDIUM",JSON.stringify(companySnapshot(plan.company_id)),"{}","{}", "",started,null);
+    const gate=governanceDecision(plan.company_id,s.capability_key);
+    if(s.requires_approval || s.cap_approval || gate.decision!=="ALLOW") {
+      const reason=gate.reason||"Governance gate: aprovação necessária antes do efeito.";
+      db.prepare("UPDATE ai_plan_steps SET status='PENDING_APPROVAL',result=?,updated_at=? WHERE id=?").run(reason,started,s.id);
+      db.prepare("INSERT INTO ai_execution_runs VALUES (?,?,?,?,?,?,?,?,?,?,?,?)").run(id(),plan.id,s.id,plan.company_id,s.capability_key,"PENDING_APPROVAL",s.risk_level||"MEDIUM",JSON.stringify(companySnapshot(plan.company_id)),"{}",JSON.stringify({decision:gate.decision,reason}),reason,started,null);
       blocked++; continue;
     }
     let execution;

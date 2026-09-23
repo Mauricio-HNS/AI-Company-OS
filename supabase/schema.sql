@@ -96,3 +96,17 @@ using (bucket_id='support-attachments' and auth.uid() is not null);
 
 create policy "support files upload" on storage.objects for insert
 with check (bucket_id='support-attachments' and auth.uid() is not null);
+
+create or replace function public.register_company_user(target_company text, display_name text)
+returns void language plpgsql security definer set search_path = public
+as $$
+begin
+  if not exists(select 1 from public.companies where id=target_company) then
+    raise exception 'Empresa não encontrada';
+  end if;
+  insert into public.company_users(id,company_id,full_name)
+  values(auth.uid(),target_company,display_name)
+  on conflict(id) do update set company_id=excluded.company_id, full_name=excluded.full_name;
+end;
+$$;
+grant execute on function public.register_company_user(text,text) to authenticated;

@@ -110,3 +110,33 @@ begin
 end;
 $$;
 grant execute on function public.register_company_user(text,text) to authenticated;
+
+create table if not exists public.master_users (
+  id uuid primary key references auth.users(id) on delete cascade,
+  email text not null,
+  created_at timestamptz not null default now()
+);
+alter table public.master_users enable row level security;
+create policy "master reads own profile" on public.master_users for select using (id=auth.uid());
+
+create or replace function public.is_master()
+returns boolean language sql stable security definer set search_path=public
+as $$ select exists(select 1 from public.master_users where id=auth.uid()); $$;
+
+create policy "master manages companies" on public.companies
+for all using (public.is_master()) with check (public.is_master());
+
+create policy "master reads all tickets" on public.support_tickets
+for select using (public.is_master());
+
+create policy "master updates tickets" on public.support_tickets
+for update using (public.is_master());
+
+create policy "master reads messages" on public.support_messages
+for select using (public.is_master());
+
+create policy "master writes messages" on public.support_messages
+for insert with check (public.is_master() and author_id=auth.uid());
+
+create policy "master reads attachments" on public.support_attachments
+for select using (public.is_master());

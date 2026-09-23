@@ -1,11 +1,11 @@
 import express from "express";
 import cors from "cors";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import multer from "multer";
 import { PORT, JWT_SECRET, MASTER_EMAIL, MASTER_PASSWORD } from "./config/env.js";
 import { UPLOAD_DIR } from "./config/paths.js";
 import { db } from "./db/index.js";
+import { auth, master, sign } from "./auth/index.js";
 import crypto from "node:crypto";
 
 const app = express();
@@ -13,16 +13,6 @@ const app = express();
 function now() { return new Date().toISOString(); }
 function id() { return crypto.randomUUID(); }
 function hashToken(token) { return crypto.createHash("sha256").update(token).digest("hex"); }
-function sign(user) { return jwt.sign({ sub:user.id, role:user.role, companyId:user.company_id || null }, JWT_SECRET, { expiresIn:"12h" }); }
-function auth(req,res,next) {
-  const h = req.headers.authorization || "";
-  if (!h.startsWith("Bearer ")) return res.status(401).json({error:"AUTH_REQUIRED"});
-  try { req.user = jwt.verify(h.slice(7), JWT_SECRET); next(); }
-  catch { return res.status(401).json({error:"INVALID_TOKEN"}); }
-}
-function master(req,res,next) {
-  auth(req,res,()=> req.user.role === "MASTER" ? next() : res.status(403).json({error:"MASTER_REQUIRED"}));
-}
 function audit(actorId,action,type,entity,payload={}) {
   db.prepare("INSERT INTO audit_log VALUES (?,?,?,?,?,?,?)").run(id(),actorId,action,type,entity,JSON.stringify(payload),now());
 }

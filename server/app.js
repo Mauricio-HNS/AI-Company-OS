@@ -13,6 +13,7 @@ import { executeMission, executePlan } from "./missions/engine.js";
 import { ensureOrchestrator, seedCapabilities, analyzeCompany, runSuperAgent } from "./super-agent/index.js";
 import { now, id, hashToken, safeJson } from "./core/utils.js";
 import { enqueueJob, getJob, listJobs } from "./jobs/queue.js";
+import { requestPasswordReset, confirmPasswordReset, inspectResetToken } from "./auth/password-reset.js";
 
 const app = express();
 
@@ -28,6 +29,35 @@ app.use(express.json({limit:"2mb"}));
 
 app.get("/api/health", (_req,res)=>res.json({ok:true,service:"ai-company-os-server",time:now()}));
 app.get("/api/master/jobs",master,(req,res)=>res.json(listJobs(req.query.companyId || null, req.query.limit)));
+app.post("/api/auth/password-reset/request", async (req,res)=>{
+  try {
+    const role = req.body?.portal === "master" ? "MASTER" : "CLIENT";
+    const result = await requestPasswordReset({ email:req.body?.email, role, ip:req.ip });
+    res.status(200).json(result);
+  } catch {
+    res.status(200).json({
+      message:"Se esse endereço estiver cadastrado, enviaremos um link para redefinir a senha."
+    });
+  }
+});
+
+app.get("/api/auth/password-reset/verify", (req,res)=>{
+  res.json(inspectResetToken(req.query?.token));
+});
+
+app.post("/api/auth/password-reset/confirm", async (req,res)=>{
+  try {
+    const result = await confirmPasswordReset({
+      token:req.body?.token,
+      newPassword:req.body?.newPassword
+    });
+    if (!result.ok) return res.status(result.status).json({error:result.error});
+    res.json({ok:true,message:"Senha redefinida. Entre novamente com sua nova senha."});
+  } catch {
+    res.status(400).json({error:"INVALID_OR_EXPIRED_RESET_TOKEN"});
+  }
+});
+
 app.get("/api/master/jobs/:id",master,(req,res)=>{
   const job=getJob(req.params.id);
   if(!job) return res.status(404).json({error:"JOB_NOT_FOUND"});
@@ -49,7 +79,7 @@ app.post("/api/auth/master", async (req,res)=>{
 
 app.post("/api/auth/client/signup", async (req,res)=>{
   const {inviteToken,name,email,password}=req.body||{};
-  if(!inviteToken||!name||!email||!password||password.length<8) return res.status(400).json({error:"INVALID_INPUT"});
+  if(!inviteToken||!name||!email||!password||password.length<10) return res.status(400).json({error:"INVALID_INPUT"});
   const inv=db.prepare("SELECT * FROM invites WHERE token_hash=?").get(hashToken(inviteToken));
   if(!inv || inv.revoked_at || (inv.expires_at && inv.expires_at < now())) return res.status(400).json({error:"INVALID_OR_EXPIRED_INVITE"});
   const company=db.prepare("SELECT * FROM companies WHERE id=?").get(inv.company_id);

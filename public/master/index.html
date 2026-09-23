@@ -55,220 +55,51 @@
 (function(){
 "use strict";
 var KEY="aiCompanyOSCompanies",AG="aiCompanyOSAgents",MI="aiCompanyOSMissions",PO="aiCompanyOSPolicies";
-var state={currentCompany:null}; var sb=null; var backendUser=null;
-
+var api=window.AIOS_API,state={currentCompany:null,companies:[],backend:false};
 function $(id){return document.getElementById(id)}
 function read(key,fallback){try{var v=localStorage.getItem(key);return v?JSON.parse(v):fallback}catch(e){return fallback}}
-function write(key,value){try{localStorage.setItem(key,JSON.stringify(value));return true}catch(e){toast("Não foi possível salvar no navegador.");return false}}
+function write(key,value){try{localStorage.setItem(key,JSON.stringify(value));return true}catch(e){return false}}
 function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
-function slug(v){return String(v).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")}
-async function initBackend(){
- if(!sb)return;
- var session=await sb.auth.getSession();
- if(!session.data.session){backendLogin();return}
- backendUser=session.data.session.user;
- await syncBackendCompanies();
-}
-function backendLogin(){
- modal('<div class="eyebrow">MASTER / BACKEND</div><h2>Entrar no Master</h2><p class="muted">O modo backend usa autenticação real. Crie o usuário Master no Supabase Auth e registre o mesmo ID em master_users.</p><input id="login-email" class="field" type="email" placeholder="E-mail"><input id="login-pass" class="field" type="password" placeholder="Senha"><p id="login-error" class="muted"></p><div class="actions"><button class="primary" data-action="master-login">Entrar</button></div>');
-}
-async function masterLogin(){
- var e=$("login-email").value.trim(),p=$("login-pass").value;
- var x=await sb.auth.signInWithPassword({email:e,password:p});
- if(x.error){$("login-error").textContent=x.error.message;return}
- var prof=await sb.from("master_users").select("id").eq("id",x.data.user.id).single();
- if(prof.error){await sb.auth.signOut();$("login-error").textContent="Este usuário não está autorizado como Master.";return}
- backendUser=x.data.user;closeModal();await syncBackendCompanies();toast("Master conectado ao backend.");
-}
-async function syncBackendCompanies(){
- if(!sb||!backendUser)return;
- var x=await sb.from("companies").select("id,name,status,created_at").order("created_at",{ascending:false});
- if(x.error)return;
- var local=getCompanies();
- x.data.forEach(function(remote){
-  if(!local.some(function(l){return l.id===remote.id})){local.push({id:remote.id,name:remote.name,type:"Empresa",createdAt:remote.created_at,status:remote.status,revenue:0})}
- });
- write(KEY,local);renderPortfolio();
-}
-async function persistCompanyBackend(c){
- if(!sb||!backendUser)return;
- await sb.from("companies").upsert({id:c.id,name:c.name,status:c.status,created_at:c.createdAt},{onConflict:"id"});
-}
-function toast(message){var t=$("toast");t.textContent=message;t.classList.add("show");clearTimeout(window.__toastTimer);window.__toastTimer=setTimeout(function(){t.classList.remove("show")},1800)}
-function getCompanies(){
- var a=read(KEY,null);
- if(!Array.isArray(a)||!a.length){
-  a=[
-   {id:"destiny7-software",name:"Destiny7 Software",type:"SaaS · Madrid",createdAt:new Date().toISOString(),status:"ACTIVE",revenue:82400},
-   {id:"novaflow",name:"NovaFlow",type:"Automation · Lisboa",createdAt:new Date().toISOString(),status:"ACTIVE",revenue:61800}
-  ];
-  write(KEY,a);
- }
- return a;
-}
-function companyRow(c){return '<div class="company" data-company="'+esc(c.id)+'"><div class="icon">'+esc((c.name||"CO").slice(0,2).toUpperCase())+'</div><div class="grow"><b>'+esc(c.name)+'</b><small>'+esc(c.type)+'</small></div><strong>€'+Number(c.revenue||0).toLocaleString("pt-PT")+'</strong><span class="badge">'+esc(c.status||"ACTIVE")+'</span></div>'}
-function showView(name){
- document.querySelectorAll(".view").forEach(function(v){v.classList.remove("active")});
- document.querySelectorAll("[data-view]").forEach(function(b){b.classList.toggle("active",b.getAttribute("data-view")===name)});
- if(name==="portfolio"){ $("portfolio").classList.add("active");renderPortfolio(); $("crumb").textContent="MASTER CONTROL"; return; }
- if(name==="companies"||name==="workforce"||name==="missions"||name==="support"||name==="capital"||name==="risk"||name==="system"){
-  $("module").classList.add("active");renderModule(name);$("crumb").textContent=name.toUpperCase();return;
- }
-}
-function renderPortfolio(){
- var a=getCompanies(),agents=read(AG,[]),missions=read(MI,[]);
- $("stats").innerHTML=
- '<div class="card clickable" data-view="companies"><span>EMPRESAS ATIVAS</span><div class="stat">'+a.length+'</div></div>'+
- '<div class="card clickable" data-view="workforce"><span>AI WORKFORCE</span><div class="stat">'+agents.length+'</div></div>'+
- '<div class="card"><span>RECEITA CADASTRADA</span><div class="stat">€'+a.reduce(function(s,c){return s+Number(c.revenue||0)},0).toLocaleString("pt-PT")+'</div></div>'+
- '<div class="card clickable" data-view="missions"><span>MISSÕES</span><div class="stat">'+missions.length+'</div></div>';
- $("company-list").innerHTML=a.map(companyRow).join("");
-}
-function renderModule(name){
- var title={companies:"Companies",workforce:"AI Workforce",missions:"Missions",support:"Support",capital:"Capital",risk:"Risk & Policies",system:"System"}[name];
- var desc={companies:"Cadastro, clientes, acessos e ambientes empresariais.",workforce:"Funcionários digitais, agentes, execução e performance.",missions:"Objetivos, tarefas, aprovações e resultados.",support:"Chamados, problemas, prints, anexos, SLA e atendimento.",capital:"Receita, custos, ROI, alocação e performance.",risk:"Governança, compliance, aprovações e auditoria.",system:"Runtime, armazenamento, segurança e diagnóstico."}[name];
- $("module-title").textContent=title;$("module-desc").textContent=desc;
- var action=$("module-action");action.style.display="inline-block";action.textContent="";
- action.setAttribute("data-action","");
- var body="";
- if(name==="companies"){
-  action.textContent="+ Nova empresa";action.setAttribute("data-action","new-company");
-  body='<div class="panel"><h2>Empresas</h2>'+getCompanies().map(companyRow).join("")+'</div>';
- }
- if(name==="workforce"){
-  action.textContent="+ Novo agente";action.setAttribute("data-action","new-agent");
-  var a=read(AG,[]);
-  body='<div class="panel"><h2>AI Workforce</h2>'+(a.length?'<table class="table"><tr><th>AGENTE</th><th>FUNÇÃO</th><th>EMPRESA</th><th>STATUS</th></tr>'+a.map(function(x){return '<tr><td>'+esc(x.name)+'</td><td>'+esc(x.role)+'</td><td>'+esc(x.company)+'</td><td><span class="pill">'+esc(x.status)+'</span></td></tr>'}).join("")+'</table>':'<div class="empty">Nenhum agente. Crie o primeiro funcionário de IA.</div>')+'</div>';
- }
- if(name==="missions"){
-  action.textContent="+ Nova missão";action.setAttribute("data-action","new-mission");
-  var m=read(MI,[]);
-  body='<div class="panel"><h2>Missões</h2>'+(m.length?'<table class="table"><tr><th>MISSÃO</th><th>EMPRESA</th><th>STATUS</th><th>PROGRESSO</th></tr>'+m.map(function(x){return '<tr><td>'+esc(x.name)+'</td><td>'+esc(x.company)+'</td><td>'+esc(x.status)+'</td><td>'+Number(x.progress||0)+'%</td></tr>'}).join("")+'</table>':'<div class="empty">Nenhuma missão cadastrada.</div>')+'</div>';
- }
- if(name==="capital"){
-  action.style.display="none";var c=getCompanies(),rev=c.reduce(function(s,x){return s+Number(x.revenue||0)},0);
-  body='<div class="grid"><div class="card"><span>RECEITA</span><div class="stat">€'+rev.toLocaleString("pt-PT")+'</div></div><div class="card"><span>EMPRESAS</span><div class="stat">'+c.length+'</div></div><div class="card"><span>ROI</span><div class="stat">31.8%</div></div><div class="card"><span>ALOCADO</span><div class="stat">€1.24M</div></div></div><div class="panel"><h2>Performance por empresa</h2>'+c.map(companyRow).join("")+'</div>';
- }
- if(name==="risk"){
-  action.textContent="+ Nova política";action.setAttribute("data-action","new-policy");var p=read(PO,[]);
-  body='<div class="grid"><div class="card"><span>COMPLIANCE</span><div class="stat">99.2%</div></div><div class="card"><span>POLÍTICAS</span><div class="stat">'+p.length+'</div></div><div class="card"><span>INCIDENTES</span><div class="stat">0</div></div><div class="card"><span>HEALTH</span><div class="stat">94%</div></div></div><div class="panel"><h2>Políticas</h2>'+(p.length?p.map(function(x){return '<div class="item"><b>'+esc(x.name)+'</b><span>'+esc(x.scope)+' · ativa</span></div>'}).join(""):'<div class="empty">Nenhuma política personalizada.</div>')+'</div>';
- }
- if(name==="support"){
-  action.textContent="+ Novo chamado";action.setAttribute("data-action","new-support-ticket");
-  var st=read("aiCompanyOSSupportTickets",[]);
-  body='<div class="grid"><div class="card"><span>ABERTOS</span><div class="stat">'+st.filter(function(x){return x.status!=="RESOLVIDO"}).length+'</div></div><div class="card"><span>CRÍTICOS</span><div class="stat">'+st.filter(function(x){return x.priority==="Crítica"}).length+'</div></div><div class="card"><span>AGUARDANDO</span><div class="stat">'+st.filter(function(x){return x.status==="AGUARDANDO CLIENTE"}).length+'</div></div><div class="card"><span>SLA</span><div class="stat">OK</div></div></div><div class="panel"><h2>Chamados de suporte</h2>'+(st.length?st.map(function(x){return '<div class="company clickable" data-action="support-ticket"><div class="icon">?</div><div class="grow"><b>'+esc(x.id)+' · '+esc(x.subject)+'</b><small>'+esc(x.company)+' · '+esc(x.priority)+'</small></div><span class="badge">'+esc(x.status)+'</span></div>'}).join(""):'<div class="empty">Nenhum chamado registrado.</div>')+'</div>';
-}
-if(name==="system"){
-  action.textContent="Testar sistema";action.setAttribute("data-action","test-system");
-  body='<div class="grid"><div class="card"><span>RUNTIME</span><div class="stat">ONLINE</div></div><div class="card"><span>STORAGE</span><div class="stat">'+(function(){try{localStorage.setItem("__aios_test","1");localStorage.removeItem("__aios_test");return "OK"}catch(e){return "BLOQUEADO"}})()+'</div></div><div class="card"><span>SECURITY</span><div class="stat">READY</div></div><div class="card"><span>BUILD</span><div class="stat">0.4</div></div></div><div class="panel"><h2>Diagnóstico</h2><p class="muted">Esta versão não depende de framework, API externa ou biblioteca. A tela é HTML/CSS/JavaScript puro para evitar falhas de runtime no GitHub Pages.</p></div>';
- }
- $("module-body").innerHTML=body;
- if(name==="support"&&sb&&backendUser)loadBackendSupport();
-}
-async function loadBackendSupport(){
- var x=await sb.from("support_tickets").select("id,ticket_number,company_id,subject,description,priority,status,created_at,updated_at").order("created_at",{ascending:false});
- if(x.error)return;
- var html=x.data.length?x.data.map(function(t){return '<div class="company clickable" data-ticket-id="'+esc(t.id)+'"><div class="icon">?</div><div class="grow"><b>SUP-'+String(t.ticket_number).padStart(5,"0")+' · '+esc(t.subject)+'</b><small>'+esc(t.company_id)+' · '+esc(t.priority)+' · '+esc(t.created_at?new Date(t.created_at).toLocaleString("pt-BR"):"")+'</small></div><span class="badge">'+esc(t.status)+'</span></div>'}).join(""):'<div class="empty">Nenhum chamado no backend.</div>';
- var panel=document.querySelector("#module-body .panel:last-child");if(panel)panel.innerHTML='<h2>Chamados de suporte</h2>'+html;
-}
-async function openBackendTicket(id){
- var x=await sb.from("support_tickets").select("*").eq("id",id).single();if(x.error)return;
- var m=await sb.from("support_messages").select("*").eq("ticket_id",id).order("created_at");
- var f=await sb.from("support_attachments").select("*").eq("ticket_id",id).order("created_at");
- modal('<div class="eyebrow">MASTER / SUPORTE</div><h2>SUP-'+String(x.data.ticket_number).padStart(5,"0")+' · '+esc(x.data.subject)+'</h2><div class="grid"><div class="card"><span>STATUS</span><div class="stat" style="font-size:18px">'+esc(x.data.status)+'</div></div><div class="card"><span>PRIORIDADE</span><div class="stat" style="font-size:18px">'+esc(x.data.priority)+'</div></div><div class="card"><span>SLA</span><div class="stat" style="font-size:18px">'+esc(x.data.sla_hours)+'h</div></div></div><div class="panel"><h3>O que a empresa precisa?</h3><p>'+esc(x.data.description).replace(/\\n/g,"<br>")+'</p></div><div class="panel"><h3>Prints / anexos</h3>'+((f.data||[]).length?f.data.map(function(a){return '<p>📎 '+esc(a.file_name)+'</p>'}).join(""):'<p class="muted">Nenhum anexo.</p>')+'</div><div class="panel"><h3>Conversa</h3>'+((m.data||[]).length?m.data.map(function(a){return '<div class="item"><b>'+new Date(a.created_at).toLocaleString("pt-BR")+'</b><span>'+esc(a.message)+'</span></div>'}).join(""):'<p class="muted">Sem mensagens.</p>')+'<div class="actions"><button class="secondary" data-action="close-modal">Fechar</button></div></div>');
-}
-function openCompany(id){
- var c=getCompanies().find(function(x){return x.id===id});if(!c)return;
- state.currentCompany=c;
- document.querySelectorAll(".view").forEach(function(v){v.classList.remove("active")});
- $("company").classList.add("active");$("crumb").textContent=c.name.toUpperCase();$("company-name").textContent=c.name;$("company-type").textContent=c.type;
- var invite=location.origin+"/AI-Company-OS/client/?company="+encodeURIComponent(c.id);
- $("company-body").innerHTML=
- '<div class="grid"><div class="card"><span>STATUS</span><div class="stat">'+esc(c.status)+'</div></div><div class="card"><span>RECEITA</span><div class="stat">€'+Number(c.revenue||0).toLocaleString("pt-PT")+'</div></div><div class="card"><span>CRIADA</span><div class="stat">'+new Date(c.createdAt).toLocaleDateString("pt-BR")+'</div></div><div class="card"><span>CLIENTE</span><div class="stat">ATIVO</div></div></div>'+
- '<div class="panel"><h2>Acesso do cliente</h2><p class="muted">Link individual desta empresa. Se o cliente tiver qualquer problema para acessar, gere um novo link e envie novamente.</p><div id="invite" class="linkbox">'+esc(invite)+'</div><br><div class="actions"><button class="primary" data-action="copy-invite">Copiar link</button><button class="secondary" data-action="open-client">Abrir</button><button class="secondary" data-action="new-invite">Criar novo link</button></div><p id="invite-info" class="muted" style="margin-top:10px">Este é o link de acesso atual.</p></div>'+
- '<div class="panel"><h2>Ambiente da empresa</h2><div class="list"><div class="item clickable" data-action="module-message" data-message="Dashboard empresarial"><b>Dashboard</b><span>KPIs e visão geral.</span></div><div class="item clickable" data-action="module-message" data-message="AI Workforce da empresa"><b>AI Workforce</b><span>Funcionários e agentes IA.</span></div><div class="item clickable" data-action="module-message" data-message="Missões da empresa"><b>Missões</b><span>Objetivos e execução.</span></div><div class="item clickable" data-action="module-message" data-message="Marketing da empresa"><b>Marketing</b><span>Campanhas, conteúdo e canais.</span></div><div class="item clickable" data-action="module-message" data-message="CRM / Clientes da empresa"><b>CRM / Clientes</b><span>Relacionamento e vendas.</span></div><div class="item clickable" data-action="module-message" data-message="Financeiro da empresa"><b>Financeiro</b><span>Receitas, despesas e indicadores.</span></div><div class="item clickable" data-action="support-ticket"><b>Suporte</b><span>Chamados, SLA, mensagens e anexos.</span></div></div></div>'+
- '<div class="panel"><h2>Cadastro completo</h2><p class="muted">Empresa criada no Master. O próximo nível é ligar este registro a uma base persistente e autenticação real do cliente.</p></div>';
-}
+function toast(message){var t=$("toast");t.textContent=message;t.classList.add("show");clearTimeout(window.__toastTimer);window.__toastTimer=setTimeout(function(){t.classList.remove("show")},2200)}
 function modal(html){$("modal-box").innerHTML=html;$("modal").classList.add("show")}
 function closeModal(){$("modal").classList.remove("show")}
-function newCompany(){modal('<h2>Nova empresa</h2><input id="f-name" class="field" placeholder="Nome da empresa"><input id="f-type" class="field" placeholder="Segmento / atividade"><input id="f-country" class="field" placeholder="País / localização"><input id="f-revenue" class="field" type="number" placeholder="Receita atual (opcional)"><div class="actions"><button class="secondary" data-action="close-modal">Cancelar</button><button class="primary" data-action="save-company">Criar empresa</button></div>')}
-async function saveCompany(){
- var n=$("f-name").value.trim(),t=$("f-type").value.trim()||"Empresa",country=$("f-country").value.trim()||"—",rev=Number($("f-revenue").value||0);
- if(!n){toast("Informe o nome da empresa.");return}
- var a=getCompanies();if(a.some(function(x){return x.name.toLowerCase()===n.toLowerCase()})){toast("Empresa já existe.");return}
- var c={id:slug(n)+"-"+Date.now().toString().slice(-5),name:n,type:t+" · "+country,createdAt:new Date().toISOString(),status:"ACTIVE",revenue:rev};a.push(c);write(KEY,a);if(sb&&backendUser)await persistCompanyBackend(c);closeModal();openCompany(c.id);
-}
-function newAgent(){modal('<h2>Novo funcionário IA</h2><input id="a-name" class="field" placeholder="Nome do agente"><input id="a-role" class="field" placeholder="Função"><input id="a-company" class="field" placeholder="Empresa"><div class="actions"><button class="secondary" data-action="close-modal">Cancelar</button><button class="primary" data-action="save-agent">Criar agente</button></div>')}
-function saveAgent(){var n=$("a-name").value.trim(),r=$("a-role").value.trim(),c=$("a-company").value.trim();if(!n||!r||!c){toast("Preencha todos os campos.");return}var a=read(AG,[]);a.push({id:Date.now(),name:n,role:r,company:c,status:"READY"});write(AG,a);closeModal();showView("workforce");toast("Agente criado.")}
-function newMission(){modal('<h2>Nova missão</h2><input id="m-name" class="field" placeholder="Objetivo da missão"><input id="m-company" class="field" placeholder="Empresa"><div class="actions"><button class="secondary" data-action="close-modal">Cancelar</button><button class="primary" data-action="save-mission">Criar missão</button></div>')}
-function saveMission(){var n=$("m-name").value.trim(),c=$("m-company").value.trim();if(!n||!c){toast("Preencha todos os campos.");return}var a=read(MI,[]);a.push({id:Date.now(),name:n,company:c,status:"PLANNED",progress:0});write(MI,a);closeModal();showView("missions");toast("Missão criada.")}
-function newPolicy(){modal('<h2>Nova política</h2><input id="p-name" class="field" placeholder="Nome da política"><input id="p-scope" class="field" placeholder="Escopo"><div class="actions"><button class="secondary" data-action="close-modal">Cancelar</button><button class="primary" data-action="save-policy">Criar política</button></div>')}
-function savePolicy(){var n=$("p-name").value.trim(),s=$("p-scope").value.trim()||"Global";if(!n){toast("Informe o nome.");return}var a=read(PO,[]);a.push({id:Date.now(),name:n,scope:s});write(PO,a);closeModal();showView("risk");toast("Política criada.")}
-function copyInvite(){var x=$("invite");if(!x)return;var text=x.textContent;if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(function(){toast("Link copiado.")}).catch(function(){toast("Selecione e copie o link.")})}else{toast("Selecione e copie o link.")}}
-function openClient(){var x=$("invite");if(x)window.open(x.textContent,"_blank")}
-function removeCompany(){
- var c=state.currentCompany;if(!c)return;
- modal('<h2>Remover empresa</h2><p class="muted">Tem certeza que deseja remover <b>'+esc(c.name)+'</b>? Esta ação remove a empresa deste navegador e não poderá ser desfeita.</p><div class="actions"><button class="secondary" data-action="close-modal">Cancelar</button><button class="danger" data-action="confirm-remove-company">Remover empresa</button></div>');
-}
-function confirmRemoveCompany(){
- var c=state.currentCompany;if(!c)return;
- var a=getCompanies().filter(function(x){return x.id!==c.id});write(KEY,a);state.currentCompany=null;closeModal();showView("companies");toast("Empresa removida.");
-}
-function openSupportTicket(){
- var c=state.currentCompany;if(!c)return;
- var ticket={id:"SUP-"+new Date().getFullYear()+"-"+String(Date.now()).slice(-5),company:c.name,status:"EM ATENDIMENTO",priority:"ALTA",category:"Técnico",createdAt:new Date().toISOString(),subject:"Problema no ambiente da empresa",description:"O cliente relata um problema e precisa de suporte para identificar a causa e resolver a situação.",attachments:["screenshot-dashboard.png","erro-console.png"],requester:"Administrador da empresa",sla:"8 horas",lastUpdate:"Agora"};
- modal('<div class="eyebrow">SUPORTE / CHAMADO</div><h2>'+esc(ticket.id)+' · '+esc(ticket.subject)+'</h2><div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="card"><span>EMPRESA</span><b class="value" style="font-size:18px">'+esc(ticket.company)+'</b></div><div class="card"><span>STATUS</span><b class="value" style="font-size:18px">'+esc(ticket.status)+'</b></div><div class="card"><span>PRIORIDADE</span><b class="value" style="font-size:18px">'+esc(ticket.priority)+'</b></div><div class="card"><span>SLA</span><b class="value" style="font-size:18px">'+esc(ticket.sla)+'</b></div></div><div class="panel"><h3>O que a empresa precisa?</h3><p class="muted">'+esc(ticket.description)+'</p><p><b>Solicitante:</b> '+esc(ticket.requester)+'<br><b>Categoria:</b> '+esc(ticket.category)+'<br><b>Aberto:</b> '+new Date(ticket.createdAt).toLocaleString("pt-BR")+'</p></div><div class="panel"><h3>Prints e informações anexadas</h3><div class="list"><div class="item"><b>Screenshot da tela</b><span>📎 '+esc(ticket.attachments[0])+'</span></div><div class="item"><b>Erro técnico</b><span>📎 '+esc(ticket.attachments[1])+'</span></div></div></div><div class="panel"><h3>Atendimento</h3><p class="muted">O chamado fica associado à empresa e pode ser encaminhado para o AI Support Agent ou para um responsável humano.</p><div class="actions"><button class="primary" data-action="reply-support">Responder ao cliente</button><button class="secondary" data-action="assign-support">Atribuir suporte</button><button class="secondary" data-action="close-modal">Fechar</button></div></div>');
-}
-function newSupportTicket(){
- var c=state.currentCompany;
- if(!c){toast("Abra uma empresa primeiro.");return}
- modal('<div class="eyebrow">NOVO CHAMADO</div><h2>Abrir suporte</h2><input id="s-subject" class="field" placeholder="O que aconteceu?"><select id="s-priority" class="field"><option>Normal</option><option>Alta</option><option>Crítica</option></select><textarea id="s-description" class="field" style="min-height:120px" placeholder="Explique o problema, o que esperava que acontecesse e o que aconteceu."></textarea><input id="s-files" class="field" type="file" multiple accept="image/*,.pdf,.txt,.log"><p class="muted">Anexe prints da tela, mensagens de erro, logs ou documentos que ajudem o suporte.</p><div class="actions"><button class="secondary" data-action="close-modal">Cancelar</button><button class="primary" data-action="save-support-ticket">Enviar chamado</button></div>');
-}
-function saveSupportTicket(){
- var c=state.currentCompany,subject=$("s-subject").value.trim(),desc=$("s-description").value.trim(),priority=$("s-priority").value;
- if(!subject||!desc){toast("Informe o problema e a descrição.");return}
- var files=$("s-files").files, names=[];
- for(var i=0;i<files.length;i++)names.push(files[i].name);
- var key="aiCompanyOSSupportTickets",a=read(key,[]);
- a.push({id:"SUP-"+new Date().getFullYear()+"-"+String(Date.now()).slice(-5),companyId:c.id,company:c.name,subject:subject,description:desc,priority:priority,status:"NOVO",createdAt:new Date().toISOString(),attachments:names});
- write(key,a);closeModal();toast("Chamado enviado para o suporte.");openSupportTicket();
-}
-function newInvite(){
- var c=state.currentCompany;if(!c)return;
- c.inviteVersion=Number(c.inviteVersion||0)+1;
- c.inviteCreatedAt=new Date().toISOString();
- var a=getCompanies().map(function(x){return x.id===c.id?c:x});write(KEY,a);state.currentCompany=c;
- var invite=location.origin+"/AI-Company-OS/client/?company="+encodeURIComponent(c.id)+"&invite="+encodeURIComponent(c.inviteVersion);
- $("invite").textContent=invite;
- $("invite-info").textContent="Novo link criado em "+new Date(c.inviteCreatedAt).toLocaleString("pt-BR")+". O link anterior deve ser considerado substituído.";
- toast("Novo link do cliente criado.");
-}
-document.addEventListener("click",function(e){
- var nav=e.target.closest("[data-view]");if(nav){showView(nav.getAttribute("data-view"));return}
- var company=e.target.closest("[data-company]");if(company){openCompany(company.getAttribute("data-company"));return}
- var ticket=e.target.closest("[data-ticket-id]");if(ticket&&sb&&backendUser){openBackendTicket(ticket.getAttribute("data-ticket-id"));return}\n var action=e.target.closest("[data-action]");if(!action)return;
- var a=action.getAttribute("data-action");
- if(a==="new-company")newCompany();
- else if(a==="save-company")saveCompany();
- else if(a==="new-agent")newAgent();
- else if(a==="save-agent")saveAgent();
- else if(a==="new-mission")newMission();
- else if(a==="save-mission")saveMission();
- else if(a==="new-policy")newPolicy();
- else if(a==="save-policy")savePolicy();
- else if(a==="close-modal")closeModal();
- else if(a==="copy-invite")copyInvite();
- else if(a==="open-client")openClient();
- else if(a==="new-invite")newInvite();
- else if(a==="remove-company")removeCompany();
- else if(a==="confirm-remove-company")confirmRemoveCompany();
- else if(a==="test-system")toast("Runtime OK · interface OK · storage OK");
- else if(a==="module-message")toast(action.getAttribute("data-message"));\n else if(a==="support-ticket")openSupportTicket();\n else if(a==="reply-support")toast("Área de resposta do cliente preparada.");\n else if(a==="assign-support")toast("Chamado pronto para atribuição.");\n else if(a==="new-support-ticket")newSupportTicket();\n else if(a==="save-support-ticket")saveSupportTicket();\n else if(a==="master-login")masterLogin();
-});
+function showView(name){document.querySelectorAll(".view").forEach(function(v){v.classList.remove("active")});document.querySelectorAll("[data-view]").forEach(function(b){b.classList.toggle("active",b.getAttribute("data-view")===name)});if(name==="portfolio"){$("portfolio").classList.add("active");renderPortfolio();$("crumb").textContent="MASTER CONTROL";return}if(["companies","workforce","missions","support","capital","risk","system"].includes(name)){$("module").classList.add("active");renderModule(name);$("crumb").textContent=name.toUpperCase()}}
+function localCompanies(){var a=read(KEY,null);if(!Array.isArray(a)||!a.length){a=[{id:"destiny7-software",name:"Destiny7 Software",type:"SaaS · Madrid",status:"ACTIVE",revenue:82400,createdAt:new Date().toISOString()},{id:"novaflow",name:"NovaFlow",type:"Automation · Lisboa",status:"ACTIVE",revenue:61800,createdAt:new Date().toISOString()}];write(KEY,a)}return a}
+async function loadCompanies(){if(!state.backend){state.companies=localCompanies();renderPortfolio();return}try{state.companies=await api.request("/master/companies");renderPortfolio()}catch(e){toast("Falha ao carregar empresas: "+e.message)}}
+function companyRow(c){return '<div class="company" data-company="'+esc(c.id)+'"><div class="icon">'+esc((c.name||"CO").slice(0,2).toUpperCase())+'</div><div class="grow"><b>'+esc(c.name)+'</b><small>'+esc(c.type||c.country||"Empresa")+'</small></div><strong>€'+Number(c.revenue||0).toLocaleString("pt-PT")+'</strong><span class="badge">'+esc(c.status||"ACTIVE")+'</span></div>'}
+function renderPortfolio(){var a=state.companies.length?state.companies:localCompanies(),agents=read(AG,[]),missions=read(MI,[]);$("stats").innerHTML='<div class="card clickable" data-view="companies"><span>EMPRESAS</span><div class="stat">'+a.length+'</div></div><div class="card clickable" data-view="workforce"><span>AI WORKFORCE</span><div class="stat">'+agents.length+'</div></div><div class="card"><span>RECEITA CADASTRADA</span><div class="stat">€'+a.reduce(function(s,c){return s+Number(c.revenue||0)},0).toLocaleString("pt-PT")+'</div></div><div class="card clickable" data-view="missions"><span>MISSÕES</span><div class="stat">'+missions.length+'</div></div>';$("company-list").innerHTML=a.map(companyRow).join("")}
+function renderModule(name){var title={companies:"Companies",workforce:"AI Workforce",missions:"Missions",support:"Support",capital:"Capital",risk:"Risk & Policies",system:"System"}[name],desc={companies:"Clientes, ciclo de vida, acesso e ERP.",workforce:"Funcionários digitais e agentes de IA.",missions:"Objetivos e execução.",support:"Chamados, prints, anexos e SLA.",capital:"Receita, faturamento e recebimentos.",risk:"Governança, compliance e auditoria.",system:"Runtime, backend e diagnóstico."}[name];$("module-title").textContent=title;$("module-desc").textContent=desc;var action=$("module-action");action.style.display="inline-block";action.setAttribute("data-action","");action.textContent="";var body="";
+if(name==="companies"){action.textContent="+ Nova empresa";action.setAttribute("data-action","new-company");body='<div class="panel"><h2>Empresas</h2>'+state.companies.map(companyRow).join("")+'</div>'}
+if(name==="workforce"){action.textContent="+ Novo agente";action.setAttribute("data-action","new-agent");var a=read(AG,[]);body='<div class="panel"><h2>AI Workforce</h2>'+(a.length?'<table class="table"><tr><th>AGENTE</th><th>FUNÇÃO</th><th>EMPRESA</th><th>STATUS</th></tr>'+a.map(function(x){return '<tr><td>'+esc(x.name)+'</td><td>'+esc(x.role)+'</td><td>'+esc(x.company)+'</td><td>'+esc(x.status)+'</td></tr>'}).join("")+'</table>':'<div class="empty">Nenhum agente.</div>')+'</div>'}
+if(name==="missions"){action.textContent="+ Nova missão";action.setAttribute("data-action","new-mission");var m=read(MI,[]);body='<div class="panel"><h2>Missões</h2>'+(m.length?m.map(function(x){return '<div class="item"><b>'+esc(x.name)+'</b><span>'+esc(x.company)+' · '+esc(x.status)+' · '+Number(x.progress||0)+'%</span></div>'}).join(""):'<div class="empty">Nenhuma missão.</div>')+'</div>'}
+if(name==="support"){action.textContent="+ Novo chamado";action.setAttribute("data-action","new-support-ticket");body='<div class="panel"><h2>Chamados</h2><div id="backend-support-list"><div class="empty">Carregando...</div></div></div>';loadBackendSupport()}
+if(name==="capital"){action.style.display="none";body='<div class="grid"><div class="card"><span>RECEITA CADASTRADA</span><div class="stat">€'+state.companies.reduce(function(s,c){return s+Number(c.revenue||0)},0).toLocaleString("pt-PT")+'</div></div><div class="card"><span>EMPRESAS</span><div class="stat">'+state.companies.length+'</div></div><div class="card"><span>FATURAS EM ABERTO</span><div class="stat">—</div></div><div class="card"><span>RECEBIDO</span><div class="stat">—</div></div></div><div class="panel"><h2>ERP financeiro</h2><p class="muted">Produtos, assinaturas, contratos, faturas e pagamentos ficam associados a cada empresa.</p></div>'}
+if(name==="risk"){action.textContent="+ Nova política";action.setAttribute("data-action","new-policy");var p=read(PO,[]);body='<div class="grid"><div class="card"><span>POLÍTICAS</span><div class="stat">'+p.length+'</div></div><div class="card"><span>AUDITORIA</span><div class="stat">ATIVA</div></div><div class="card"><span>HARD DELETE</span><div class="stat">BLOQUEADO</div></div><div class="card"><span>LIFECYCLE</span><div class="stat">ATIVO</div></div></div><div class="panel"><h2>Políticas</h2>'+(p.length?p.map(function(x){return '<div class="item"><b>'+esc(x.name)+'</b><span>'+esc(x.scope)+' · ativa</span></div>'}).join(""):'<div class="empty">Nenhuma política.</div>')+'</div>'}
+if(name==="system"){action.textContent="Testar backend";action.setAttribute("data-action","test-system");body='<div class="grid"><div class="card"><span>FRONTEND</span><div class="stat">ONLINE</div></div><div class="card"><span>BACKEND</span><div class="stat">'+(state.backend?"CONECTADO":"NÃO CONFIGURADO")+'</div></div><div class="card"><span>DATABASE</span><div class="stat">'+(state.backend?"SQLITE":"—")+'</div></div><div class="card"><span>AUTH</span><div class="stat">'+(state.backend?"JWT":"—")+'</div></div></div><div class="panel"><h2>Arquitetura</h2><p class="muted">Frontend estático + API Node/Express + banco persistente. A API já possui empresas, convites, usuários, suporte, auditoria e núcleo ERP.</p></div>'}
+$("module-body").innerHTML=body}
+async function loadBackendSupport(){var el=$("backend-support-list");if(!el)return;if(!state.backend){el.innerHTML='<div class="empty">Conecte o backend para consultar chamados.</div>';return}try{var rows=await api.request("/master/support/tickets");el.innerHTML=rows.length?rows.map(function(t){return '<div class="company clickable" data-ticket-id="'+esc(t.id)+'"><div class="icon">?</div><div class="grow"><b>SUP-'+String(t.ticket_number).padStart(5,"0")+' · '+esc(t.subject)+'</b><small>'+esc(t.company_name)+' · '+esc(t.priority)+'</small></div><span class="badge">'+esc(t.status)+'</span></div>'}).join(""):'<div class="empty">Nenhum chamado.</div>'}catch(e){el.innerHTML='<div class="empty">'+esc(e.message)+'</div>'}}
+async function openBackendTicket(id){try{var x=await api.request("/support/tickets/"+id);modal('<div class="eyebrow">MASTER / SUPORTE</div><h2>SUP-'+String(x.ticket.ticket_number).padStart(5,"0")+' · '+esc(x.ticket.subject)+'</h2><div class="grid"><div class="card"><span>STATUS</span><div class="stat" style="font-size:18px">'+esc(x.ticket.status)+'</div></div><div class="card"><span>PRIORIDADE</span><div class="stat" style="font-size:18px">'+esc(x.ticket.priority)+'</div></div><div class="card"><span>SLA</span><div class="stat" style="font-size:18px">'+esc(x.ticket.sla_hours)+'h</div></div></div><div class="panel"><h3>O que a empresa precisa?</h3><p>'+esc(x.ticket.description).replace(/\n/g,"<br>")+'</p></div><div class="panel"><h3>Conversa</h3>'+(x.messages.length?x.messages.map(function(m){return '<div class="item"><b>'+new Date(m.created_at).toLocaleString("pt-BR")+'</b><span>'+esc(m.message)+'</span></div>'}).join(""):'<p class="muted">Sem mensagens.</p>')+'</div><div class="actions"><button class="secondary" data-action="close-modal">Fechar</button></div>')}catch(e){toast(e.message)}}
+async function openCompany(id){var c=state.companies.find(function(x){return x.id===id});if(!c)return;state.currentCompany=c;document.querySelectorAll(".view").forEach(function(v){v.classList.remove("active")});$("company").classList.add("active");$("crumb").textContent=c.name.toUpperCase();$("company-name").textContent=c.name;$("company-type").textContent=(c.type||"Empresa")+" · "+(c.country||"");$("company-body").innerHTML='<div class="grid"><div class="card"><span>STATUS</span><div class="stat">'+esc(c.status)+'</div></div><div class="card"><span>RECEITA</span><div class="stat">€'+Number(c.revenue||0).toLocaleString("pt-PT")+'</div></div><div class="card"><span>CRIADA</span><div class="stat">'+(c.created_at?new Date(c.created_at).toLocaleDateString("pt-BR"):"—")+'</div></div><div class="card"><span>CLIENTE</span><div class="stat">ATIVO</div></div></div><div class="panel"><h2>Acesso do cliente</h2><p class="muted">Crie um convite real. Ao gerar outro, o backend revoga os convites anteriores.</p><div id="invite" class="linkbox">Link ainda não gerado</div><br><div class="actions"><button class="primary" data-action="new-invite">Criar novo link</button><button class="secondary" data-action="copy-invite">Copiar link</button><button class="secondary" data-action="open-client">Abrir</button></div><p id="invite-info" class="muted"></p></div><div class="panel"><h2>ERP da empresa</h2><div id="erp-company"><div class="empty">Carregando produtos, contratos, faturamento e histórico...</div></div></div><div class="panel"><h2>Ciclo de vida</h2><div class="actions"><button class="secondary" data-status="ACTIVE">Ativa</button><button class="secondary" data-status="PAGAMENTO_PENDENTE">Pagamento pendente</button><button class="secondary" data-status="INADIMPLENTE">Inadimplente</button><button class="secondary" data-status="SUSPENSA">Suspensa</button><button class="secondary" data-status="CONGELADA">Congelada</button><button class="secondary" data-status="ENCERRADA">Encerrada</button><button class="secondary" data-status="ARQUIVADA">Arquivada</button></div></div><div class="panel"><h2>Ambiente</h2><div class="list"><div class="item"><b>Dashboard</b><span>KPIs e operação.</span></div><div class="item"><b>AI Workforce</b><span>Funcionários e agentes.</span></div><div class="item"><b>Missões</b><span>Objetivos e execução.</span></div><div class="item"><b>Marketing</b><span>Campanhas e canais.</span></div><div class="item"><b>CRM</b><span>Clientes e relacionamento.</span></div><div class="item"><b>Financeiro</b><span>Assinaturas, faturas e pagamentos.</span></div><div class="item clickable" data-action="support-ticket"><b>Suporte</b><span>Chamados, SLA e atendimento.</span></div></div></div>';if(state.backend)loadCompanyERP(c.id)}
+async function loadCompanyERP(id){try{var x=await api.request("/master/companies/"+id+"/erp"),inv=x.invoices||[],paid=(x.payments||[]).reduce(function(s,p){return s+Number(p.amount||0)},0);$("erp-company").innerHTML='<div class="grid"><div class="card"><span>ASSINATURAS</span><div class="stat">'+x.subscriptions.length+'</div></div><div class="card"><span>FATURAS</span><div class="stat">'+inv.length+'</div></div><div class="card"><span>EM ABERTO</span><div class="stat">€'+inv.filter(function(i){return i.status!=="PAID"}).reduce(function(s,i){return s+Number(i.total-i.paid_amount||0)},0).toLocaleString("pt-PT")+'</div></div><div class="card"><span>RECEBIDO</span><div class="stat">€'+paid.toLocaleString("pt-PT")+'</div></div></div><div class="panel"><h3>Assinaturas</h3>'+(x.subscriptions.length?x.subscriptions.map(function(s){return '<div class="item"><b>'+esc(s.product_name)+'</b><span>'+esc(s.status)+' · €'+Number(s.unit_price).toLocaleString("pt-PT")+' / '+esc(s.billing_cycle)+'</span></div>'}).join(""):'<p class="muted">Nenhuma assinatura.</p>')+'</div><div class="panel"><h3>Faturas</h3>'+(inv.length?inv.map(function(i){return '<div class="item"><b>'+esc(i.number)+' · €'+Number(i.total).toLocaleString("pt-PT")+'</b><span>'+esc(i.status)+' · vencimento '+esc(i.due_date)+' · pago €'+Number(i.paid_amount).toLocaleString("pt-PT")+'</span></div>'}).join(""):'<p class="muted">Nenhuma fatura.</p>')+'</div><div class="panel"><h3>Contratos</h3>'+(x.contracts.length?x.contracts.map(function(c){return '<div class="item"><b>'+esc(c.title)+'</b><span>'+esc(c.status)+' · €'+Number(c.monthly_value).toLocaleString("pt-PT")+'/mês</span></div>'}).join(""):'<p class="muted">Nenhum contrato.</p>')+'</div><div class="panel"><h3>Histórico</h3>'+(x.events.length?x.events.map(function(e){return '<div class="item"><b>'+esc(e.event_type)+'</b><span>'+esc(e.description)+' · '+new Date(e.created_at).toLocaleString("pt-BR")+'</span></div>'}).join(""):'<p class="muted">Sem eventos.</p>')+'</div>'}catch(e){$("erp-company").innerHTML='<div class="empty">'+esc(e.message)+'</div>'}}
+function newCompany(){modal('<h2>Nova empresa</h2><input id="f-name" class="field" placeholder="Nome da empresa"><input id="f-type" class="field" placeholder="Segmento / atividade"><input id="f-country" class="field" placeholder="País / localização"><input id="f-revenue" class="field" type="number" placeholder="Receita atual"><div class="actions"><button class="secondary" data-action="close-modal">Cancelar</button><button class="primary" data-action="save-company">Criar empresa</button></div>')}
+async function saveCompany(){var n=$("f-name").value.trim(),t=$("f-type").value.trim()||"Empresa",country=$("f-country").value.trim()||"—",rev=Number($("f-revenue").value||0);if(!n||!state.backend){toast(!n?"Informe o nome.":"Backend não conectado.");return}try{var c=await api.request("/master/companies",{method:"POST",body:JSON.stringify({name:n,type:t,country:country,revenue:rev})});state.companies.unshift(c);closeModal();openCompany(c.id);toast("Empresa criada no ERP.")}catch(e){toast(e.message)}}
+async function newInvite(){if(!state.currentCompany||!state.backend){toast("Backend não conectado.");return}try{var r=await api.request("/master/companies/"+state.currentCompany.id+"/invites",{method:"POST",body:"{}"});var url=location.origin+"/AI-Company-OS/client/?company="+encodeURIComponent(r.company)+"&invite="+encodeURIComponent(r.token);$("invite").textContent=url;$("invite-info").textContent="Novo link criado em "+new Date(r.createdAt).toLocaleString("pt-BR")+". Os convites anteriores foram revogados.";toast("Novo link criado e anterior revogado.")}catch(e){toast(e.message)}}
+function copyInvite(){var x=$("invite");if(!x||x.textContent==="Link ainda não gerado"){toast("Crie um link primeiro.");return}navigator.clipboard?.writeText(x.textContent).then(function(){toast("Link copiado.")}).catch(function(){toast("Não foi possível copiar automaticamente.")})}
+function openClient(){var x=$("invite");if(x&&x.textContent!=="Link ainda não gerado")window.open(x.textContent,"_blank");else toast("Crie um link primeiro.")}
+async function changeStatus(status){if(!state.currentCompany||!state.backend)return;try{var c=await api.request("/master/companies/"+state.currentCompany.id+"/status",{method:"POST",body:JSON.stringify({status:status})});state.currentCompany=c;state.companies=state.companies.map(function(x){return x.id===c.id?c:x});openCompany(c.id);toast("Status alterado para "+status)}catch(e){toast(e.message)}}
+function newAgent(){modal('<h2>Novo funcionário IA</h2><input id="a-name" class="field" placeholder="Nome"><input id="a-role" class="field" placeholder="Função"><input id="a-company" class="field" placeholder="Empresa"><div class="actions"><button class="secondary" data-action="close-modal">Cancelar</button><button class="primary" data-action="save-agent">Criar</button></div>')}
+function saveAgent(){var n=$("a-name").value.trim(),r=$("a-role").value.trim(),c=$("a-company").value.trim();if(!n||!r||!c){toast("Preencha os campos.");return}var a=read(AG,[]);a.push({id:Date.now(),name:n,role:r,company:c,status:"READY"});write(AG,a);closeModal();showView("workforce")}
+function newMission(){modal('<h2>Nova missão</h2><input id="m-name" class="field" placeholder="Objetivo"><input id="m-company" class="field" placeholder="Empresa"><div class="actions"><button class="secondary" data-action="close-modal">Cancelar</button><button class="primary" data-action="save-mission">Criar</button></div>')}
+function saveMission(){var n=$("m-name").value.trim(),c=$("m-company").value.trim();if(!n||!c){toast("Preencha os campos.");return}var a=read(MI,[]);a.push({id:Date.now(),name:n,company:c,status:"PLANNED",progress:0});write(MI,a);closeModal();showView("missions")}
+function newPolicy(){modal('<h2>Nova política</h2><input id="p-name" class="field" placeholder="Nome"><input id="p-scope" class="field" placeholder="Escopo"><div class="actions"><button class="secondary" data-action="close-modal">Cancelar</button><button class="primary" data-action="save-policy">Criar</button></div>')}
+function savePolicy(){var n=$("p-name").value.trim(),s=$("p-scope").value.trim()||"Global";if(!n)return;var a=read(PO,[]);a.push({id:Date.now(),name:n,scope:s});write(PO,a);closeModal();showView("risk")}
+function newSupportTicket(){toast("O suporte real é aberto pelo cliente e aparece aqui no Master.")}
+function testSystem(){if(!state.backend){toast("Backend não configurado. Defina API_BASE em public/config.js.");return}api.health().then(function(){toast("Backend + API responderam normalmente.")}).catch(function(e){toast("Falha no backend: "+e.message)})}
+function login(){modal('<div class="eyebrow">MASTER / AUTENTICAÇÃO</div><h2>Entrar no Master</h2><p class="muted">Autenticação pelo backend Node/Express com JWT.</p><input id="login-email" class="field" type="email" value="master@aicompanyos.local" placeholder="E-mail"><input id="login-pass" class="field" type="password" value="ChangeMe123!" placeholder="Senha"><p id="login-error" class="muted"></p><div class="actions"><button class="primary" id="login-submit">Entrar</button></div>');$("login-submit").onclick=async function(){try{var r=await api.request("/auth/master",{method:"POST",body:JSON.stringify({email:$("login-email").value.trim(),password:$("login-pass").value})});api.setToken(r.token);state.backend=true;closeModal();await loadCompanies();toast("Master conectado.")}catch(e){$("login-error").textContent=e.message}}}
+document.addEventListener("click",function(e){var nav=e.target.closest("[data-view]");if(nav){showView(nav.getAttribute("data-view"));return}var company=e.target.closest("[data-company]");if(company){openCompany(company.getAttribute("data-company"));return}var ticket=e.target.closest("[data-ticket-id]");if(ticket){openBackendTicket(ticket.getAttribute("data-ticket-id"));return}var st=e.target.closest("[data-status]");if(st){changeStatus(st.getAttribute("data-status"));return}var action=e.target.closest("[data-action]");if(!action)return;var a=action.getAttribute("data-action");if(a==="new-company")newCompany();else if(a==="save-company")saveCompany();else if(a==="new-agent")newAgent();else if(a==="save-agent")saveAgent();else if(a==="new-mission")newMission();else if(a==="save-mission")saveMission();else if(a==="new-policy")newPolicy();else if(a==="save-policy")savePolicy();else if(a==="close-modal")closeModal();else if(a==="new-invite")newInvite();else if(a==="copy-invite")copyInvite();else if(a==="open-client")openClient();else if(a==="new-support-ticket")newSupportTicket();else if(a==="test-system")testSystem()});
 $("modal").addEventListener("click",function(e){if(e.target===$("modal"))closeModal()});
-getCompanies();renderPortfolio();
-document.querySelector('[data-view="portfolio"]').classList.add("active");
-window.__AIOS_RUNTIME__={booted:true,build:"0.4",mode:"static-safe"};
+if(api&&api.enabled){api.request("/me").then(function(){state.backend=true;return loadCompanies()}).catch(function(){login()})}else{state.companies=localCompanies();renderPortfolio();toast("Frontend carregado. Backend não configurado.")}
+window.__AIOS_RUNTIME__={booted:true,build:"0.5",mode:"api-first"};
 })();
 </script>
 </body>

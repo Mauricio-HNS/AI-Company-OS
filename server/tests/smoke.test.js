@@ -187,4 +187,6 @@ test("end-to-end company lifecycle completes successfully", async (t) => {
   assert.ok(tickets.some((item) => item.id === ticket.id));
 });
 
-let port;
+const e2eServer = app.listen(0);
+const port = e2eServer.address().port;
+process.on("exit", () => e2eServer.close());

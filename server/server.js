@@ -298,6 +298,37 @@ function provisionWorkforce(companyId, actorId) {
 }
 
 
+
+function executePlan(planId, actorId) {
+  const plan=db.prepare("SELECT * FROM ai_plans WHERE id=?").get(planId);
+  if(!plan) return null;
+  const steps=db.prepare("SELECT s.*,c.risk_level,c.requires_approval AS cap_approval FROM ai_plan_steps s LEFT JOIN ai_capabilities c ON c.key=s.capability_key WHERE s.plan_id=? ORDER BY s.step_order").all(planId);
+  let executed=0,blocked=0;
+  const t=now();
+  for(const s of steps) {
+    if(s.requires_approval || s.cap_approval) {
+      db.prepare("UPDATE ai_plan_steps SET status='PENDING_APPROVAL',updated_at=? WHERE id=?").run(t,s.id);
+      blocked++; continue;
+    }
+    let result="Capability validated; execution adapter pending for this capability.";
+    let status="COMPLETED";
+    if(s.capability_key==="analytics.measure") result="Measurement checkpoint created.";
+    else if(s.capability_key==="finance.analyze") result="Financial analysis checkpoint completed.";
+    else if(s.capability_key==="support.triage") result="Support triage checkpoint completed.";
+    else if(s.capability_key==="crm.read") result="CRM observation checkpoint completed.";
+    else if(s.capability_key==="marketing.plan") result="Marketing planning checkpoint created.";
+    else if(s.capability_key==="mission.create") result="Mission creation checkpoint created.";
+    else if(s.capability_key==="growth.optimize") result="Growth optimization checkpoint created.";
+    else { status="PENDING_ADAPTER"; result="Capability discovered but has no execution adapter yet."; }
+    db.prepare("UPDATE ai_plan_steps SET status=?,result=?,updated_at=? WHERE id=?").run(status,result,t,s.id);
+    if(status==="COMPLETED") executed++;
+  }
+  const finalStatus=blocked ? "PARTIALLY_EXECUTED" : (steps.length&&executed===steps.length ? "EXECUTED" : "EXECUTION_PENDING_ADAPTER");
+  db.prepare("UPDATE ai_plans SET status=?,updated_at=? WHERE id=?").run(finalStatus,t,planId);
+  audit(actorId||null,"SUPER_AGENT_EXECUTION","ai_plan",planId,{executed,blocked,total:steps.length});
+  return {plan:db.prepare("SELECT * FROM ai_plans WHERE id=?").get(planId),steps:db.prepare("SELECT * FROM ai_plan_steps WHERE plan_id=? ORDER BY step_order").all(planId),executed,blocked};
+}
+
 const CAPABILITY_SEED = [
   ["crm.read","Ler CRM","CRM","Consultar clientes, leads e oportunidades","READ","LOW",0],
   ["crm.followup","Criar follow-up","CRM","Criar ações de acompanhamento comercial","CREATE","LOW",0],
@@ -576,6 +607,12 @@ app.delete("/api/master/agents/:id",master,(req,res)=>{
   res.json({ok:true});
 });
 
+
+app.post("/api/master/plans/:id/execute",master,(req,res)=>{
+  const plan=db.prepare("SELECT * FROM ai_plans WHERE id=?").get(req.params.id);
+  if(!plan)return res.status(404).json({error:"PLAN_NOT_FOUND"});
+  res.json(executePlan(plan.id,req.user.sub));
+});
 app.get("/api/master/companies/:id/super-agent",master,(req,res)=>{
   const company=db.prepare("SELECT * FROM companies WHERE id=?").get(req.params.id);
   if(!company)return res.status(404).json({error:"COMPANY_NOT_FOUND"});

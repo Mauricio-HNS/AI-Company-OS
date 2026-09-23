@@ -89,7 +89,7 @@ test("end-to-end company lifecycle completes successfully", async (t) => {
       inviteToken: invite.token,
       name: "E2E Client",
       email: clientEmail,
-      password: "ClientPass123!"
+      password: "ClientPass123A!"
     })
   });
   assert.equal(signupResponse.status, 200);
@@ -99,7 +99,7 @@ test("end-to-end company lifecycle completes successfully", async (t) => {
   const clientLoginResponse = await fetch("http://127.0.0.1:" + port + "/api/auth/client/login", {
     method: "POST",
     headers: {"content-type": "application/json"},
-    body: JSON.stringify({email: clientEmail, password: "ClientPass123!"})
+    body: JSON.stringify({email: clientEmail, password: "ClientPass123A!"})
   });
   assert.equal(clientLoginResponse.status, 200);
   const clientLogin = await clientLoginResponse.json();

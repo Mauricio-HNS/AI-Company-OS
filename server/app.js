@@ -162,7 +162,8 @@ app.delete("/api/master/agents/:id",master,(req,res)=>{
 app.post("/api/master/plans/:id/execute",master,(req,res)=>{
   const plan=db.prepare("SELECT * FROM ai_plans WHERE id=?").get(req.params.id);
   if(!plan)return res.status(404).json({error:"PLAN_NOT_FOUND"});
-  res.json(executePlan(plan.id,req.user.sub));
+  const job=enqueueJob("PLAN_EXECUTION",{planId:plan.id,actorId:req.user.sub},{companyId:plan.company_id,priority:10});
+  res.status(202).json({queued:true,job});
 });
 app.get("/api/master/companies/:id/super-agent",master,(req,res)=>{
   const company=db.prepare("SELECT * FROM companies WHERE id=?").get(req.params.id);
@@ -194,9 +195,10 @@ app.get("/api/master/companies/:id/crm",master,(req,res)=>{
   });
 });
 app.post("/api/master/missions/:id/execute",master,(req,res)=>{
-  const result=executeMission(req.params.id,req.user.sub);
-  if(result?.error==="MISSION_NOT_FOUND") return res.status(404).json(result);
-  res.json(result);
+  const mission=db.prepare("SELECT * FROM ai_missions WHERE id=?").get(req.params.id);
+  if(!mission)return res.status(404).json({error:"MISSION_NOT_FOUND"});
+  const job=enqueueJob("MISSION_EXECUTION",{missionId:mission.id,actorId:req.user.sub},{companyId:mission.company_id,priority:20});
+  res.status(202).json({queued:true,job});
 });
 app.post("/api/master/companies/:id/super-agent/run",master,(req,res)=>{
   const company=db.prepare("SELECT id FROM companies WHERE id=?").get(req.params.id);

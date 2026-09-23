@@ -30,5 +30,12 @@ jobs:
         run: node --check server.js
       - name: Application syntax check
         run: node --check app.js
+      - name: Worker syntax check
+        run: node --check worker.js
+      - name: Job modules syntax check
+        run: |
+          node --check jobs/queue.js
+          node --check jobs/worker.js
+          node --check jobs/handlers.js
       - name: Test
         run: npm test

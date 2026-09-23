@@ -21,7 +21,7 @@ function workforceBlueprint(company) {
   if(/software|saas|tech|tecnolog|desenvolvimento|it/.test(type)) extras.push({role:"Product & Technology Manager",name:"AI Product",department:"PRODUCT",description:"Acompanha produto, backlog, qualidade e evolução técnica.",autonomy:"AUTONOMOUS",permissions:["read:product","create:task","analyze:quality"],tools:["tasks","analytics","knowledge"],goals:["melhorar produto continuamente"],kpis:["delivery_rate","quality"]});
   return core.concat(extras);
 }
-function provisionWorkforce(companyId, actorId) {
+export function provisionWorkforce(companyId, actorId) {
   const company=db.prepare("SELECT * FROM companies WHERE id=?").get(companyId);
   if(!company) return [];
   const existing=db.prepare("SELECT role FROM ai_agents WHERE company_id=?").all(companyId);

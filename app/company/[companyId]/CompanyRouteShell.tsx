@@ -8,47 +8,35 @@ import CompanySidebar from '../../../ui/company/CompanySidebar'
 import CompanyTopbar from '../../../ui/company/CompanyTopbar'
 import styles from './CompanyRuntimeWorkspaceV2.module.css'
 
-type Company = {
-  name: string
-  type: string
-  agents: number
-}
+type Company = { name: string; type: string; agents: number }
 
 function viewFromPath(pathname: string, companyId: string): CompanyView {
   const prefix = `/company/${companyId}`
   const segment = pathname.slice(prefix.length).split('/').filter(Boolean)[0]
   if (!segment) return 'Dashboard'
-
   const map: Partial<Record<string, CompanyView>> = {
-    agents: 'Agents',
-    marketing: 'Marketing',
-    operations: 'Operations',
-    schedule: 'Operations',
-    intelligence: 'Intelligence',
-    settings: 'Settings',
-    salon: 'Salon',
+    agents: 'Agents', missions: 'Missions', tasks: 'Tasks', marketing: 'Marketing',
+    customers: 'Customers', products: 'Products', finance: 'Finance',
+    intelligence: 'Intelligence', knowledge: 'Knowledge', operations: 'Operations',
+    schedule: 'Operations', integrations: 'Integrations', security: 'Security',
+    settings: 'Settings', salon: 'Salon',
   }
-
   return map[segment] ?? 'Dashboard'
 }
 
 function pathForView(companyId: string, view: CompanyView): string {
   const map: Record<CompanyView, string> = {
-    Dashboard: '',
-    Agents: 'agents',
-    Marketing: 'marketing',
-    Operations: 'operations',
-    Intelligence: 'intelligence',
-    Settings: 'settings',
-    Salon: 'salon',
+    Dashboard: '', Agents: 'agents', Missions: 'missions', Tasks: 'tasks',
+    Marketing: 'marketing', Customers: 'customers', Products: 'products',
+    Finance: 'finance', Intelligence: 'intelligence', Knowledge: 'knowledge',
+    Operations: 'operations', Integrations: 'integrations', Security: 'security',
+    Salon: 'salon', Settings: 'settings',
   }
   return `/company/${companyId}${map[view] ? `/${map[view]}` : ''}`
 }
 
 export default function CompanyRouteShell({ company, companyId, children }: {
-  company: Company
-  companyId: string
-  children: ReactNode
+  company: Company; companyId: string; children: ReactNode
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -71,22 +59,12 @@ export default function CompanyRouteShell({ company, companyId, children }: {
 
   return (
     <main className={`${styles.workspace} ${collapsed ? styles.collapsed : ''}`}>
-      <CompanySidebar
-        company={company}
-        view={view}
-        collapsed={collapsed}
-        onViewChange={navigate}
-        onToggle={() => setCollapsed(value => !value)}
-      />
+      <CompanySidebar company={company} view={view} collapsed={collapsed}
+        onViewChange={navigate} onToggle={() => setCollapsed(value => !value)} />
       <section className={styles.main}>
-        <CompanyTopbar
-          companyName={company.name}
-          companyId={companyId}
-          session={session}
-          profileOpen={profileOpen}
-          onProfileToggle={() => setProfileOpen(value => !value)}
-          onViewChange={navigate}
-        />
+        <CompanyTopbar companyName={company.name} companyId={companyId} session={session}
+          profileOpen={profileOpen} onProfileToggle={() => setProfileOpen(value => !value)}
+          onViewChange={navigate} />
         {children}
       </section>
     </main>

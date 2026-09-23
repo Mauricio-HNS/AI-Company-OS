@@ -734,6 +734,18 @@ app.get("/api/master/companies/:id/super-agent/plans",master,(req,res)=>{
   const plans=db.prepare("SELECT * FROM ai_plans WHERE company_id=? ORDER BY created_at DESC").all(company.id);
   res.json(plans.map(p=>({...p,detected_needs:safeJson(p.detected_needs)})));
 });
+app.get("/api/master/companies/:id/missions",master,(req,res)=>{
+  const company=db.prepare("SELECT id FROM companies WHERE id=?").get(req.params.id);
+  if(!company)return res.status(404).json({error:"COMPANY_NOT_FOUND"});
+  const missions=db.prepare("SELECT m.*,a.name assigned_agent_name FROM ai_missions m LEFT JOIN ai_agents a ON a.id=m.assigned_agent_id WHERE m.company_id=? ORDER BY m.created_at DESC").all(company.id);
+  res.json(missions);
+});
+app.get("/api/master/companies/:id/executions",master,(req,res)=>{
+  const company=db.prepare("SELECT id FROM companies WHERE id=?").get(req.params.id);
+  if(!company)return res.status(404).json({error:"COMPANY_NOT_FOUND"});
+  const runs=db.prepare("SELECT e.*,s.title step_title,c.name capability_name FROM ai_execution_runs e LEFT JOIN ai_plan_steps s ON s.id=e.plan_step_id LEFT JOIN ai_capabilities c ON c.key=e.capability_key WHERE e.company_id=? ORDER BY e.started_at DESC LIMIT 200").all(company.id);
+  res.json(runs);
+});
 app.get("/api/master/capabilities",master,(_req,res)=>{
   seedCapabilities();
   res.json(db.prepare("SELECT * FROM ai_capabilities WHERE active=1 ORDER BY domain,name").all());

@@ -28,3 +28,7 @@ jobs:
         run: npm install
       - name: Syntax check
         run: node --check server.js
+      - name: Application syntax check
+        run: node --check app.js
+      - name: Test
+        run: npm test

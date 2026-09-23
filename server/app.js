@@ -4,21 +4,11 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import multer from "multer";
 import Database from "better-sqlite3";
-import fs from "node:fs";
-import path from "node:path";
+import { PORT, JWT_SECRET, MASTER_EMAIL, MASTER_PASSWORD } from "./config/env.js";
+import { DATA_DIR, UPLOAD_DIR } from "./config/paths.js";
 import crypto from "node:crypto";
 
 const app = express();
-const PORT = Number(process.env.PORT || 3000);
-const JWT_SECRET = process.env.JWT_SECRET || "change-this-in-production";
-const MASTER_EMAIL = process.env.MASTER_EMAIL || "master@aicompanyos.local";
-const MASTER_PASSWORD = process.env.MASTER_PASSWORD || "ChangeMe123!";
-const ROOT = process.cwd();
-const DATA_DIR = path.join(ROOT, "data");
-const UPLOAD_DIR = path.join(ROOT, "uploads");
-fs.mkdirSync(DATA_DIR, { recursive: true });
-fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-
 const db = new Database(path.join(DATA_DIR, "ai-company-os.sqlite"));
 db.pragma("journal_mode = WAL");
 db.exec(`

@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import bcrypt from "bcryptjs";
 import multer from "multer";
-import { PORT, JWT_SECRET, MASTER_EMAIL, MASTER_PASSWORD } from "./config/env.js";
+import { MASTER_EMAIL, MASTER_PASSWORD } from "./config/env.js";
 import { UPLOAD_DIR } from "./config/paths.js";
 import { db } from "./db/index.js";
 import { auth, master, sign } from "./auth/index.js";
@@ -304,6 +304,13 @@ function analyzeCompany(companyId, actorId) {
 });
 
 app.use(cors({ origin:true, credentials:false }));
+app.disable("x-powered-by");
+app.use((req,res,next)=>{
+  const requestId=req.headers["x-request-id"] || crypto.randomUUID();
+  req.requestId=String(requestId);
+  res.setHeader("x-request-id",req.requestId);
+  next();
+});
 app.use(express.json({limit:"2mb"}));
 
 app.get("/api/health", (_req,res)=>res.json({ok:true,service:"ai-company-os-server",time:now()}));
@@ -666,6 +673,13 @@ app.use("/api/files",auth,(req,res,next)=>{
 });
 
 app.get("/api/master/audit",master,(_req,res)=>res.json(db.prepare("SELECT * FROM audit_log ORDER BY created_at DESC LIMIT 500").all()));
+
+app.use((err,req,res,_next)=>{
+  const status=Number(err?.statusCode || err?.status || 500);
+  const code=err?.code || (status===500 ? "INTERNAL_SERVER_ERROR" : "REQUEST_ERROR");
+  if(status>=500) console.error("AIOS_REQUEST_ERROR", { requestId:req.requestId, error:err?.message });
+  res.status(status).json({ error:code, requestId:req.requestId });
+});
 
 const seed=db.prepare("SELECT COUNT(*) n FROM companies").get().n;
 if(!db.prepare("SELECT COUNT(*) n FROM products").get().n) {

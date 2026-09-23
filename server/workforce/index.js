@@ -1,9 +1,7 @@
-import crypto from "node:crypto";
 import { db } from "../db/index.js";
 import { audit } from "../audit/index.js";
+import { now, id } from "../core/utils.js";
 
-function now() { return new Date().toISOString(); }
-function id() { return crypto.randomUUID(); }
 
 function workforceBlueprint(company) {
   const type=String(company.type||"").toLowerCase();

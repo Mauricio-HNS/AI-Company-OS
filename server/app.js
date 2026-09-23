@@ -6,6 +6,7 @@ import { PORT, JWT_SECRET, MASTER_EMAIL, MASTER_PASSWORD } from "./config/env.js
 import { UPLOAD_DIR } from "./config/paths.js";
 import { db } from "./db/index.js";
 import { auth, master, sign } from "./auth/index.js";
+import { audit } from "./audit/index.js";
 import crypto from "node:crypto";
 
 const app = express();
@@ -13,9 +14,6 @@ const app = express();
 function now() { return new Date().toISOString(); }
 function id() { return crypto.randomUUID(); }
 function hashToken(token) { return crypto.createHash("sha256").update(token).digest("hex"); }
-function audit(actorId,action,type,entity,payload={}) {
-  db.prepare("INSERT INTO audit_log VALUES (?,?,?,?,?,?,?)").run(id(),actorId,action,type,entity,JSON.stringify(payload),now());
-}
 function workforceBlueprint(company) {
   const type=String(company.type||"").toLowerCase();
   const core=[

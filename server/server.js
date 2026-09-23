@@ -879,6 +879,24 @@ app.get("/api/master/companies/:id/executions",master,(req,res)=>{
   const runs=db.prepare("SELECT e.*,s.title step_title,c.name capability_name FROM ai_execution_runs e LEFT JOIN ai_plan_steps s ON s.id=e.plan_step_id LEFT JOIN ai_capabilities c ON c.key=e.capability_key WHERE e.company_id=? ORDER BY e.started_at DESC LIMIT 200").all(company.id);
   res.json(runs);
 });
+app.get("/api/master/policies",master,(_req,res)=>{
+  seedCapabilities();
+  res.json(db.prepare("SELECT p.*,c.name capability_name FROM ai_policies p LEFT JOIN ai_capabilities c ON c.key=p.capability_key ORDER BY p.company_id,p.capability_key").all());
+});
+app.post("/api/master/policies",master,(req,res)=>{
+  const capability=String(req.body?.capabilityKey||"");
+  const effect=String(req.body?.effect||"ESCALATE");
+  if(!["ALLOW","ESCALATE","BLOCK"].includes(effect)) return res.status(400).json({error:"INVALID_POLICY_EFFECT"});
+  if(!db.prepare("SELECT 1 FROM ai_capabilities WHERE key=? AND active=1").get(capability)) return res.status(404).json({error:"CAPABILITY_NOT_FOUND"});
+  const companyId=req.body?.companyId||null;
+  if(companyId && !db.prepare("SELECT 1 FROM companies WHERE id=?").get(companyId)) return res.status(404).json({error:"COMPANY_NOT_FOUND"});
+  const existing=db.prepare("SELECT id FROM ai_policies WHERE ((company_id=? AND ? IS NOT NULL) OR (company_id IS NULL AND ? IS NULL)) AND capability_key=? LIMIT 1").get(companyId,companyId,companyId,capability);
+  const t=now();
+  if(existing) db.prepare("UPDATE ai_policies SET effect=?,reason=?,updated_at=? WHERE id=?").run(effect,String(req.body?.reason||""),t,existing.id);
+  else db.prepare("INSERT INTO ai_policies VALUES (?,?,?,?,?,?,?)").run(id(),companyId,capability,effect,String(req.body?.reason||""),t,t);
+  audit(req.user.sub,"AI_POLICY_UPDATED","ai_policy",existing?.id||null,{companyId,capability,effect});
+  res.json(db.prepare("SELECT p.*,c.name capability_name FROM ai_policies p LEFT JOIN ai_capabilities c ON c.key=p.capability_key WHERE p.company_id IS ? AND p.capability_key=? ORDER BY p.updated_at DESC LIMIT 1").get(companyId,capability));
+});
 app.get("/api/master/capabilities",master,(_req,res)=>{
   seedCapabilities();
   res.json(db.prepare("SELECT * FROM ai_capabilities WHERE active=1 ORDER BY domain,name").all());

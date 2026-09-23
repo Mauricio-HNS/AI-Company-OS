@@ -417,6 +417,46 @@ app.post("/api/master/companies/:id/status",master,(req,res)=>{
   res.json(db.prepare("SELECT * FROM companies WHERE id=?").get(c.id));
 });
 
+app.get("/api/master/workforce",master,(_req,res)=>{
+  const rows=db.prepare("SELECT a.*,c.name company_name FROM ai_agents a JOIN companies c ON c.id=a.company_id ORDER BY c.name,a.department,a.created_at").all();
+  res.json(rows);
+});
+app.get("/api/master/companies/:id/workforce",master,(req,res)=>{
+  const company=db.prepare("SELECT * FROM companies WHERE id=?").get(req.params.id);
+  if(!company)return res.status(404).json({error:"COMPANY_NOT_FOUND"});
+  res.json(db.prepare("SELECT * FROM ai_agents WHERE company_id=? ORDER BY department,created_at").all(company.id));
+});
+app.post("/api/master/companies/:id/workforce/provision",master,(req,res)=>{
+  const company=db.prepare("SELECT * FROM companies WHERE id=?").get(req.params.id);
+  if(!company)return res.status(404).json({error:"COMPANY_NOT_FOUND"});
+  const created=provisionWorkforce(company.id,req.user.sub);
+  res.json({company,created,agents:db.prepare("SELECT * FROM ai_agents WHERE company_id=? ORDER BY department,created_at").all(company.id)});
+});
+app.post("/api/master/agents",master,(req,res)=>{
+  const company=db.prepare("SELECT * FROM companies WHERE id=?").get(req.body?.companyId);
+  const name=String(req.body?.name||"").trim(), role=String(req.body?.role||"").trim();
+  if(!company)return res.status(404).json({error:"COMPANY_NOT_FOUND"});
+  if(!name||!role)return res.status(400).json({error:"NAME_AND_ROLE_REQUIRED"});
+  const t=now(),a={id:id(),company_id:company.id,name,role,department:req.body?.department||"GENERAL",description:req.body?.description||"",autonomy:req.body?.autonomy||"OPERATIONAL",status:"READY",source:"MANUAL",permissions:JSON.stringify(req.body?.permissions||[]),tools:JSON.stringify(req.body?.tools||[]),goals:JSON.stringify(req.body?.goals||[]),kpis:JSON.stringify(req.body?.kpis||[]),supervisor_id:req.body?.supervisorId||null,created_at:t,updated_at:t};
+  db.prepare("INSERT INTO ai_agents VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").run(...Object.values(a));
+  audit(req.user.sub,"AGENT_CREATED","ai_agent",a.id,a);
+  res.status(201).json(a);
+});
+app.patch("/api/master/agents/:id",master,(req,res)=>{
+  const a=db.prepare("SELECT * FROM ai_agents WHERE id=?").get(req.params.id);
+  if(!a)return res.status(404).json({error:"AGENT_NOT_FOUND"});
+  const n={...a,...req.body,updated_at:now()};
+  db.prepare("UPDATE ai_agents SET name=?,role=?,department=?,description=?,autonomy=?,status=?,permissions=?,tools=?,goals=?,kpis=?,supervisor_id=?,updated_at=? WHERE id=?").run(n.name,n.role,n.department,n.description,n.autonomy,n.status,n.permissions?.constructor===String?n.permissions:JSON.stringify(n.permissions||[]),n.tools?.constructor===String?n.tools:JSON.stringify(n.tools||[]),n.goals?.constructor===String?n.goals:JSON.stringify(n.goals||[]),n.kpis?.constructor===String?n.kpis:JSON.stringify(n.kpis||[]),n.supervisor_id||null,n.updated_at,a.id);
+  audit(req.user.sub,"AGENT_UPDATED","ai_agent",a.id,{before:a,after:n});
+  res.json(db.prepare("SELECT * FROM ai_agents WHERE id=?").get(a.id));
+});
+app.delete("/api/master/agents/:id",master,(req,res)=>{
+  const a=db.prepare("SELECT * FROM ai_agents WHERE id=?").get(req.params.id);
+  if(!a)return res.status(404).json({error:"AGENT_NOT_FOUND"});
+  db.prepare("UPDATE ai_agents SET status='DISABLED',updated_at=? WHERE id=?").run(now(),a.id);
+  audit(req.user.sub,"AGENT_DISABLED","ai_agent",a.id);
+  res.json({ok:true});
+});
 app.get("/api/master/support/tickets",master,(_req,res)=>{
   const rows=db.prepare(`SELECT t.*,c.name company_name FROM support_tickets t JOIN companies c ON c.id=t.company_id ORDER BY t.created_at DESC`).all();
   res.json(rows);

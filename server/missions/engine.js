@@ -41,22 +41,6 @@ function executeMission(missionId, actorId) {
   return {mission:db.prepare("SELECT * FROM ai_missions WHERE id=?").get(mission.id),execution:{...execution,status:finalStatus}};
 }
 
-function runSuperAgent(companyId, actorId, maxCycles=3) {
-  const cycles=Math.max(1,Math.min(3,Number(maxCycles)||3));
-  const results=[];
-  for(let cycle=1;cycle<=cycles;cycle++) {
-    const analysis=analyzeCompany(companyId,actorId);
-    if(!analysis?.plan?.id) break;
-    const execution=executePlan(analysis.plan.id,actorId);
-    results.push({cycle,analysis,execution});
-    const failed=execution?.failed||0, blocked=execution?.blocked||0;
-    if(failed===0 && blocked===0 && execution?.executed===execution?.steps?.length) break;
-    if(cycle<cycles && failed===0 && blocked>0) break;
-  }
-  audit(actorId||null,"SUPER_AGENT_RUN","company",companyId,{cycles:results.length,maxCycles:cycles});
-  return {company:db.prepare("SELECT * FROM companies WHERE id=?").get(companyId),cycles:results};
-}
-
 function executePlan(planId, actorId) {
   const plan=db.prepare("SELECT * FROM ai_plans WHERE id=?").get(planId);
   if(!plan) return null;
@@ -87,4 +71,4 @@ function executePlan(planId, actorId) {
   return {plan:db.prepare("SELECT * FROM ai_plans WHERE id=?").get(planId),steps:db.prepare("SELECT * FROM ai_plan_steps WHERE plan_id=? ORDER BY step_order").all(planId),executed,blocked,failed};
 }
 
-export { executeMission, runSuperAgent, executePlan };
+export { executeMission, executePlan };

@@ -170,14 +170,6 @@ function analyzeCompany(companyId, actorId) {
   return {company,orchestrator,plan,needs,agents};
 }
 
-const upload = multer({
-  storage: multer.diskStorage({
-    destination: (_req,_file,cb)=>cb(null,UPLOAD_DIR),
-    filename: (_req,file,cb)=>cb(null, id()+"-"+file.originalname.replace(/[^a-zA-Z0-9._-]/g,"_"))
-  }),
-  limits:{ fileSize: 15*1024*1024 }
-});
-
 app.use(cors({ origin:true, credentials:false }));
 app.disable("x-powered-by");
 app.use((req,res,next)=>{

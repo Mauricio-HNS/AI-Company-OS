@@ -2,119 +2,35 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AI Company OS — Cliente</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../config.js"></script>
+<title>AI Company OS — Cliente</title><script src="../config.js"></script><script src="../api.js"></script>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#07151a;color:#e8f0f2;font:14px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}.wrap{max-width:1100px;margin:auto;padding:28px}.box,.card{background:#0b2027;border:1px solid #18353d;border-radius:14px;padding:22px}.auth{max-width:480px;margin:8vh auto}.eyebrow{color:#c2a46a;font-size:10px;letter-spacing:3px}.muted{color:#8da4aa}.field,textarea,select{width:100%;padding:12px;margin:7px 0;background:#07151a;border:1px solid #294951;border-radius:8px;color:#fff}.primary,.secondary{border:0;border-radius:8px;padding:12px 15px;cursor:pointer;font-weight:700}.primary{background:#c2a46a;color:#07151a}.secondary{background:#17343c;color:#fff}.actions{display:flex;gap:8px;flex-wrap:wrap}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.ticket{margin-top:10px;cursor:pointer}.ticket:hover{border-color:#c2a46a}.pill{display:inline-block;background:#13313c;color:#c2a46a;border-radius:99px;padding:5px 8px;font-size:10px}.hidden{display:none}.modal{position:fixed;inset:0;background:#000b;display:none;place-items:center;padding:20px}.modal.show{display:grid}.modalbox{width:min(760px,100%);max-height:90vh;overflow:auto;background:#0b2027;border:1px solid #31515a;border-radius:15px;padding:24px}.msg{padding:12px;border-left:2px solid #c2a46a;margin:10px 0;background:#071b21}.error{color:#ff9d9d;margin-top:10px}@media(max-width:700px){.grid{grid-template-columns:1fr}.wrap{padding:15px}}
-</style>
-</head>
-<body>
-<div class="wrap">
+*{box-sizing:border-box}body{margin:0;background:#07151a;color:#e8f0f2;font:14px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:1100px;margin:auto;padding:28px}.box,.card{background:#0b2027;border:1px solid #18353d;border-radius:14px;padding:22px}.auth{max-width:480px;margin:8vh auto}.eyebrow{color:#c2a46a;font-size:10px;letter-spacing:3px}.muted{color:#8da4aa}.field,textarea,select{width:100%;padding:12px;margin:7px 0;background:#07151a;border:1px solid #294951;border-radius:8px;color:#fff}.primary,.secondary{border:0;border-radius:8px;padding:12px 15px;cursor:pointer;font-weight:700}.primary{background:#c2a46a;color:#07151a}.secondary{background:#17343c;color:#fff}.actions{display:flex;gap:8px;flex-wrap:wrap}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.ticket{margin-top:10px;cursor:pointer}.ticket:hover{border-color:#c2a46a}.pill{display:inline-block;background:#13313c;color:#c2a46a;border-radius:99px;padding:5px 8px;font-size:10px}.hidden{display:none}.modal{position:fixed;inset:0;background:#000b;display:none;place-items:center;padding:20px}.modal.show{display:grid}.modalbox{width:min(760px,100%);max-height:90vh;overflow:auto;background:#0b2027;border:1px solid #31515a;border-radius:15px;padding:24px}.msg{padding:12px;border-left:2px solid #c2a46a;margin:10px 0;background:#071b21}.error{color:#ff9d9d;margin-top:10px}@media(max-width:700px){.grid{grid-template-columns:1fr}.wrap{padding:15px}}
+</style></head>
+<body><div class="wrap">
 <section id="auth" class="box auth">
-<div class="eyebrow">AI COMPANY OS / CLIENT ACCESS</div>
-<h1 id="companyTitle">Seu ambiente empresarial</h1>
-<p class="muted">Crie seu acesso para entrar no ambiente da sua empresa e abrir chamados de suporte.</p>
-<input id="name" class="field" placeholder="Seu nome">
-<input id="email" class="field" type="email" placeholder="Seu e-mail">
+<div class="eyebrow">AI COMPANY OS / CLIENT ACCESS</div><h1 id="companyTitle">Seu ambiente empresarial</h1>
+<p class="muted">Crie seu acesso usando o link enviado pelo Master.</p>
+<input id="name" class="field" placeholder="Seu nome"><input id="email" class="field" type="email" placeholder="Seu e-mail">
 <input id="password" class="field" type="password" placeholder="Senha (mínimo 8 caracteres)">
 <input id="password2" class="field" type="password" placeholder="Confirme a senha">
 <button id="signupBtn" class="primary" style="width:100%">Criar meu acesso</button>
-<p id="authError" class="error"></p>
-</section>
-
-<section id="dashboard" class="hidden">
-<div class="eyebrow">COMPANY DASHBOARD</div>
-<h1 id="welcome"></h1><p id="companyInfo" class="muted"></p>
-<div class="grid">
-<div class="card"><b>Dashboard</b><p class="muted">Visão geral da operação.</p></div>
-<div class="card"><b>AI Workforce</b><p class="muted">Funcionários e agentes de IA.</p></div>
-<div class="card"><b>Missões</b><p class="muted">Objetivos e execução.</p></div>
-</div>
-<div class="card" style="margin-top:14px">
-<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><h2>Suporte</h2><p class="muted">Abra um chamado e envie prints, documentos, logs e outras informações.</p></div><button id="newTicket" class="primary">+ Novo chamado</button></div>
-<div id="tickets"></div>
-</div>
-</section>
-</div>
-
-<div id="modal" class="modal"><div id="modalBox" class="modalbox"></div></div>
+<p id="authError" class="error"></p></section>
+<section id="dashboard" class="hidden"><div class="eyebrow">COMPANY DASHBOARD</div><h1 id="welcome"></h1><p id="companyInfo" class="muted"></p>
+<div class="grid"><div class="card"><b>Dashboard</b><p class="muted">Visão geral da operação.</p></div><div class="card"><b>AI Workforce</b><p class="muted">Funcionários e agentes de IA.</p></div><div class="card"><b>Missões</b><p class="muted">Objetivos e execução.</p></div></div>
+<div class="card" style="margin-top:14px"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><h2>Suporte</h2><p class="muted">Abra um chamado e envie prints, documentos, logs e informações.</p></div><button id="newTicket" class="primary">+ Novo chamado</button></div><div id="tickets"></div></div>
+</section></div><div id="modal" class="modal"><div id="modalBox" class="modalbox"></div></div>
 <script>
 (function(){
-"use strict";
-const params=new URLSearchParams(location.search), companyId=params.get("company");
-const cfg=window.AIOS_CONFIG||{}, ready=!!(cfg.SUPABASE_URL&&cfg.SUPABASE_ANON_KEY);
-const sb=ready?supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY):null;
-const $=id=>document.getElementById(id);
-function err(x){$("authError").textContent=x||""}
-function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function modal(html){$("modalBox").innerHTML=html;$("modal").classList.add("show")}
-function closeModal(){$("modal").classList.remove("show")}
-async function loadCompany(){
- if(!companyId){$("companyTitle").textContent="Link de empresa inválido";$("signupBtn").disabled=true;return}
- if(!ready){$("companyTitle").textContent="Acesso à "+companyId.replace(/-/g," ");err("Backend ainda não configurado. Preencha public/config.js com o Supabase URL e anon key.");return}
- const {data,error}=await sb.from("companies").select("id,name,status").eq("id",companyId).single();
- if(error){err("Empresa não encontrada ou link inválido.");return}
- $("companyTitle").textContent="Acesso à "+data.name;
-}
-async function signup(){
- err("");
- if(!ready){err("Backend não configurado.");return}
- const n=$("name").value.trim(),e=$("email").value.trim(),p=$("password").value,p2=$("password2").value;
- if(!n||!e||!p){err("Preencha todos os campos.");return}
- if(p.length<8){err("A senha deve ter pelo menos 8 caracteres.");return}
- if(p!==p2){err("As senhas não coincidem.");return}
- const {data,error}=await sb.auth.signUp({email:e,password:p});
- if(error){err(error.message);return}
- if(!data.user){err("Não foi possível criar o acesso.");return}
- const reg=await sb.rpc("register_company_user",{target_company:companyId,display_name:n});
- if(reg.error){err(reg.error.message);return}
- await openDashboard(data.user,n);
-}
-async function openDashboard(user,name){
- $("auth").classList.add("hidden");$("dashboard").classList.remove("hidden");
- const {data:c}=await sb.from("companies").select("name,status").eq("id",companyId).single();
- $("welcome").textContent="Bem-vindo, "+name;
- $("companyInfo").textContent=(c?.name||companyId)+" · Status: "+(c?.status||"ACTIVE");
- await loadTickets();
-}
-async function loadTickets(){
- const {data,error}=await sb.from("support_tickets").select("*").eq("company_id",companyId).order("created_at",{ascending:false});
- if(error){$("tickets").innerHTML='<p class="error">'+esc(error.message)+"</p>";return}
- $("tickets").innerHTML=data.length?data.map(t=>'<div class="card ticket" data-ticket="'+esc(t.id)+'"><div style="display:flex;justify-content:space-between;gap:8px"><b>SUP-'+String(t.ticket_number).padStart(5,"0")+' · '+esc(t.subject)+'</b><span class="pill">'+esc(t.status)+'</span></div><p class="muted">'+esc(t.description.slice(0,150))+'</p><small class="muted">'+esc(t.priority)+' · '+new Date(t.created_at).toLocaleString("pt-BR")+'</small></div>').join(""):'<p class="muted">Nenhum chamado aberto.</p>';
-}
-function newTicket(){
- modal('<div class="eyebrow">SUPORTE / NOVO CHAMADO</div><h2>O que aconteceu?</h2><input id="ts" class="field" placeholder="Título do problema"><select id="tp" class="field"><option>Normal</option><option>Alta</option><option>Crítica</option></select><textarea id="td" rows="7" placeholder="Explique o que você precisa, o que esperava que acontecesse e o que aconteceu."></textarea><input id="tf" class="field" type="file" multiple accept="image/*,.pdf,.txt,.log,.doc,.docx"><p class="muted">Envie prints da tela, mensagens de erro, logs ou documentos. Os arquivos serão armazenados no chamado.</p><div class="actions"><button class="secondary" data-close>Cancelar</button><button class="primary" id="sendTicket">Enviar chamado</button></div>');
- $("sendTicket").onclick=createTicket;
-}
-async function createTicket(){
- const {data:{user}}=await sb.auth.getUser();if(!user)return;
- const subject=$("ts").value.trim(),description=$("td").value.trim(),priority=$("tp").value;
- if(!subject||!description){alert("Informe título e descrição.");return}
- const {data:t,error}=await sb.from("support_tickets").insert({company_id:companyId,requester_id:user.id,subject,description,priority}).select().single();
- if(error){alert(error.message);return}
- const files=[...$("tf").files];
- for(const f of files){
-  const path=companyId+"/"+t.id+"/"+crypto.randomUUID()+"-"+f.name;
-  const up=await sb.storage.from("support-attachments").upload(path,f,{upsert:false});
-  if(up.error)continue;
-  await sb.from("support_attachments").insert({ticket_id:t.id,uploaded_by:user.id,file_name:f.name,storage_path:path,mime_type:f.type,size_bytes:f.size});
- }
- closeModal();await loadTickets();openTicket(t.id);
-}
-async function openTicket(id){
- const {data:t,error}=await sb.from("support_tickets").select("*").eq("id",id).single();if(error)return;
- const [messages,files]=await Promise.all([
-  sb.from("support_messages").select("*").eq("ticket_id",id).order("created_at"),
-  sb.from("support_attachments").select("*").eq("ticket_id",id).order("created_at")
- ]);
- modal('<div class="eyebrow">SUPORTE / CHAMADO</div><h2>SUP-'+String(t.ticket_number).padStart(5,"0")+' · '+esc(t.subject)+'</h2><div class="grid"><div class="card"><small>STATUS</small><br><span class="pill">'+esc(t.status)+'</span></div><div class="card"><small>PRIORIDADE</small><br><b>'+esc(t.priority)+'</b></div><div class="card"><small>SLA</small><br><b>'+esc(t.sla_hours)+' horas</b></div></div><div class="card" style="margin-top:12px"><h3>O que a empresa precisa?</h3><p>'+esc(t.description).replace(/\n/g,"<br>")+'</p><p class="muted">Aberto em '+new Date(t.created_at).toLocaleString("pt-BR")+'</p></div><div class="card" style="margin-top:12px"><h3>Prints e anexos</h3>'+((files.data||[]).length?(files.data||[]).map(f=>'<p>📎 '+esc(f.file_name)+'</p>').join(""):'<p class="muted">Nenhum anexo.</p>')+'</div><div class="card" style="margin-top:12px"><h3>Conversa</h3>'+((messages.data||[]).length?(messages.data||[]).map(m=>'<div class="msg">'+esc(m.message)+'<br><small class="muted">'+new Date(m.created_at).toLocaleString("pt-BR")+'</small></div>').join(""):'<p class="muted">Ainda não há mensagens do suporte.</p>')+'<textarea id="reply" rows="4" placeholder="Responder ao suporte..."></textarea><div class="actions"><button class="primary" id="replyBtn">Enviar resposta</button><button class="secondary" data-close>Fechar</button></div></div>');
- $("replyBtn").onclick=async()=>{const message=$("reply").value.trim();if(!message)return;const {data:{user}}=await sb.auth.getUser();const x=await sb.from("support_messages").insert({ticket_id:id,author_id:user.id,message});if(x.error){alert(x.error.message);return}closeModal();openTicket(id)};
-}
-$("signupBtn").onclick=signup;$("newTicket").onclick=newTicket;
-document.addEventListener("click",e=>{if(e.target.matches("[data-close]"))closeModal();const t=e.target.closest("[data-ticket]");if(t)openTicket(t.dataset.ticket)});
-$("modal").onclick=e=>{if(e.target===$("modal"))closeModal()};
-loadCompany();
+"use strict";const api=window.AIOS_API,params=new URLSearchParams(location.search),invite=params.get("invite");let me=null;
+const $=id=>document.getElementById(id),esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function error(x){$("authError").textContent=x||""}function modal(h){$("modalBox").innerHTML=h;$("modal").classList.add("show")}function close(){ $("modal").classList.remove("show") }
+async function signup(){error("");const n=$("name").value.trim(),e=$("email").value.trim(),p=$("password").value,p2=$("password2").value;if(!invite){error("Link de convite inválido.");return}if(!api.enabled){error("Backend ainda não conectado. O Master precisa configurar a URL da API.");return}if(!n||!e||!p){error("Preencha todos os campos.");return}if(p.length<8||p!==p2){error(p.length<8?"A senha deve ter pelo menos 8 caracteres.":"As senhas não coincidem.");return}try{const r=await api.request("/auth/client/signup",{method:"POST",body:JSON.stringify({inviteToken:invite,name:n,email:e,password:p})});api.setToken(r.token);me=r;openDashboard()}catch(e){error(e.message)}}
+async function openDashboard(){ $("auth").classList.add("hidden");$("dashboard").classList.remove("hidden");$("welcome").textContent="Bem-vindo, "+me.user.name;$("companyInfo").textContent=me.company.name+" · Status: "+me.company.status;await loadTickets()}
+async function loadTickets(){try{const rows=await api.request("/support/tickets");$("tickets").innerHTML=rows.length?rows.map(t=>'<div class="card ticket" data-ticket="'+esc(t.id)+'"><div style="display:flex;justify-content:space-between;gap:8px"><b>SUP-'+String(t.ticket_number).padStart(5,"0")+' · '+esc(t.subject)+'</b><span class="pill">'+esc(t.status)+'</span></div><p class="muted">'+esc(t.description.slice(0,160))+'</p><small class="muted">'+esc(t.priority)+' · '+new Date(t.created_at).toLocaleString("pt-BR")+'</small></div>').join(""):'<p class="muted">Nenhum chamado aberto.</p>'}catch(e){$("tickets").innerHTML='<p class="error">'+esc(e.message)+"</p>"}}
+function newTicket(){modal('<div class="eyebrow">SUPORTE / NOVO CHAMADO</div><h2>O que aconteceu?</h2><input id="ts" class="field" placeholder="Título do problema"><select id="tp" class="field"><option>Normal</option><option>Alta</option><option>Crítica</option></select><textarea id="td" rows="7" placeholder="Explique o que você precisa, o que esperava e o que aconteceu."></textarea><input id="tf" class="field" type="file" multiple accept="image/*,.pdf,.txt,.log,.doc,.docx"><div class="actions"><button class="secondary" data-close>Cancelar</button><button class="primary" id="sendTicket">Enviar chamado</button></div>');$("sendTicket").onclick=createTicket}
+async function createTicket(){const subject=$("ts").value.trim(),description=$("td").value.trim(),priority=$("tp").value;if(!subject||!description){alert("Informe título e descrição.");return}try{const t=await api.request("/support/tickets",{method:"POST",body:JSON.stringify({subject,description,priority})});const files=[...$("tf").files];if(files.length){const fd=new FormData();files.forEach(f=>fd.append("files",f));const token=localStorage.getItem("aiosAuthToken");await fetch((window.AIOS_CONFIG.API_BASE||"")+"/api/support/tickets/"+t.id+"/attachments",{method:"POST",headers:{Authorization:"Bearer "+token},body:fd})}close();await loadTickets();openTicket(t.id)}catch(e){alert(e.message)}}
+async function openTicket(id){try{const x=await api.request("/support/tickets/"+id);modal('<div class="eyebrow">SUPORTE / CHAMADO</div><h2>SUP-'+String(x.ticket.ticket_number).padStart(5,"0")+' · '+esc(x.ticket.subject)+'</h2><div class="grid"><div class="card"><small>STATUS</small><br><span class="pill">'+esc(x.ticket.status)+'</span></div><div class="card"><small>PRIORIDADE</small><br><b>'+esc(x.ticket.priority)+'</b></div><div class="card"><small>SLA</small><br><b>'+esc(x.ticket.sla_hours)+' horas</b></div></div><div class="card" style="margin-top:12px"><h3>O que a empresa precisa?</h3><p>'+esc(x.ticket.description).replace(/\n/g,"<br>")+'</p></div><div class="card" style="margin-top:12px"><h3>Prints e anexos</h3>'+(x.attachments.length?x.attachments.map(a=>'<p>📎 '+esc(a.file_name)+'</p>').join(""):'<p class="muted">Nenhum anexo.</p>')+'</div><div class="card" style="margin-top:12px"><h3>Conversa</h3>'+(x.messages.length?x.messages.map(m=>'<div class="msg">'+esc(m.message)+'<br><small class="muted">'+new Date(m.created_at).toLocaleString("pt-BR")+'</small></div>').join(""):'<p class="muted">Ainda não há mensagens.</p>')+'<textarea id="reply" rows="4" placeholder="Responder ao suporte..."></textarea><div class="actions"><button class="primary" id="replyBtn">Enviar resposta</button><button class="secondary" data-close>Fechar</button></div></div>');$("replyBtn").onclick=async()=>{const message=$("reply").value.trim();if(!message)return;try{await api.request("/support/tickets/"+id+"/messages",{method:"POST",body:JSON.stringify({message})});close();openTicket(id)}catch(e){alert(e.message)}}}catch(e){alert(e.message)}}
+$("signupBtn").onclick=signup;$("newTicket").onclick=newTicket;document.addEventListener("click",e=>{if(e.target.matches("[data-close]"))close();const t=e.target.closest("[data-ticket]");if(t)openTicket(t.dataset.ticket)});$("modal").onclick=e=>{if(e.target===$("modal"))close()};
+if(!api.enabled){error("Backend não configurado neste endereço. O frontend está pronto para receber a URL da API.");}
 })();
-</script>
-</body></html>
+</script></body></html>

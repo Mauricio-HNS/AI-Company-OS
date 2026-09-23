@@ -9,6 +9,7 @@ import { audit } from "./audit/index.js";
 import { provisionWorkforce } from "./workforce/index.js";
 import { supportRouter } from "./support/index.js";
 import { erpRouter } from "./erp/index.js";
+import { createMission } from "./missions/index.js";
 import { now, id, hashToken, safeJson } from "./core/utils.js";
 
 const app = express();
@@ -20,13 +21,6 @@ function companySnapshot(companyId) {
   const agents=db.prepare("SELECT COUNT(*) n FROM ai_agents WHERE company_id=? AND status<>'DISABLED'").get(companyId);
   const missions=db.prepare("SELECT COUNT(*) n FROM ai_missions WHERE company_id=? AND status NOT IN ('COMPLETED','CANCELLED')").get(companyId);
   return {open_invoices:open.n,open_balance:open.balance,overdue_invoices:overdue.n,overdue_balance:overdue.balance,pending_support:support.n,active_ai_agents:agents.n,active_missions:missions.n};
-}
-function createMission(companyId, planId, step, title, objective, department, priority, agentId, actorId) {
-  const t=now();
-  const mission={id:id(),company_id:companyId,plan_id:planId,plan_step_id:step.id,title,objective,department,priority,status:"PLANNED",assigned_agent_id:agentId||null,result:"",created_at:t,updated_at:t};
-  db.prepare("INSERT INTO ai_missions VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)").run(...Object.values(mission));
-  audit(actorId||null,"AI_MISSION_CREATED","ai_mission",mission.id,{planId,stepId:step.id,capability:step.capability_key});
-  return mission;
 }
 function executeCapability(companyId, plan, step, actorId) {
   const input=companySnapshot(companyId);

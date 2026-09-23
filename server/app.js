@@ -6,6 +6,7 @@ import multer from "multer";
 import Database from "better-sqlite3";
 import { PORT, JWT_SECRET, MASTER_EMAIL, MASTER_PASSWORD } from "./config/env.js";
 import { DATA_DIR, UPLOAD_DIR } from "./config/paths.js";
+import path from "node:path";
 import crypto from "node:crypto";
 
 const app = express();

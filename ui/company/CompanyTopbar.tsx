@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { Bell, Building2, ChevronDown, ChevronRight, Search, Settings, ShieldCheck, UserRound } from 'lucide-react'
-import type { CompanyView } from './CompanyNavigation'
+import type { CompanyView } from './company-navigation'
 import styles from './CompanyTopbar.module.css'
 
 type SessionSummary = {

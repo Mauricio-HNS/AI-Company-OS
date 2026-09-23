@@ -2,7 +2,6 @@ import { db } from "../db/index.js";
 import { audit } from "../audit/index.js";
 import { now, id } from "../core/utils.js";
 
-
 function workforceBlueprint(company) {
   const type=String(company.type||"").toLowerCase();
   const core=[
@@ -15,10 +14,11 @@ function workforceBlueprint(company) {
   ];
   const extras=[];
   if(/sal[aã]o|barber|beauty|cabeleire|est[eé]tica|spa/.test(type)) extras.push({role:"Salon Operations Manager",name:"AI Salon",department:"SALON",description:"Cuida de agenda, serviços, clientes e operação do salão.",autonomy:"AUTONOMOUS",permissions:["read:salon","manage:appointments","manage:commission"],tools:["salon","crm","finance"],goals:["otimizar agenda e ocupação"],kpis:["occupancy","revenue_per_service"]});
-  if(/restaurant|restaurante|food|caf[eé]|bar/.test(type)) extras.push({role:"Hospitality Manager",name:"AI Hospitality",department:"OPERATIONS",description:"Acompanha reservas, atendimento e experiência do cliente.",autonomy:"AUTONOMOUS",permissions:["read:operations","manage:reservations"],tools:["operations","crm"],goals:["melhorar experiência do cliente"],kpis:["occupancy","customer_satisfaction"]});
-  if(/software|saas|tech|tecnolog|desenvolvimento|it/.test(type)) extras.push({role:"Product & Technology Manager",name:"AI Product",department:"PRODUCT",description:"Acompanha produto, backlog, qualidade e evolução técnica.",autonomy:"AUTONOMOUS",permissions:["read:product","create:task","analyze:quality"],tools:["tasks","analytics","knowledge"],goals:["melhorar produto continuamente"],kpis:["delivery_rate","quality"]});
+  if(/restaurant|restaurante|food|caf[eé]|bar\b/.test(type)) extras.push({role:"Hospitality Manager",name:"AI Hospitality",department:"OPERATIONS",description:"Acompanha reservas, atendimento e experiência do cliente.",autonomy:"AUTONOMOUS",permissions:["read:operations","manage:reservations"],tools:["operations","crm"],goals:["melhorar experiência do cliente"],kpis:["occupancy","customer_satisfaction"]});
+  if(/software|saas|tech|tecnolog|desenvolvimento|it\b/.test(type)) extras.push({role:"Product & Technology Manager",name:"AI Product",department:"PRODUCT",description:"Acompanha produto, backlog, qualidade e evolução técnica.",autonomy:"AUTONOMOUS",permissions:["read:product","create:task","analyze:quality"],tools:["tasks","analytics","knowledge"],goals:["melhorar produto continuamente"],kpis:["delivery_rate","quality"]});
   return core.concat(extras);
 }
+
 export function provisionWorkforce(companyId, actorId) {
   const company=db.prepare("SELECT * FROM companies WHERE id=?").get(companyId);
   if(!company) return [];
@@ -29,7 +29,7 @@ export function provisionWorkforce(companyId, actorId) {
     if(roles.has(item.role.toLowerCase())) continue;
     const t=now();
     const a={id:id(),company_id:companyId,name:item.name,role:item.role,department:item.department,description:item.description,autonomy:item.autonomy,status:"READY",source:"AUTO",permissions:JSON.stringify(item.permissions),tools:JSON.stringify(item.tools),goals:JSON.stringify(item.goals),kpis:JSON.stringify(item.kpis),supervisor_id:null,created_at:t,updated_at:t};
-    db.prepare("INSERT INTO ai_agents VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").run(...Object.values(a));
+    db.prepare("INSERT INTO ai_agents (id,company_id,name,role,department,description,autonomy,status,source,permissions,tools,goals,kpis,supervisor_id,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").run(...Object.values(a));
     created.push(a);
     roles.add(item.role.toLowerCase());
   }

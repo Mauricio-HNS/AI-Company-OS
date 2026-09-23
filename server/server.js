@@ -309,6 +309,7 @@ app.post("/api/master/companies",master,(req,res)=>{
   if(!name?.trim()) return res.status(400).json({error:"NAME_REQUIRED"});
   const t=now(), c={id:id(),name:name.trim(),type,country,status:"ACTIVE",revenue:Number(revenue)||0,created_at:t,updated_at:t};
   db.prepare("INSERT INTO companies VALUES (?,?,?,?,?,?,?,?)").run(c.id,c.name,c.type,c.country,c.status,c.revenue,c.created_at,c.updated_at);
+  provisionWorkforce(c.id,req.user.sub);
   audit(req.user.sub,"COMPANY_CREATED","company",c.id,c);
   res.status(201).json(c);
 });
@@ -543,7 +544,12 @@ if(!seed) {
   for(const c of [
     {id:"destiny7-software",name:"Destiny7 Software",type:"SaaS",country:"Spain",revenue:82400},
     {id:"novaflow",name:"NovaFlow",type:"Automation",country:"Portugal",revenue:61800}
-  ]) db.prepare("INSERT INTO companies VALUES (?,?,?,?,?,?,?,?)").run(c.id,c.name,c.type,c.country,"ACTIVE",c.revenue,t,t);
+  ]) {
+    db.prepare("INSERT INTO companies VALUES (?,?,?,?,?,?,?,?)").run(c.id,c.name,c.type,c.country,"ACTIVE",c.revenue,t,t);
+    provisionWorkforce(c.id,null);
+  }
 }
+
+for(const c of db.prepare("SELECT id FROM companies").all()) provisionWorkforce(c.id,null);
 
 app.listen(PORT,()=>console.log(`AI Company OS backend running on :${PORT}`));

@@ -686,3 +686,95 @@ REPLAN
 > The next generation of software will not only help people operate companies. It will help companies operate themselves.
 
 AI Company OS is being built toward that control plane: humans define direction and boundaries; an AI workforce continuously plans, executes, measures, learns and replans inside them.
+
+
+## 2026 Operating Architecture
+
+The product is now organized around six control areas: Master Control, Super Agent, AI Workforce, ERP/CRM/Support, Company Brain, and Governance/Execution.
+
+### Current module map
+
+| Domain | Responsibility | State |
+|---|---|---|
+| Master Control | Portfolio, companies, workforce, missions, support | Implemented |
+| Company Lifecycle | Active, implementation, pending payment, delinquent, suspended, frozen, closed, archived | Foundation |
+| ERP | Products, subscriptions, invoices, payments, contracts, events | Foundation |
+| CRM | Customers, leads, opportunities, pipeline | Foundation |
+| Support | Tickets, messages, attachments, SLA and priority | Implemented |
+| AI Workforce | Automatic and manual AI employees | Implemented |
+| Super Agent | Analyze, plan, delegate, execute, verify and replan | Foundation |
+| Mission Engine | Persistent missions and governed execution | Foundation |
+| Capability Registry | Machine-readable actions | Implemented |
+| Governance | ALLOW / ESCALATE / BLOCK policies | Foundation |
+| Execution Telemetry | Snapshots, verification and audit | Foundation |
+| Company Brain | Facts, memory, RAG and reasoning | Foundation |
+| Company Bridge | Local-first customer-system connection | Foundation |
+| External Integrations | ERP, CRM, payment, email, WhatsApp and other adapters | Next |
+
+### Canonical execution lifecycle
+
+OBSERVE -> UNDERSTAND -> IDENTIFY NEED -> DEFINE OBJECTIVE -> CHECK CAPABILITIES -> CREATE PLAN -> CHECK GOVERNANCE -> CREATE/ASSIGN MISSION -> EXECUTE THROUGH ADAPTER -> VERIFY POST-STATE -> RECORD EVIDENCE -> LEARN -> REPLAN.
+
+Every business-side effect must pass the governance gate. Current agentic architecture research similarly emphasizes separation between planning, execution and governance, policy-as-code, gated execution and independent oversight. citeturn0search0turn0search3
+
+### Risk classes
+
+| Class | Examples | Default |
+|---|---|---|
+| READ | Analytics, CRM read, financial analysis | ALLOW |
+| PLAN | Marketing plan, growth plan, mission proposal | ALLOW |
+| INTERNAL WRITE | Mission, agent assignment, internal status | Policy |
+| EXTERNAL COMMUNICATION | Email, WhatsApp, customer message | ESCALATE |
+| FINANCIAL EFFECT | Invoice, payment, collection, refund | ESCALATE |
+| CONTRACT EFFECT | Activate, cancel, renew | ESCALATE |
+| SECURITY EFFECT | Credentials, permissions, integrations | ESCALATE |
+| DESTRUCTIVE | Delete or irreversible change | BLOCK |
+
+### Product boundary
+
+COMPANY = customer organization.
+ACCOUNT / SUBSCRIPTION = commercial relationship.
+ENVIRONMENT = isolated operational workspace.
+
+All company data, agents, missions, CRM, finance, support, documents, memory and policies must remain tenant-scoped.
+
+### Repository target
+
+app/ = Next.js application.
+public/ = static Master and Client experiences.
+server/ = current Node control-plane backend.
+cloud/ = production Company Brain boundary.
+bridge/ = customer-side local connector.
+docs/ = architecture, operations and governance.
+.github/workflows/ = CI.
+
+### Server refactor target
+
+Split the current server/server.js into config, db, auth, governance, companies, erp, crm, support, workforce, super-agent, missions, capabilities, audit and adapters. The refactor must preserve existing API contracts before adding new business capabilities.
+
+### Roadmap
+
+Phase 1 — Stabilize: module extraction, schema versioning, integration tests, governance tests, execution tests and tenant-isolation tests.
+
+Phase 2 — Real ERP: invoice/payment adapters, subscriptions, contracts, CRM writes and support actions.
+
+Phase 3 — Real Super Agent: specialist creation, mission assignment, bounded retries, failure diagnosis, repair missions, verification and automatic replan.
+
+Phase 4 — Company Brain: business facts, memory, documents, RAG and evidence-backed decisions.
+
+Phase 5 — Company Bridge: ERP/SQLite/CSV connectors, local policy, minimization, device identity, outbox and cloud sync.
+
+Phase 6 — Production: PostgreSQL, object storage, secrets, LLM gateway, observability, backups, rate limits, tenant isolation and deployment adapters.
+
+### Non-negotiable rules
+
+1. Super Agent plans; it never bypasses governance.
+2. Adapters never execute directly from model output.
+3. Every side effect has a capability key.
+4. Every capability has a risk classification.
+5. Every execution produces evidence.
+6. Verification occurs after execution.
+7. Failed verification triggers repair or replan, never false success.
+8. Hard deletion remains blocked for business entities.
+9. Customer environments remain isolated.
+10. Master controls platform-wide policy; companies control only their authorized environment.

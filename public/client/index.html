@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer">
 <title>AI Company OS — Cliente</title><script src="../config.js"></script><script src="../api.js"></script>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#07151a;color:#e8f0f2;font:14px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:1100px;margin:auto;padding:28px}.box,.card{background:#0b2027;border:1px solid #18353d;border-radius:14px;padding:22px}.auth{max-width:480px;margin:8vh auto}.eyebrow{color:#c2a46a;font-size:10px;letter-spacing:3px}.muted{color:#8da4aa}.field,textarea,select{width:100%;padding:12px;margin:7px 0;background:#07151a;border:1px solid #294951;border-radius:8px;color:#fff}.primary,.secondary{border:0;border-radius:8px;padding:12px 15px;cursor:pointer;font-weight:700}.primary{background:#c2a46a;color:#07151a}.secondary{background:#17343c;color:#fff}.actions{display:flex;gap:8px;flex-wrap:wrap}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.ticket{margin-top:10px;cursor:pointer}.ticket:hover{border-color:#c2a46a}.pill{display:inline-block;background:#13313c;color:#c2a46a;border-radius:99px;padding:5px 8px;font-size:10px}.hidden{display:none}.modal{position:fixed;inset:0;background:#000b;display:none;place-items:center;padding:20px}.modal.show{display:grid}.modalbox{width:min(760px,100%);max-height:90vh;overflow:auto;background:#0b2027;border:1px solid #31515a;border-radius:15px;padding:24px}.msg{padding:12px;border-left:2px solid #c2a46a;margin:10px 0;background:#071b21}.error{color:#ff9d9d;margin-top:10px}@media(max-width:700px){.grid{grid-template-columns:1fr}.wrap{padding:15px}}
@@ -9,11 +9,37 @@
 <body><div class="wrap">
 <section id="auth" class="box auth">
 <div class="eyebrow">AI COMPANY OS / CLIENT ACCESS</div><h1 id="companyTitle">Seu ambiente empresarial</h1>
+<div id="signupPane">
 <p class="muted">Crie seu acesso usando o link enviado pelo Master.</p>
-<input id="name" class="field" placeholder="Seu nome"><input id="email" class="field" type="email" placeholder="Seu e-mail">
-<input id="password" class="field" type="password" placeholder="Senha (mínimo 8 caracteres)">
-<input id="password2" class="field" type="password" placeholder="Confirme a senha">
+<input id="name" class="field" placeholder="Seu nome">
+<input id="email" class="field" type="email" autocomplete="email" placeholder="Seu e-mail">
+<input id="password" class="field" type="password" autocomplete="new-password" placeholder="Senha (mínimo 10 caracteres)">
+<input id="password2" class="field" type="password" autocomplete="new-password" placeholder="Confirme a senha">
 <button id="signupBtn" class="primary" style="width:100%">Criar meu acesso</button>
+<p class="muted" style="text-align:center;margin-top:14px">Já possui acesso? <button id="showLogin" class="secondary">Entrar</button></p>
+</div>
+<div id="loginPane" class="hidden">
+<p class="muted">Entre no ambiente empresarial da sua empresa.</p>
+<input id="loginEmail" class="field" type="email" autocomplete="email" placeholder="Seu e-mail">
+<input id="loginPassword" class="field" type="password" autocomplete="current-password" placeholder="Sua senha">
+<button id="loginBtn" class="primary" style="width:100%">Entrar</button>
+<p style="text-align:center;margin-top:14px"><button id="forgotBtn" class="secondary">Esqueci minha senha</button></p>
+<p class="muted" style="text-align:center">Primeiro acesso? <button id="showSignup" class="secondary">Criar acesso</button></p>
+</div>
+<div id="resetPane" class="hidden">
+<p class="muted">Digite o e-mail cadastrado. Por segurança, a resposta será a mesma exista ou não uma conta.</p>
+<input id="resetEmail" class="field" type="email" autocomplete="email" placeholder="Seu e-mail">
+<button id="requestResetBtn" class="primary" style="width:100%">Enviar link de recuperação</button>
+<p id="resetMessage" class="muted"></p>
+<p style="text-align:center;margin-top:14px"><button id="backLogin" class="secondary">Voltar ao login</button></p>
+</div>
+<div id="newPasswordPane" class="hidden">
+<p class="muted">Crie uma nova senha com pelo menos 10 caracteres, incluindo letras e números.</p>
+<input id="newPassword" class="field" type="password" autocomplete="new-password" placeholder="Nova senha">
+<input id="newPassword2" class="field" type="password" autocomplete="new-password" placeholder="Confirme a nova senha">
+<button id="confirmResetBtn" class="primary" style="width:100%">Redefinir senha</button>
+<p id="confirmResetMessage" class="muted"></p>
+</div>
 <p id="authError" class="error"></p></section>
 <section id="dashboard" class="hidden"><div class="eyebrow">COMPANY DASHBOARD</div><h1 id="welcome"></h1><p id="companyInfo" class="muted"></p>
 <div class="grid"><div class="card"><b>Dashboard</b><p class="muted">Visão geral da operação.</p></div><div class="card"><b>AI Workforce</b><p class="muted">Funcionários e agentes de IA.</p></div><div class="card"><b>Missões</b><p class="muted">Objetivos e execução.</p></div></div>
@@ -24,13 +50,23 @@
 "use strict";const api=window.AIOS_API,params=new URLSearchParams(location.search),invite=params.get("invite");let me=null;
 const $=id=>document.getElementById(id),esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function error(x){$("authError").textContent=x||""}function modal(h){$("modalBox").innerHTML=h;$("modal").classList.add("show")}function close(){ $("modal").classList.remove("show") }
-async function signup(){error("");const n=$("name").value.trim(),e=$("email").value.trim(),p=$("password").value,p2=$("password2").value;if(!invite){error("Link de convite inválido.");return}if(!api.enabled){error("Backend ainda não conectado. O Master precisa configurar a URL da API.");return}if(!n||!e||!p){error("Preencha todos os campos.");return}if(p.length<8||p!==p2){error(p.length<8?"A senha deve ter pelo menos 8 caracteres.":"As senhas não coincidem.");return}try{const r=await api.request("/auth/client/signup",{method:"POST",body:JSON.stringify({inviteToken:invite,name:n,email:e,password:p})});api.setToken(r.token);me=r;openDashboard()}catch(e){error(e.message)}}
+function pane(name){["signupPane","loginPane","resetPane","newPasswordPane"].forEach(x=>$(x).classList.add("hidden"));$(name).classList.remove("hidden");error("");}
+async function signup(){error("");const n=$("name").value.trim(),e=$("email").value.trim(),p=$("password").value,p2=$("password2").value;if(!invite){error("Link de convite inválido. Para entrar, use o login.");return}if(!api.enabled){error("Backend ainda não conectado. O Master precisa configurar a URL da API.");return}if(!n||!e||!p){error("Preencha todos os campos.");return}if(p.length<10||p!==p2){error(p.length<10?"A senha deve ter pelo menos 10 caracteres.":"As senhas não coincidem.");return}try{const r=await api.request("/auth/client/signup",{method:"POST",body:JSON.stringify({inviteToken:invite,name:n,email:e,password:p})});api.setToken(r.token);me=r;openDashboard()}catch(e){error(e.message)}}
+async function login(){error("");try{const r=await api.request("/auth/client/login",{method:"POST",body:JSON.stringify({email:$("loginEmail").value.trim(),password:$("loginPassword").value})});api.setToken(r.token);me=r;openDashboard()}catch(e){error("E-mail ou senha inválidos.")}}
+async function requestReset(){error("");$("resetMessage").textContent="";try{const r=await api.request("/auth/password-reset/request",{method:"POST",body:JSON.stringify({email:$("resetEmail").value.trim(),portal:"client"})});$("resetMessage").textContent=r.message+(r.devResetUrl?"
+
+Ambiente de desenvolvimento: "+r.devResetUrl:"");}catch(e){$("resetMessage").textContent="Se esse endereço estiver cadastrado, enviaremos um link para redefinir a senha."}}
+async function confirmReset(){error("");const p=$("newPassword").value,p2=$("newPassword2").value;if(p.length<10||p!==p2){$("confirmResetMessage").textContent=p.length<10?"A senha deve ter pelo menos 10 caracteres.":"As senhas não coincidem.";return}try{await api.request("/auth/password-reset/confirm",{method:"POST",body:JSON.stringify({token:params.get("resetToken"),newPassword:p})});$("confirmResetMessage").textContent="Senha redefinida com sucesso. Agora entre com a nova senha.";params.delete("resetToken");history.replaceState({},document.title,location.pathname+(location.search?"?"+params.toString():""));setTimeout(()=>pane("loginPane"),700)}catch(e){$("confirmResetMessage").textContent=e.message}}
 async function openDashboard(){ $("auth").classList.add("hidden");$("dashboard").classList.remove("hidden");$("welcome").textContent="Bem-vindo, "+me.user.name;$("companyInfo").textContent=me.company.name+" · Status: "+me.company.status;await loadTickets()}
 async function loadTickets(){try{const rows=await api.request("/support/tickets");$("tickets").innerHTML=rows.length?rows.map(t=>'<div class="card ticket" data-ticket="'+esc(t.id)+'"><div style="display:flex;justify-content:space-between;gap:8px"><b>SUP-'+String(t.ticket_number).padStart(5,"0")+' · '+esc(t.subject)+'</b><span class="pill">'+esc(t.status)+'</span></div><p class="muted">'+esc(t.description.slice(0,160))+'</p><small class="muted">'+esc(t.priority)+' · '+new Date(t.created_at).toLocaleString("pt-BR")+'</small></div>').join(""):'<p class="muted">Nenhum chamado aberto.</p>'}catch(e){$("tickets").innerHTML='<p class="error">'+esc(e.message)+"</p>"}}
 function newTicket(){modal('<div class="eyebrow">SUPORTE / NOVO CHAMADO</div><h2>O que aconteceu?</h2><input id="ts" class="field" placeholder="Título do problema"><select id="tp" class="field"><option>Normal</option><option>Alta</option><option>Crítica</option></select><textarea id="td" rows="7" placeholder="Explique o que você precisa, o que esperava e o que aconteceu."></textarea><input id="tf" class="field" type="file" multiple accept="image/*,.pdf,.txt,.log,.doc,.docx"><div class="actions"><button class="secondary" data-close>Cancelar</button><button class="primary" id="sendTicket">Enviar chamado</button></div>');$("sendTicket").onclick=createTicket}
 async function createTicket(){const subject=$("ts").value.trim(),description=$("td").value.trim(),priority=$("tp").value;if(!subject||!description){alert("Informe título e descrição.");return}try{const t=await api.request("/support/tickets",{method:"POST",body:JSON.stringify({subject,description,priority})});const files=[...$("tf").files];if(files.length){const fd=new FormData();files.forEach(f=>fd.append("files",f));const token=localStorage.getItem("aiosAuthToken");await fetch((window.AIOS_CONFIG.API_BASE||"")+"/api/support/tickets/"+t.id+"/attachments",{method:"POST",headers:{Authorization:"Bearer "+token},body:fd})}close();await loadTickets();openTicket(t.id)}catch(e){alert(e.message)}}
 async function openTicket(id){try{const x=await api.request("/support/tickets/"+id);modal('<div class="eyebrow">SUPORTE / CHAMADO</div><h2>SUP-'+String(x.ticket.ticket_number).padStart(5,"0")+' · '+esc(x.ticket.subject)+'</h2><div class="grid"><div class="card"><small>STATUS</small><br><span class="pill">'+esc(x.ticket.status)+'</span></div><div class="card"><small>PRIORIDADE</small><br><b>'+esc(x.ticket.priority)+'</b></div><div class="card"><small>SLA</small><br><b>'+esc(x.ticket.sla_hours)+' horas</b></div></div><div class="card" style="margin-top:12px"><h3>O que a empresa precisa?</h3><p>'+esc(x.ticket.description).replace(/\n/g,"<br>")+'</p></div><div class="card" style="margin-top:12px"><h3>Prints e anexos</h3>'+(x.attachments.length?x.attachments.map(a=>'<p>📎 '+esc(a.file_name)+'</p>').join(""):'<p class="muted">Nenhum anexo.</p>')+'</div><div class="card" style="margin-top:12px"><h3>Conversa</h3>'+(x.messages.length?x.messages.map(m=>'<div class="msg">'+esc(m.message)+'<br><small class="muted">'+new Date(m.created_at).toLocaleString("pt-BR")+'</small></div>').join(""):'<p class="muted">Ainda não há mensagens.</p>')+'<textarea id="reply" rows="4" placeholder="Responder ao suporte..."></textarea><div class="actions"><button class="primary" id="replyBtn">Enviar resposta</button><button class="secondary" data-close>Fechar</button></div></div>');$("replyBtn").onclick=async()=>{const message=$("reply").value.trim();if(!message)return;try{await api.request("/support/tickets/"+id+"/messages",{method:"POST",body:JSON.stringify({message})});close();openTicket(id)}catch(e){alert(e.message)}}}catch(e){alert(e.message)}}
-$("signupBtn").onclick=signup;$("newTicket").onclick=newTicket;document.addEventListener("click",e=>{if(e.target.matches("[data-close]"))close();const t=e.target.closest("[data-ticket]");if(t)openTicket(t.dataset.ticket)});$("modal").onclick=e=>{if(e.target===$("modal"))close()};
+$("signupBtn").onclick=signup;$("loginBtn").onclick=login;$("requestResetBtn").onclick=requestReset;$("confirmResetBtn").onclick=confirmReset;
+$("showLogin").onclick=()=>pane("loginPane");$("showSignup").onclick=()=>pane("signupPane");$("forgotBtn").onclick=()=>pane("resetPane");$("backLogin").onclick=()=>pane("loginPane");
+$("newTicket").onclick=newTicket;document.addEventListener("click",e=>{if(e.target.matches("[data-close]"))close();const t=e.target.closest("[data-ticket]");if(t)openTicket(t.dataset.ticket)});$("modal").onclick=e=>{if(e.target===$("modal"))close()};
+if(params.get("resetToken")){pane("newPasswordPane");}
+else if(!invite){pane("loginPane");}
 if(!api.enabled){error("Backend não configurado neste endereço. O frontend está pronto para receber a URL da API.");}
 })();
 </script></body></html>

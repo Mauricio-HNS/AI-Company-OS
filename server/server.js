@@ -278,6 +278,17 @@ CREATE TABLE IF NOT EXISTS ai_execution_runs (
   FOREIGN KEY(plan_step_id) REFERENCES ai_plan_steps(id),
   FOREIGN KEY(company_id) REFERENCES companies(id)
 );
+CREATE TABLE IF NOT EXISTS ai_policies (
+  id TEXT PRIMARY KEY,
+  company_id TEXT,
+  capability_key TEXT NOT NULL,
+  effect TEXT NOT NULL DEFAULT 'ALLOW',
+  reason TEXT DEFAULT '',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY(company_id) REFERENCES companies(id),
+  FOREIGN KEY(capability_key) REFERENCES ai_capabilities(key)
+);
 CREATE TABLE IF NOT EXISTS ai_plan_steps (
 
   id TEXT PRIMARY KEY,
@@ -403,6 +414,16 @@ function executeCapability(companyId, plan, step, actorId) {
     output={new_leads:leads.length,followup_missions_created:created};
     result="Follow-ups de CRM convertidos em missões persistentes.";
     verification={verified:true,checks:["followup_missions_created"],after:companySnapshot(companyId)};
+  } else if(capability==="workforce.create") {
+    const requested=(safeJson(plan.detected_needs,"[]").find(n=>n.key==="workforce.create")||{}).need||"capacidade especializada";
+    const before=db.prepare("SELECT id FROM ai_agents WHERE company_id=? AND status<>'DISABLED'").all(companyId);
+    const created=provisionWorkforce(companyId,actorId);
+    const after=db.prepare("SELECT * FROM ai_agents WHERE company_id=? AND status<>'DISABLED'").all(companyId);
+    const agent=created[0]||after.find(a=>!before.some(b=>b.id===a.id));
+    if(!agent) throw new Error("Não foi possível provisionar a capacidade de workforce.");
+    output={agent_id:agent.id,agent_name:agent.name,role:agent.role,need:requested};
+    result="Capacidade especializada provisionada no AI Workforce.";
+    verification={verified:!!db.prepare("SELECT 1 FROM ai_agents WHERE id=? AND status<>'DISABLED'").get(agent.id),checks:["agent_created_or_existing"]};
   } else if(capability==="marketing.plan") {
     const mission=createMission(companyId,plan.id,step,"Plano de Marketing","Definir e executar ações de aquisição, conteúdo e campanhas com base nos indicadores atuais.","MARKETING", "MEDIUM", step.assigned_agent_id, actorId);
     output={mission_id:mission.id};
@@ -430,6 +451,68 @@ function executeCapability(companyId, plan, step, actorId) {
   }
   return {status,result,input,output,verification};
 }
+function governanceDecision(companyId, capabilityKey) {
+  const cap=db.prepare("SELECT * FROM ai_capabilities WHERE key=? AND active=1").get(capabilityKey);
+  if(!cap) return {decision:"BLOCK",reason:"CAPABILITY_NOT_FOUND"};
+  const policy=db.prepare("SELECT * FROM ai_policies WHERE (company_id=? OR company_id IS NULL) AND capability_key=? ORDER BY CASE WHEN company_id IS NULL THEN 1 ELSE 0 END, updated_at DESC LIMIT 1").get(companyId,capabilityKey);
+  if(policy) return {decision:policy.effect==="ALLOW"?"ALLOW":policy.effect==="ESCALATE"?"ESCALATE":"BLOCK",reason:policy.reason||"Policy personalizada"};
+  if(Number(cap.requires_approval)===1 || ["MEDIUM","HIGH","CRITICAL"].includes(String(cap.risk_level).toUpperCase())) return {decision:"ESCALATE",reason:"Capability exige aprovação pela política de risco."};
+  return {decision:"ALLOW",reason:"Capability de baixo risco."};
+}
+
+function executeMission(missionId, actorId) {
+  const mission=db.prepare("SELECT * FROM ai_missions WHERE id=?").get(missionId);
+  if(!mission) return {error:"MISSION_NOT_FOUND"};
+  if(["COMPLETED","CANCELLED"].includes(mission.status)) return {mission};
+  if(!mission.plan_id || !mission.plan_step_id) {
+    db.prepare("UPDATE ai_missions SET status='BLOCKED_NO_CAPABILITY',result=?,updated_at=? WHERE id=?").run("Missão sem plano/step/capability executável.",now(),mission.id);
+    audit(actorId||null,"MISSION_BLOCKED","ai_mission",mission.id,{reason:"NO_PLAN_STEP"});
+    return {mission:db.prepare("SELECT * FROM ai_missions WHERE id=?").get(mission.id),status:"BLOCKED_NO_CAPABILITY"};
+  }
+  const step=db.prepare("SELECT s.*,c.risk_level,c.requires_approval AS cap_approval FROM ai_plan_steps s LEFT JOIN ai_capabilities c ON c.key=s.capability_key WHERE s.id=?").get(mission.plan_step_id);
+  if(!step || !step.capability_key) {
+    db.prepare("UPDATE ai_missions SET status='BLOCKED_NO_CAPABILITY',result=?,updated_at=? WHERE id=?").run("Não existe capability executável para esta missão.",now(),mission.id);
+    return {mission:db.prepare("SELECT * FROM ai_missions WHERE id=?").get(mission.id),status:"BLOCKED_NO_CAPABILITY"};
+  }
+  const gate=governanceDecision(mission.company_id,step.capability_key);
+  if(gate.decision!=="ALLOW") {
+    db.prepare("UPDATE ai_missions SET status='PENDING_APPROVAL',result=?,updated_at=? WHERE id=?").run(gate.reason,now(),mission.id);
+    db.prepare("UPDATE ai_plan_steps SET status='PENDING_APPROVAL',result=?,updated_at=? WHERE id=?").run(gate.reason,now(),step.id);
+    audit(actorId||null,"MISSION_GOVERNANCE_GATE","ai_mission",mission.id,{decision:gate.decision,capability:step.capability_key});
+    return {mission:db.prepare("SELECT * FROM ai_missions WHERE id=?").get(mission.id),status:"PENDING_APPROVAL",decision:gate.decision};
+  }
+  db.prepare("UPDATE ai_missions SET status='RUNNING',updated_at=? WHERE id=?").run(now(),mission.id);
+  db.prepare("UPDATE ai_plan_steps SET status='RUNNING',updated_at=? WHERE id=?").run(now(),step.id);
+  const started=now();
+  let execution;
+  try { execution=executeCapability(mission.company_id,db.prepare("SELECT * FROM ai_plans WHERE id=?").get(mission.plan_id),step,actorId); }
+  catch(err) { execution={status:"FAILED",result:"Falha no adaptador: "+err.message,input:companySnapshot(mission.company_id),output:{},verification:{verified:false,error:err.message}}; }
+  const finished=now();
+  const verified=execution.verification?.verified===true;
+  const finalStatus=execution.status==="COMPLETED" && verified ? "COMPLETED" : execution.status==="COMPLETED" ? "FAILED_VERIFICATION" : execution.status;
+  db.prepare("UPDATE ai_missions SET status=?,result=?,updated_at=? WHERE id=?").run(finalStatus,execution.result||"",finished,mission.id);
+  db.prepare("UPDATE ai_plan_steps SET status=?,result=?,updated_at=? WHERE id=?").run(finalStatus,execution.result||"",finished,step.id);
+  db.prepare("INSERT INTO ai_execution_runs VALUES (?,?,?,?,?,?,?,?,?,?,?,?)").run(id(),mission.plan_id,step.id,mission.company_id,step.capability_key,finalStatus,step.risk_level||"LOW",JSON.stringify(execution.input||{}),JSON.stringify(execution.output||{}),JSON.stringify(execution.verification||{}),finalStatus.startsWith("FAILED")?execution.result:"",started,finished);
+  audit(actorId||null,"MISSION_EXECUTED","ai_mission",mission.id,{capability:step.capability_key,status:finalStatus,verified});
+  return {mission:db.prepare("SELECT * FROM ai_missions WHERE id=?").get(mission.id),execution:{...execution,status:finalStatus}};
+}
+
+function runSuperAgent(companyId, actorId, maxCycles=3) {
+  const cycles=Math.max(1,Math.min(3,Number(maxCycles)||3));
+  const results=[];
+  for(let cycle=1;cycle<=cycles;cycle++) {
+    const analysis=analyzeCompany(companyId,actorId);
+    if(!analysis?.plan?.id) break;
+    const execution=executePlan(analysis.plan.id,actorId);
+    results.push({cycle,analysis,execution});
+    const failed=execution?.failed||0, blocked=execution?.blocked||0;
+    if(failed===0 && blocked===0 && execution?.executed===execution?.steps?.length) break;
+    if(cycle<cycles && failed===0 && blocked>0) break;
+  }
+  audit(actorId||null,"SUPER_AGENT_RUN","company",companyId,{cycles:results.length,maxCycles:cycles});
+  return {company:db.prepare("SELECT * FROM companies WHERE id=?").get(companyId),cycles:results};
+}
+
 function executePlan(planId, actorId) {
   const plan=db.prepare("SELECT * FROM ai_plans WHERE id=?").get(planId);
   if(!plan) return null;
@@ -770,6 +853,17 @@ app.get("/api/master/companies/:id/crm",master,(req,res)=>{
     leads:db.prepare("SELECT * FROM crm_leads WHERE company_id=? ORDER BY created_at DESC").all(company.id),
     opportunities:db.prepare("SELECT * FROM crm_opportunities WHERE company_id=? ORDER BY created_at DESC").all(company.id)
   });
+});
+app.post("/api/master/missions/:id/execute",master,(req,res)=>{
+  const result=executeMission(req.params.id,req.user.sub);
+  if(result?.error==="MISSION_NOT_FOUND") return res.status(404).json(result);
+  res.json(result);
+});
+app.post("/api/master/companies/:id/super-agent/run",master,(req,res)=>{
+  const company=db.prepare("SELECT id FROM companies WHERE id=?").get(req.params.id);
+  if(!company) return res.status(404).json({error:"COMPANY_NOT_FOUND"});
+  provisionWorkforce(company.id,req.user.sub);
+  res.json(runSuperAgent(company.id,req.user.sub,req.body?.maxCycles));
 });
 app.get("/api/master/companies/:id/missions",master,(req,res)=>{
   const company=db.prepare("SELECT id FROM companies WHERE id=?").get(req.params.id);

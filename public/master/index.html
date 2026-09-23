@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>AI Company OS — Master Control</title>
+<title>AI Company OS — Master Control</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="../config.js"></script>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#07151a;color:#e8f0f2;font:14px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.app{min-height:100vh}.side{position:fixed;inset:0 auto 0 0;width:245px;background:#091e24;border-right:1px solid #18353d;padding:18px;z-index:5}.brand{font-weight:800;color:#e5cd9a;line-height:1.35;padding:8px 10px 24px}.brand small{display:block;color:#668089;font-size:9px;letter-spacing:2px;margin-top:4px}.section{font-size:9px;color:#668089;letter-spacing:2px;margin:17px 8px 7px}.nav button{width:100%;border:0;background:transparent;color:#9db1b6;text-align:left;padding:11px 12px;border-radius:9px;margin:2px 0;cursor:pointer}.nav button:hover,.nav button.active{background:#13313c;color:#fff}.main{margin-left:245px;padding:20px 30px;max-width:1500px}.top{height:46px;border-bottom:1px solid #18353d;display:flex;justify-content:space-between;align-items:center}.top small{color:#779097}.view{display:none}.view.active{display:block}.hero{padding:30px 0 22px}.eyebrow{font-size:10px;letter-spacing:3px;color:#c2a46a}.hero h1{font-size:32px;margin:7px 0}.muted{color:#8da4aa}.actions{display:flex;gap:8px;flex-wrap:wrap}.primary,.secondary,.danger{border:0;border-radius:8px;padding:11px 15px;cursor:pointer;font-weight:700}.primary{background:#c2a46a;color:#07151a}.secondary{background:#17343c;color:#fff}.danger{background:#48232a;color:#fff}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.card,.panel,.item{background:#0b2027;border:1px solid #18353d;border-radius:13px}.card{padding:18px}.card.clickable,.company,.item.clickable{cursor:pointer}.card:hover,.company:hover,.item:hover{border-color:#c2a46a}.card span{display:block;color:#779097;font-size:10px}.stat,.card b.value{font-size:27px;font-weight:800;display:block;margin-top:7px}.panel{padding:20px;margin-top:14px}.panel h2{margin:0 0 10px}.company{display:flex;align-items:center;gap:13px;padding:15px 0;border-bottom:1px solid #17323a}.company:last-child{border-bottom:0}.icon{width:42px;height:42px;border-radius:10px;background:#13313c;display:grid;place-items:center;color:#e5cd9a;font-weight:800;flex:none}.grow{flex:1}.company small{display:block;color:#6f878d;margin-top:3px}.badge,.pill{font-size:10px;color:#c2a46a;background:#13313c;border-radius:99px;padding:5px 8px}.list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.item{padding:18px}.item b{display:block;margin-bottom:6px}.item span{color:#779097}.table{width:100%;border-collapse:collapse}.table th,.table td{text-align:left;padding:12px;border-bottom:1px solid #18353d}.table th{font-size:10px;color:#779097}.empty{padding:28px;text-align:center;color:#779097}.field{width:100%;padding:11px;margin:7px 0;background:#07151a;border:1px solid #294951;border-radius:8px;color:#fff}.modal{position:fixed;inset:0;background:#000b;display:none;place-items:center;padding:20px;z-index:20}.modal.show{display:grid}.box{width:min(520px,100%);max-height:90vh;overflow:auto;background:#0b2027;border:1px solid #31515a;border-radius:15px;padding:24px}.toast{position:fixed;right:22px;bottom:22px;z-index:30;background:#13313c;border:1px solid #c2a46a;padding:13px 17px;border-radius:9px;display:none}.toast.show{display:block}.linkbox{padding:12px;background:#07151a;border:1px dashed #31515a;border-radius:8px;color:#e5cd9a;word-break:break-all}.back{color:#e5cd9a;cursor:pointer;margin-bottom:12px}@media(max-width:850px){.side{width:65px}.brand,.section,.nav span{display:none}.main{margin-left:65px;padding:16px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.list{grid-template-columns:1fr}}@media(max-width:520px){.grid{grid-template-columns:1fr}.main{padding:12px}.company{align-items:flex-start;flex-wrap:wrap}}
 </style>
@@ -55,14 +55,46 @@
 (function(){
 "use strict";
 var KEY="aiCompanyOSCompanies",AG="aiCompanyOSAgents",MI="aiCompanyOSMissions",PO="aiCompanyOSPolicies";
-var state={currentCompany:null};
+var state={currentCompany:null};\nvar cfg=window.AIOS_CONFIG||{},sb=(cfg.SUPABASE_URL&&cfg.SUPABASE_ANON_KEY)?supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY):null;var backendUser=null;
 
 function $(id){return document.getElementById(id)}
 function read(key,fallback){try{var v=localStorage.getItem(key);return v?JSON.parse(v):fallback}catch(e){return fallback}}
 function write(key,value){try{localStorage.setItem(key,JSON.stringify(value));return true}catch(e){toast("Não foi possível salvar no navegador.");return false}}
 function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function slug(v){return String(v).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")}
-function toast(message){var t=$("toast");t.textContent=message;t.classList.add("show");clearTimeout(window.__toastTimer);window.__toastTimer=setTimeout(function(){t.classList.remove("show")},1800)}
+async function initBackend(){
+ if(!sb)return;
+ var session=await sb.auth.getSession();
+ if(!session.data.session){backendLogin();return}
+ backendUser=session.data.session.user;
+ await syncBackendCompanies();
+}
+function backendLogin(){
+ modal('<div class="eyebrow">MASTER / BACKEND</div><h2>Entrar no Master</h2><p class="muted">O modo backend usa autenticação real. Crie o usuário Master no Supabase Auth e registre o mesmo ID em master_users.</p><input id="login-email" class="field" type="email" placeholder="E-mail"><input id="login-pass" class="field" type="password" placeholder="Senha"><p id="login-error" class="muted"></p><div class="actions"><button class="primary" data-action="master-login">Entrar</button></div>');
+}
+async function masterLogin(){
+ var e=$("login-email").value.trim(),p=$("login-pass").value;
+ var x=await sb.auth.signInWithPassword({email:e,password:p});
+ if(x.error){$("login-error").textContent=x.error.message;return}
+ var prof=await sb.from("master_users").select("id").eq("id",x.data.user.id).single();
+ if(prof.error){await sb.auth.signOut();$("login-error").textContent="Este usuário não está autorizado como Master.";return}
+ backendUser=x.data.user;closeModal();await syncBackendCompanies();toast("Master conectado ao backend.");
+}
+async function syncBackendCompanies(){
+ if(!sb||!backendUser)return;
+ var x=await sb.from("companies").select("id,name,status,created_at").order("created_at",{ascending:false});
+ if(x.error)return;
+ var local=getCompanies();
+ x.data.forEach(function(remote){
+  if(!local.some(function(l){return l.id===remote.id})){local.push({id:remote.id,name:remote.name,type:"Empresa",createdAt:remote.created_at,status:remote.status,revenue:0})}
+ });
+ write(KEY,local);renderPortfolio();
+}
+async function persistCompanyBackend(c){
+ if(!sb||!backendUser)return;
+ await sb.from("companies").upsert({id:c.id,name:c.name,status:c.status,created_at:c.createdAt},{onConflict:"id"});
+}
+async function toast(message){var t=$("toast");t.textContent=message;t.classList.add("show");clearTimeout(window.__toastTimer);window.__toastTimer=setTimeout(function(){t.classList.remove("show")},1800)}
 function getCompanies(){
  var a=read(KEY,null);
  if(!Array.isArray(a)||!a.length){
@@ -147,11 +179,11 @@ function openCompany(id){
 function modal(html){$("modal-box").innerHTML=html;$("modal").classList.add("show")}
 function closeModal(){$("modal").classList.remove("show")}
 function newCompany(){modal('<h2>Nova empresa</h2><input id="f-name" class="field" placeholder="Nome da empresa"><input id="f-type" class="field" placeholder="Segmento / atividade"><input id="f-country" class="field" placeholder="País / localização"><input id="f-revenue" class="field" type="number" placeholder="Receita atual (opcional)"><div class="actions"><button class="secondary" data-action="close-modal">Cancelar</button><button class="primary" data-action="save-company">Criar empresa</button></div>')}
-function saveCompany(){
+async function saveCompany(){
  var n=$("f-name").value.trim(),t=$("f-type").value.trim()||"Empresa",country=$("f-country").value.trim()||"—",rev=Number($("f-revenue").value||0);
  if(!n){toast("Informe o nome da empresa.");return}
  var a=getCompanies();if(a.some(function(x){return x.name.toLowerCase()===n.toLowerCase()})){toast("Empresa já existe.");return}
- var c={id:slug(n)+"-"+Date.now().toString().slice(-5),name:n,type:t+" · "+country,createdAt:new Date().toISOString(),status:"ACTIVE",revenue:rev};a.push(c);write(KEY,a);closeModal();openCompany(c.id);
+ var c={id:slug(n)+"-"+Date.now().toString().slice(-5),name:n,type:t+" · "+country,createdAt:new Date().toISOString(),status:"ACTIVE",revenue:rev};a.push(c);write(KEY,a);if(sb&&backendUser)await persistCompanyBackend(c);closeModal();openCompany(c.id);
 }
 function newAgent(){modal('<h2>Novo funcionário IA</h2><input id="a-name" class="field" placeholder="Nome do agente"><input id="a-role" class="field" placeholder="Função"><input id="a-company" class="field" placeholder="Empresa"><div class="actions"><button class="secondary" data-action="close-modal">Cancelar</button><button class="primary" data-action="save-agent">Criar agente</button></div>')}
 function saveAgent(){var n=$("a-name").value.trim(),r=$("a-role").value.trim(),c=$("a-company").value.trim();if(!n||!r||!c){toast("Preencha todos os campos.");return}var a=read(AG,[]);a.push({id:Date.now(),name:n,role:r,company:c,status:"READY"});write(AG,a);closeModal();showView("workforce");toast("Agente criado.")}
@@ -218,7 +250,7 @@ document.addEventListener("click",function(e){
  else if(a==="remove-company")removeCompany();
  else if(a==="confirm-remove-company")confirmRemoveCompany();
  else if(a==="test-system")toast("Runtime OK · interface OK · storage OK");
- else if(a==="module-message")toast(action.getAttribute("data-message"));\n else if(a==="support-ticket")openSupportTicket();\n else if(a==="reply-support")toast("Área de resposta do cliente preparada.");\n else if(a==="assign-support")toast("Chamado pronto para atribuição.");\n else if(a==="new-support-ticket")newSupportTicket();\n else if(a==="save-support-ticket")saveSupportTicket();
+ else if(a==="module-message")toast(action.getAttribute("data-message"));\n else if(a==="support-ticket")openSupportTicket();\n else if(a==="reply-support")toast("Área de resposta do cliente preparada.");\n else if(a==="assign-support")toast("Chamado pronto para atribuição.");\n else if(a==="new-support-ticket")newSupportTicket();\n else if(a==="save-support-ticket")saveSupportTicket();\n else if(a==="master-login")masterLogin();
 });
 $("modal").addEventListener("click",function(e){if(e.target===$("modal"))closeModal()});
 getCompanies();renderPortfolio();

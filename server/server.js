@@ -170,6 +170,21 @@ CREATE TABLE IF NOT EXISTS company_events (
   created_at TEXT NOT NULL,
   FOREIGN KEY(company_id) REFERENCES companies(id)
 );
+CREATE TABLE IF NOT EXISTS crm_customers (
+  id TEXT PRIMARY KEY, company_id TEXT NOT NULL, name TEXT NOT NULL, email TEXT DEFAULT '', phone TEXT DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'ACTIVE', created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+  FOREIGN KEY(company_id) REFERENCES companies(id)
+);
+CREATE TABLE IF NOT EXISTS crm_leads (
+  id TEXT PRIMARY KEY, company_id TEXT NOT NULL, name TEXT NOT NULL, email TEXT DEFAULT '', source TEXT DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'NEW', created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+  FOREIGN KEY(company_id) REFERENCES companies(id)
+);
+CREATE TABLE IF NOT EXISTS crm_opportunities (
+  id TEXT PRIMARY KEY, company_id TEXT NOT NULL, customer_id TEXT, title TEXT NOT NULL,
+  value REAL NOT NULL DEFAULT 0, stage TEXT NOT NULL DEFAULT 'OPEN', created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+  FOREIGN KEY(company_id) REFERENCES companies(id), FOREIGN KEY(customer_id) REFERENCES crm_customers(id)
+);
 CREATE TABLE IF NOT EXISTS ai_agents (
   id TEXT PRIMARY KEY,
   company_id TEXT NOT NULL,
@@ -372,9 +387,22 @@ function executeCapability(companyId, plan, step, actorId) {
     result=`Triagem real executada: ${tickets.length} chamados analisados e ${changed} priorizados.`;
     verification={verified:true,checks:["ticket_priority_recalculated"],after:companySnapshot(companyId)};
   } else if(capability==="crm.read") {
-    output={crm_available:false,reason:"CRM entities are not yet persisted in the backend schema",observation:input};
-    result="Observação de CRM executada; o backend ainda não possui entidades persistentes de CRM.";
-    verification={verified:true,checks:["company_context_read"]};
+    const customers=db.prepare("SELECT COUNT(*) n FROM crm_customers WHERE company_id=? AND status='ACTIVE'").get(companyId).n;
+    const leads=db.prepare("SELECT COUNT(*) n FROM crm_leads WHERE company_id=? AND status NOT IN ('CONVERTED','LOST')").get(companyId).n;
+    const opportunities=db.prepare("SELECT COUNT(*) n, COALESCE(SUM(value),0) value FROM crm_opportunities WHERE company_id=? AND stage NOT IN ('WON','LOST')").get(companyId);
+    output={customers,leads,open_opportunities:opportunities.n,pipeline_value:opportunities.value};
+    result="Leitura CRM executada sobre clientes, leads e oportunidades persistidos.";
+    verification={verified:true,checks:["crm_customers","crm_leads","crm_opportunities"]};
+  } else if(capability==="crm.followup") {
+    const leads=db.prepare("SELECT * FROM crm_leads WHERE company_id=? AND status='NEW' ORDER BY created_at ASC LIMIT 20").all(companyId);
+    let created=0;
+    for(const lead of leads) {
+      const existing=db.prepare("SELECT id FROM ai_missions WHERE company_id=? AND objective LIKE ? LIMIT 1").get(companyId,"%"+lead.id+"%");
+      if(!existing) { createMission(companyId,plan.id,step,"Follow-up de lead","Realizar follow-up do lead "+lead.name+" (lead:"+lead.id+").","SALES","MEDIUM",step.assigned_agent_id,actorId); created++; }
+    }
+    output={new_leads:leads.length,followup_missions_created:created};
+    result="Follow-ups de CRM convertidos em missões persistentes.";
+    verification={verified:true,checks:["followup_missions_created"],after:companySnapshot(companyId)};
   } else if(capability==="marketing.plan") {
     const mission=createMission(companyId,plan.id,step,"Plano de Marketing","Definir e executar ações de aquisição, conteúdo e campanhas com base nos indicadores atuais.","MARKETING", "MEDIUM", step.assigned_agent_id, actorId);
     output={mission_id:mission.id};
@@ -733,6 +761,15 @@ app.get("/api/master/companies/:id/super-agent/plans",master,(req,res)=>{
   if(!company)return res.status(404).json({error:"COMPANY_NOT_FOUND"});
   const plans=db.prepare("SELECT * FROM ai_plans WHERE company_id=? ORDER BY created_at DESC").all(company.id);
   res.json(plans.map(p=>({...p,detected_needs:safeJson(p.detected_needs)})));
+});
+app.get("/api/master/companies/:id/crm",master,(req,res)=>{
+  const company=db.prepare("SELECT id FROM companies WHERE id=?").get(req.params.id);
+  if(!company)return res.status(404).json({error:"COMPANY_NOT_FOUND"});
+  res.json({
+    customers:db.prepare("SELECT * FROM crm_customers WHERE company_id=? ORDER BY created_at DESC").all(company.id),
+    leads:db.prepare("SELECT * FROM crm_leads WHERE company_id=? ORDER BY created_at DESC").all(company.id),
+    opportunities:db.prepare("SELECT * FROM crm_opportunities WHERE company_id=? ORDER BY created_at DESC").all(company.id)
+  });
 });
 app.get("/api/master/companies/:id/missions",master,(req,res)=>{
   const company=db.prepare("SELECT id FROM companies WHERE id=?").get(req.params.id);

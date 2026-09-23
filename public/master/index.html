@@ -94,7 +94,7 @@ async function persistCompanyBackend(c){
  if(!sb||!backendUser)return;
  await sb.from("companies").upsert({id:c.id,name:c.name,status:c.status,created_at:c.createdAt},{onConflict:"id"});
 }
-async function toast(message){var t=$("toast");t.textContent=message;t.classList.add("show");clearTimeout(window.__toastTimer);window.__toastTimer=setTimeout(function(){t.classList.remove("show")},1800)}
+function toast(message){var t=$("toast");t.textContent=message;t.classList.add("show");clearTimeout(window.__toastTimer);window.__toastTimer=setTimeout(function(){t.classList.remove("show")},1800)}
 function getCompanies(){
  var a=read(KEY,null);
  if(!Array.isArray(a)||!a.length){
@@ -163,6 +163,19 @@ if(name==="system"){
   body='<div class="grid"><div class="card"><span>RUNTIME</span><div class="stat">ONLINE</div></div><div class="card"><span>STORAGE</span><div class="stat">'+(function(){try{localStorage.setItem("__aios_test","1");localStorage.removeItem("__aios_test");return "OK"}catch(e){return "BLOQUEADO"}})()+'</div></div><div class="card"><span>SECURITY</span><div class="stat">READY</div></div><div class="card"><span>BUILD</span><div class="stat">0.4</div></div></div><div class="panel"><h2>Diagnóstico</h2><p class="muted">Esta versão não depende de framework, API externa ou biblioteca. A tela é HTML/CSS/JavaScript puro para evitar falhas de runtime no GitHub Pages.</p></div>';
  }
  $("module-body").innerHTML=body;
+ if(name==="support"&&sb&&backendUser)loadBackendSupport();
+}
+async function loadBackendSupport(){
+ var x=await sb.from("support_tickets").select("id,ticket_number,company_id,subject,description,priority,status,created_at,updated_at").order("created_at",{ascending:false});
+ if(x.error)return;
+ var html=x.data.length?x.data.map(function(t){return '<div class="company clickable" data-ticket-id="'+esc(t.id)+'"><div class="icon">?</div><div class="grow"><b>SUP-'+String(t.ticket_number).padStart(5,"0")+' · '+esc(t.subject)+'</b><small>'+esc(t.company_id)+' · '+esc(t.priority)+' · '+esc(t.created_at?new Date(t.created_at).toLocaleString("pt-BR"):"")+'</small></div><span class="badge">'+esc(t.status)+'</span></div>'}).join(""):'<div class="empty">Nenhum chamado no backend.</div>';
+ var panel=document.querySelector("#module-body .panel:last-child");if(panel)panel.innerHTML='<h2>Chamados de suporte</h2>'+html;
+}
+async function openBackendTicket(id){
+ var x=await sb.from("support_tickets").select("*").eq("id",id).single();if(x.error)return;
+ var m=await sb.from("support_messages").select("*").eq("ticket_id",id).order("created_at");
+ var f=await sb.from("support_attachments").select("*").eq("ticket_id",id).order("created_at");
+ modal('<div class="eyebrow">MASTER / SUPORTE</div><h2>SUP-'+String(x.data.ticket_number).padStart(5,"0")+' · '+esc(x.data.subject)+'</h2><div class="grid"><div class="card"><span>STATUS</span><div class="stat" style="font-size:18px">'+esc(x.data.status)+'</div></div><div class="card"><span>PRIORIDADE</span><div class="stat" style="font-size:18px">'+esc(x.data.priority)+'</div></div><div class="card"><span>SLA</span><div class="stat" style="font-size:18px">'+esc(x.data.sla_hours)+'h</div></div></div><div class="panel"><h3>O que a empresa precisa?</h3><p>'+esc(x.data.description).replace(/\\n/g,"<br>")+'</p></div><div class="panel"><h3>Prints / anexos</h3>'+((f.data||[]).length?f.data.map(function(a){return '<p>📎 '+esc(a.file_name)+'</p>'}).join(""):'<p class="muted">Nenhum anexo.</p>')+'</div><div class="panel"><h3>Conversa</h3>'+((m.data||[]).length?m.data.map(function(a){return '<div class="item"><b>'+new Date(a.created_at).toLocaleString("pt-BR")+'</b><span>'+esc(a.message)+'</span></div>'}).join(""):'<p class="muted">Sem mensagens.</p>')+'<div class="actions"><button class="secondary" data-action="close-modal">Fechar</button></div></div>');
 }
 function openCompany(id){
  var c=getCompanies().find(function(x){return x.id===id});if(!c)return;
@@ -233,7 +246,7 @@ function newInvite(){
 document.addEventListener("click",function(e){
  var nav=e.target.closest("[data-view]");if(nav){showView(nav.getAttribute("data-view"));return}
  var company=e.target.closest("[data-company]");if(company){openCompany(company.getAttribute("data-company"));return}
- var action=e.target.closest("[data-action]");if(!action)return;
+ var ticket=e.target.closest("[data-ticket-id]");if(ticket&&sb&&backendUser){openBackendTicket(ticket.getAttribute("data-ticket-id"));return}\n var action=e.target.closest("[data-action]");if(!action)return;
  var a=action.getAttribute("data-action");
  if(a==="new-company")newCompany();
  else if(a==="save-company")saveCompany();

@@ -226,7 +226,45 @@ CREATE TABLE IF NOT EXISTS ai_plans (
   FOREIGN KEY(company_id) REFERENCES companies(id),
   FOREIGN KEY(orchestrator_id) REFERENCES ai_orchestrators(id)
 );
+CREATE TABLE IF NOT EXISTS ai_missions (
+  id TEXT PRIMARY KEY,
+  company_id TEXT NOT NULL,
+  plan_id TEXT,
+  plan_step_id TEXT,
+  title TEXT NOT NULL,
+  objective TEXT NOT NULL,
+  department TEXT NOT NULL DEFAULT 'GENERAL',
+  priority TEXT NOT NULL DEFAULT 'MEDIUM',
+  status TEXT NOT NULL DEFAULT 'PLANNED',
+  assigned_agent_id TEXT,
+  result TEXT DEFAULT '',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY(company_id) REFERENCES companies(id),
+  FOREIGN KEY(plan_id) REFERENCES ai_plans(id),
+  FOREIGN KEY(plan_step_id) REFERENCES ai_plan_steps(id),
+  FOREIGN KEY(assigned_agent_id) REFERENCES ai_agents(id)
+);
+CREATE TABLE IF NOT EXISTS ai_execution_runs (
+  id TEXT PRIMARY KEY,
+  plan_id TEXT NOT NULL,
+  plan_step_id TEXT NOT NULL,
+  company_id TEXT NOT NULL,
+  capability_key TEXT,
+  status TEXT NOT NULL,
+  risk_level TEXT,
+  input_snapshot TEXT DEFAULT '{}',
+  output_snapshot TEXT DEFAULT '{}',
+  verification TEXT DEFAULT '{}',
+  error TEXT DEFAULT '',
+  started_at TEXT NOT NULL,
+  finished_at TEXT,
+  FOREIGN KEY(plan_id) REFERENCES ai_plans(id),
+  FOREIGN KEY(plan_step_id) REFERENCES ai_plan_steps(id),
+  FOREIGN KEY(company_id) REFERENCES companies(id)
+);
 CREATE TABLE IF NOT EXISTS ai_plan_steps (
+
   id TEXT PRIMARY KEY,
   plan_id TEXT NOT NULL,
   step_order INTEGER NOT NULL,
@@ -299,34 +337,97 @@ function provisionWorkforce(companyId, actorId) {
 
 
 
+function companySnapshot(companyId) {
+  const open=db.prepare("SELECT COUNT(*) n, COALESCE(SUM(total-paid_amount),0) balance FROM invoices WHERE company_id=? AND status IN ('OPEN','PARTIALLY_PAID')").get(companyId);
+  const overdue=db.prepare("SELECT COUNT(*) n, COALESCE(SUM(total-paid_amount),0) balance FROM invoices WHERE company_id=? AND status IN ('OPEN','PARTIALLY_PAID') AND due_date < ?").get(companyId,now().slice(0,10));
+  const support=db.prepare("SELECT COUNT(*) n FROM support_tickets WHERE company_id=? AND status NOT IN ('RESOLVIDO','FECHADO')").get(companyId);
+  const agents=db.prepare("SELECT COUNT(*) n FROM ai_agents WHERE company_id=? AND status<>'DISABLED'").get(companyId);
+  const missions=db.prepare("SELECT COUNT(*) n FROM ai_missions WHERE company_id=? AND status NOT IN ('COMPLETED','CANCELLED')").get(companyId);
+  return {open_invoices:open.n,open_balance:open.balance,overdue_invoices:overdue.n,overdue_balance:overdue.balance,pending_support:support.n,active_ai_agents:agents.n,active_missions:missions.n};
+}
+function createMission(companyId, planId, step, title, objective, department, priority, agentId, actorId) {
+  const t=now();
+  const mission={id:id(),company_id:companyId,plan_id:planId,plan_step_id:step.id,title,objective,department,priority,status:"PLANNED",assigned_agent_id:agentId||null,result:"",created_at:t,updated_at:t};
+  db.prepare("INSERT INTO ai_missions VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)").run(...Object.values(mission));
+  audit(actorId||null,"AI_MISSION_CREATED","ai_mission",mission.id,{planId,stepId:step.id,capability:step.capability_key});
+  return mission;
+}
+function executeCapability(companyId, plan, step, actorId) {
+  const input=companySnapshot(companyId);
+  const capability=step.capability_key;
+  let output={}, result="", verification={}, status="COMPLETED";
+  if(capability==="finance.analyze") {
+    output={financial_snapshot:input,generated_at:now()};
+    result="Análise financeira executada sobre dados reais do ERP.";
+    verification={verified:true,checks:["invoice_balance","overdue_balance"],after:companySnapshot(companyId)};
+  } else if(capability==="support.triage") {
+    const tickets=db.prepare("SELECT * FROM support_tickets WHERE company_id=? AND status NOT IN ('RESOLVIDO','FECHADO') ORDER BY created_at ASC").all(companyId);
+    let changed=0;
+    for(const ticket of tickets) {
+      const ageHours=(Date.now()-Date.parse(ticket.created_at))/3600000;
+      const priority=ageHours>=48?"Crítica":ageHours>=24?"Alta":ticket.priority;
+      if(priority!==ticket.priority) { db.prepare("UPDATE support_tickets SET priority=?,updated_at=? WHERE id=?").run(priority,now(),ticket.id); changed++; }
+    }
+    output={tickets_seen:tickets.length,tickets_reprioritized:changed};
+    result=`Triagem real executada: ${tickets.length} chamados analisados e ${changed} priorizados.`;
+    verification={verified:true,checks:["ticket_priority_recalculated"],after:companySnapshot(companyId)};
+  } else if(capability==="crm.read") {
+    output={crm_available:false,reason:"CRM entities are not yet persisted in the backend schema",observation:input};
+    result="Observação de CRM executada; o backend ainda não possui entidades persistentes de CRM.";
+    verification={verified:true,checks:["company_context_read"]};
+  } else if(capability==="marketing.plan") {
+    const mission=createMission(companyId,plan.id,step,"Plano de Marketing","Definir e executar ações de aquisição, conteúdo e campanhas com base nos indicadores atuais.","MARKETING", "MEDIUM", step.assigned_agent_id, actorId);
+    output={mission_id:mission.id};
+    result="Plano de marketing convertido em missão persistente.";
+    verification={verified:!!db.prepare("SELECT 1 FROM ai_missions WHERE id=?").get(mission.id),mission_id:mission.id};
+  } else if(capability==="mission.create") {
+    const mission=createMission(companyId,plan.id,step,step.title,step.title,"GENERAL","MEDIUM",step.assigned_agent_id,actorId);
+    output={mission_id:mission.id};
+    result="Missão persistente criada no backend.";
+    verification={verified:!!db.prepare("SELECT 1 FROM ai_missions WHERE id=?").get(mission.id),mission_id:mission.id};
+  } else if(capability==="growth.optimize") {
+    const mission=createMission(companyId,plan.id,step,"Otimização de Crescimento","Analisar gargalos e oportunidades e executar ações de crescimento mensuráveis.","GROWTH","HIGH",step.assigned_agent_id,actorId);
+    output={mission_id:mission.id,baseline:input};
+    result="Objetivo de crescimento convertido em missão persistente com baseline.";
+    verification={verified:!!db.prepare("SELECT 1 FROM ai_missions WHERE id=?").get(mission.id),baseline:input};
+  } else if(capability==="analytics.measure") {
+    output={baseline:input,measured_at:now()};
+    result="Medição executada com snapshot real do estado da empresa.";
+    verification={verified:true,checks:["company_snapshot"]};
+  } else {
+    status="PENDING_ADAPTER";
+    result="Capability reconhecida, mas ainda sem adaptador de execução.";
+    output={adapter_ready:false};
+    verification={verified:false,reason:"NO_ADAPTER"};
+  }
+  return {status,result,input,output,verification};
+}
 function executePlan(planId, actorId) {
   const plan=db.prepare("SELECT * FROM ai_plans WHERE id=?").get(planId);
   if(!plan) return null;
   const steps=db.prepare("SELECT s.*,c.risk_level,c.requires_approval AS cap_approval FROM ai_plan_steps s LEFT JOIN ai_capabilities c ON c.key=s.capability_key WHERE s.plan_id=? ORDER BY s.step_order").all(planId);
-  let executed=0,blocked=0;
-  const t=now();
+  let executed=0,blocked=0,failed=0;
   for(const s of steps) {
+    const started=now();
     if(s.requires_approval || s.cap_approval) {
-      db.prepare("UPDATE ai_plan_steps SET status='PENDING_APPROVAL',updated_at=? WHERE id=?").run(t,s.id);
+      db.prepare("UPDATE ai_plan_steps SET status='PENDING_APPROVAL',result=?,updated_at=? WHERE id=?").run("Governance gate: aprovação necessária antes do efeito.",started,s.id);
+      db.prepare("INSERT INTO ai_execution_runs VALUES (?,?,?,?,?,?,?,?,?,?,?,?)").run(id(),plan.id,s.id,plan.company_id,s.capability_key,"PENDING_APPROVAL","MEDIUM",JSON.stringify(companySnapshot(plan.company_id)),"{}","{}", "",started,null);
       blocked++; continue;
     }
-    let result="Capability validated; execution adapter pending for this capability.";
-    let status="COMPLETED";
-    if(s.capability_key==="analytics.measure") result="Measurement checkpoint created.";
-    else if(s.capability_key==="finance.analyze") result="Financial analysis checkpoint completed.";
-    else if(s.capability_key==="support.triage") result="Support triage checkpoint completed.";
-    else if(s.capability_key==="crm.read") result="CRM observation checkpoint completed.";
-    else if(s.capability_key==="marketing.plan") result="Marketing planning checkpoint created.";
-    else if(s.capability_key==="mission.create") result="Mission creation checkpoint created.";
-    else if(s.capability_key==="growth.optimize") result="Growth optimization checkpoint created.";
-    else { status="PENDING_ADAPTER"; result="Capability discovered but has no execution adapter yet."; }
-    db.prepare("UPDATE ai_plan_steps SET status=?,result=?,updated_at=? WHERE id=?").run(status,result,t,s.id);
-    if(status==="COMPLETED") executed++;
+    let execution;
+    try { execution=executeCapability(plan.company_id,plan,s,actorId); }
+    catch(err) {
+      execution={status:"FAILED",result:"Falha no adaptador: "+err.message,input:companySnapshot(plan.company_id),output:{},verification:{verified:false,error:err.message}};
+    }
+    const finished=now();
+    db.prepare("UPDATE ai_plan_steps SET status=?,result=?,updated_at=? WHERE id=?").run(execution.status,execution.result,finished,s.id);
+    db.prepare("INSERT INTO ai_execution_runs VALUES (?,?,?,?,?,?,?,?,?,?,?,?)").run(id(),plan.id,s.id,plan.company_id,s.capability_key,execution.status,s.risk_level||"LOW",JSON.stringify(execution.input||{}),JSON.stringify(execution.output||{}),JSON.stringify(execution.verification||{}),execution.status==="FAILED"?execution.result:"",started,finished);
+    if(execution.status==="COMPLETED") executed++; else if(execution.status==="FAILED") failed++;
   }
-  const finalStatus=blocked ? "PARTIALLY_EXECUTED" : (steps.length&&executed===steps.length ? "EXECUTED" : "EXECUTION_PENDING_ADAPTER");
-  db.prepare("UPDATE ai_plans SET status=?,updated_at=? WHERE id=?").run(finalStatus,t,planId);
-  audit(actorId||null,"SUPER_AGENT_EXECUTION","ai_plan",planId,{executed,blocked,total:steps.length});
-  return {plan:db.prepare("SELECT * FROM ai_plans WHERE id=?").get(planId),steps:db.prepare("SELECT * FROM ai_plan_steps WHERE plan_id=? ORDER BY step_order").all(planId),executed,blocked};
+  const finalStatus=failed ? "EXECUTION_FAILED" : blocked ? "PARTIALLY_EXECUTED" : (steps.length&&executed===steps.length ? "EXECUTED" : "EXECUTION_PENDING_ADAPTER");
+  db.prepare("UPDATE ai_plans SET status=?,updated_at=? WHERE id=?").run(finalStatus,now(),planId);
+  audit(actorId||null,"SUPER_AGENT_EXECUTION","ai_plan",planId,{executed,blocked,failed,total:steps.length});
+  return {plan:db.prepare("SELECT * FROM ai_plans WHERE id=?").get(planId),steps:db.prepare("SELECT * FROM ai_plan_steps WHERE plan_id=? ORDER BY step_order").all(planId),executed,blocked,failed};
 }
 
 const CAPABILITY_SEED = [

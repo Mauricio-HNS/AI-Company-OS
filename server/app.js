@@ -66,13 +66,14 @@ app.get("/api/master/jobs/:id",master,(req,res)=>{
 
 app.post("/api/auth/master", async (req,res)=>{
   const {email,password}=req.body||{};
-  if(email!==MASTER_EMAIL || password!==MASTER_PASSWORD) return res.status(401).json({error:"INVALID_CREDENTIALS"});
-  let u=db.prepare("SELECT * FROM users WHERE email=?").get(MASTER_EMAIL);
+  if(email!==MASTER_EMAIL || typeof password!=="string") return res.status(401).json({error:"INVALID_CREDENTIALS"});
+  let u=db.prepare("SELECT * FROM users WHERE email=? AND role='MASTER'").get(MASTER_EMAIL);
   if(!u) {
     const t=now(), hash=await bcrypt.hash(MASTER_PASSWORD,12);
-    u={id:id(),company_id:null,name:"Master Administrator",email:MASTER_EMAIL,password_hash:hash,role:"MASTER",active:1,created_at:t};
+    u={id:id(),company_id:null,name:"Master Administrator",email:MASTER_EMAIL,password_hash:hash,role:"MASTER",active:1,token_version:0,created_at:t};
     db.prepare("INSERT INTO users (id,company_id,name,email,password_hash,role,active,token_version,created_at) VALUES (?,?,?,?,?,?,?,?,?)").run(u.id,null,u.name,u.email,u.password_hash,u.role,1,0,t);
   }
+  if(!u.active || !(await bcrypt.compare(password,u.password_hash))) return res.status(401).json({error:"INVALID_CREDENTIALS"});
   audit(u.id,"MASTER_LOGIN","user",u.id);
   res.json({token:sign(u),user:{id:u.id,name:u.name,email:u.email,role:u.role}});
 });

@@ -170,6 +170,26 @@ CREATE TABLE IF NOT EXISTS company_events (
   created_at TEXT NOT NULL,
   FOREIGN KEY(company_id) REFERENCES companies(id)
 );
+CREATE TABLE IF NOT EXISTS ai_agents (
+  id TEXT PRIMARY KEY,
+  company_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  role TEXT NOT NULL,
+  department TEXT NOT NULL DEFAULT 'GENERAL',
+  description TEXT DEFAULT '',
+  autonomy TEXT NOT NULL DEFAULT 'OPERATIONAL',
+  status TEXT NOT NULL DEFAULT 'READY',
+  source TEXT NOT NULL DEFAULT 'AUTO',
+  permissions TEXT DEFAULT '[]',
+  tools TEXT DEFAULT '[]',
+  goals TEXT DEFAULT '[]',
+  kpis TEXT DEFAULT '[]',
+  supervisor_id TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY(company_id) REFERENCES companies(id),
+  FOREIGN KEY(supervisor_id) REFERENCES ai_agents(id)
+);
 `);
 
 function now() { return new Date().toISOString(); }

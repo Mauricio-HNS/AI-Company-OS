@@ -36,7 +36,7 @@ function executeMission(missionId, actorId) {
   const finalStatus=execution.status==="COMPLETED" && verified ? "COMPLETED" : execution.status==="COMPLETED" ? "FAILED_VERIFICATION" : execution.status;
   db.prepare("UPDATE ai_missions SET status=?,result=?,updated_at=? WHERE id=?").run(finalStatus,execution.result||"",finished,mission.id);
   db.prepare("UPDATE ai_plan_steps SET status=?,result=?,updated_at=? WHERE id=?").run(finalStatus,execution.result||"",finished,step.id);
-  db.prepare("INSERT INTO ai_execution_runs VALUES (?,?,?,?,?,?,?,?,?,?,?,?)").run(id(),mission.plan_id,step.id,mission.company_id,step.capability_key,finalStatus,step.risk_level||"LOW",JSON.stringify(execution.input||{}),JSON.stringify(execution.output||{}),JSON.stringify(execution.verification||{}),finalStatus.startsWith("FAILED")?execution.result:"",started,finished);
+  db.prepare("INSERT INTO ai_execution_runs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)").run(id(),mission.plan_id,step.id,mission.company_id,step.capability_key,finalStatus,step.risk_level||"LOW",JSON.stringify(execution.input||{}),JSON.stringify(execution.output||{}),JSON.stringify(execution.verification||{}),finalStatus.startsWith("FAILED")?execution.result:"",started,finished);
   audit(actorId||null,"MISSION_EXECUTED","ai_mission",mission.id,{capability:step.capability_key,status:finalStatus,verified});
   return {mission:db.prepare("SELECT * FROM ai_missions WHERE id=?").get(mission.id),execution:{...execution,status:finalStatus}};
 }

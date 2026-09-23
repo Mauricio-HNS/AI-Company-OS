@@ -17,9 +17,30 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'CLIENT',
   active INTEGER NOT NULL DEFAULT 1,
+  token_version INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL,
   FOREIGN KEY(company_id) REFERENCES companies(id)
 );
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  token_hash TEXT NOT NULL UNIQUE,
+  expires_at TEXT NOT NULL,
+  used_at TEXT,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY(user_id) REFERENCES users(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user
+ON password_reset_tokens(user_id, expires_at);
+
+CREATE TABLE IF NOT EXISTS password_reset_rate_limits (
+  rate_key TEXT PRIMARY KEY,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  window_started_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS invites (
   id TEXT PRIMARY KEY,
   company_id TEXT NOT NULL,

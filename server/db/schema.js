@@ -272,6 +272,30 @@ CREATE TABLE IF NOT EXISTS ai_execution_runs (
   FOREIGN KEY(plan_step_id) REFERENCES ai_plan_steps(id),
   FOREIGN KEY(company_id) REFERENCES companies(id)
 );
+CREATE TABLE IF NOT EXISTS ai_jobs (
+  id TEXT PRIMARY KEY,
+  company_id TEXT,
+  type TEXT NOT NULL,
+  payload TEXT NOT NULL DEFAULT '{}',
+  status TEXT NOT NULL DEFAULT 'QUEUED',
+  priority INTEGER NOT NULL DEFAULT 100,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  max_attempts INTEGER NOT NULL DEFAULT 3,
+  available_at TEXT NOT NULL,
+  locked_at TEXT,
+  locked_by TEXT,
+  started_at TEXT,
+  finished_at TEXT,
+  last_error TEXT DEFAULT '',
+  result TEXT DEFAULT '{}',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY(company_id) REFERENCES companies(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_ai_jobs_queue
+ON ai_jobs(status, priority, available_at);
+
 CREATE TABLE IF NOT EXISTS ai_policies (
   id TEXT PRIMARY KEY,
   company_id TEXT,

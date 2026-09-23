@@ -8,13 +8,10 @@ import { db } from "./db/index.js";
 import { auth, master, sign } from "./auth/index.js";
 import { audit } from "./audit/index.js";
 import { provisionWorkforce } from "./workforce/index.js";
-import crypto from "node:crypto";
+import { now, id, hashToken, safeJson } from "./core/utils.js";
 
 const app = express();
 
-function now() { return new Date().toISOString(); }
-function id() { return crypto.randomUUID(); }
-function hashToken(token) { return crypto.createHash("sha256").update(token).digest("hex"); }
 function companySnapshot(companyId) {
   const open=db.prepare("SELECT COUNT(*) n, COALESCE(SUM(total-paid_amount),0) balance FROM invoices WHERE company_id=? AND status IN ('OPEN','PARTIALLY_PAID')").get(companyId);
   const overdue=db.prepare("SELECT COUNT(*) n, COALESCE(SUM(total-paid_amount),0) balance FROM invoices WHERE company_id=? AND status IN ('OPEN','PARTIALLY_PAID') AND due_date < ?").get(companyId,now().slice(0,10));
@@ -219,7 +216,6 @@ function seedCapabilities() {
   const t=now();
   for(const x of CAPABILITY_SEED) stmt.run(x[0],x[1],x[2],x[3],x[4],x[5],x[6],1,t);
 }
-function safeJson(value, fallback=[]) { try { return JSON.parse(value||"[]"); } catch { return fallback; } }
 function analyzeCompany(companyId, actorId) {
   const company=db.prepare("SELECT * FROM companies WHERE id=?").get(companyId);
   if(!company) return null;

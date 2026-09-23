@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { app, db } from "../app.js";
+import { hashToken, safeJson } from "../core/utils.js";
 
 test("backend boots with the canonical database schema", async (t) => {
   const required = [

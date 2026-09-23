@@ -9,7 +9,6 @@ import { audit } from "./audit/index.js";
 import { provisionWorkforce } from "./workforce/index.js";
 import { supportRouter } from "./support/index.js";
 import { erpRouter } from "./erp/index.js";
-import { createMission } from "./missions/index.js";
 import { companySnapshot, executeCapability } from "./capabilities/index.js";
 import { governanceDecision } from "./governance/index.js";
 import { now, id, hashToken, safeJson } from "./core/utils.js";

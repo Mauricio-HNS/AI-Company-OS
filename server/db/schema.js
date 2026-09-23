@@ -218,6 +218,23 @@ CREATE TABLE IF NOT EXISTS ai_plans (
   FOREIGN KEY(company_id) REFERENCES companies(id),
   FOREIGN KEY(orchestrator_id) REFERENCES ai_orchestrators(id)
 );
+CREATE TABLE IF NOT EXISTS ai_plan_steps (
+
+  id TEXT PRIMARY KEY,
+  plan_id TEXT NOT NULL,
+  step_order INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  capability_key TEXT,
+  assigned_agent_id TEXT,
+  status TEXT NOT NULL DEFAULT 'PLANNED',
+  requires_approval INTEGER NOT NULL DEFAULT 0,
+  result TEXT DEFAULT '',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY(plan_id) REFERENCES ai_plans(id),
+  FOREIGN KEY(capability_key) REFERENCES ai_capabilities(key),
+  FOREIGN KEY(assigned_agent_id) REFERENCES ai_agents(id)
+);
 CREATE TABLE IF NOT EXISTS ai_missions (
   id TEXT PRIMARY KEY,
   company_id TEXT NOT NULL,
@@ -266,21 +283,5 @@ CREATE TABLE IF NOT EXISTS ai_policies (
   FOREIGN KEY(company_id) REFERENCES companies(id),
   FOREIGN KEY(capability_key) REFERENCES ai_capabilities(key)
 );
-CREATE TABLE IF NOT EXISTS ai_plan_steps (
 
-  id TEXT PRIMARY KEY,
-  plan_id TEXT NOT NULL,
-  step_order INTEGER NOT NULL,
-  title TEXT NOT NULL,
-  capability_key TEXT,
-  assigned_agent_id TEXT,
-  status TEXT NOT NULL DEFAULT 'PLANNED',
-  requires_approval INTEGER NOT NULL DEFAULT 0,
-  result TEXT DEFAULT '',
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
-  FOREIGN KEY(plan_id) REFERENCES ai_plans(id),
-  FOREIGN KEY(capability_key) REFERENCES ai_capabilities(key),
-  FOREIGN KEY(assigned_agent_id) REFERENCES ai_agents(id)
-);
 `;

@@ -79,7 +79,7 @@ function showView(name){
  document.querySelectorAll(".view").forEach(function(v){v.classList.remove("active")});
  document.querySelectorAll("[data-view]").forEach(function(b){b.classList.toggle("active",b.getAttribute("data-view")===name)});
  if(name==="portfolio"){ $("portfolio").classList.add("active");renderPortfolio(); $("crumb").textContent="MASTER CONTROL"; return; }
- if(name==="companies"||name==="workforce"||name==="missions"||name==="capital"||name==="risk"||name==="system"){
+ if(name==="companies"||name==="workforce"||name==="missions"||name==="support"||name==="capital"||name==="risk"||name==="system"){
   $("module").classList.add("active");renderModule(name);$("crumb").textContent=name.toUpperCase();return;
  }
 }
@@ -93,8 +93,8 @@ function renderPortfolio(){
  $("company-list").innerHTML=a.map(companyRow).join("");
 }
 function renderModule(name){
- var title={companies:"Companies",workforce:"AI Workforce",missions:"Missions",capital:"Capital",risk:"Risk & Policies",system:"System"}[name];
- var desc={companies:"Cadastro, clientes, acessos e ambientes empresariais.",workforce:"Funcionários digitais, agentes, execução e performance.",missions:"Objetivos, tarefas, aprovações e resultados.",capital:"Receita, custos, ROI, alocação e performance.",risk:"Governança, compliance, aprovações e auditoria.",system:"Runtime, armazenamento, segurança e diagnóstico."}[name];
+ var title={companies:"Companies",workforce:"AI Workforce",missions:"Missions",support:"Support",capital:"Capital",risk:"Risk & Policies",system:"System"}[name];
+ var desc={companies:"Cadastro, clientes, acessos e ambientes empresariais.",workforce:"Funcionários digitais, agentes, execução e performance.",missions:"Objetivos, tarefas, aprovações e resultados.",support:"Chamados, problemas, prints, anexos, SLA e atendimento.",capital:"Receita, custos, ROI, alocação e performance.",risk:"Governança, compliance, aprovações e auditoria.",system:"Runtime, armazenamento, segurança e diagnóstico."}[name];
  $("module-title").textContent=title;$("module-desc").textContent=desc;
  var action=$("module-action");action.style.display="inline-block";action.textContent="";
  action.setAttribute("data-action","");

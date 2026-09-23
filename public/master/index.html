@@ -19,7 +19,7 @@
 <button data-view="portfolio">◈ <span>Portfolio</span></button>
 <button data-view="companies">▣ <span>Companies</span></button>
 <button data-view="workforce">◉ <span>AI Workforce</span></button>
-<button data-view="missions">◌ <span>Missions</span></button>
+<button data-view="missions">◌ <span>Missions</span></button><button data-view="support">◉ <span>Support</span></button>
 </nav>
 <div class="section">CONTROL</div>
 <nav class="nav">
@@ -121,7 +121,12 @@ function renderModule(name){
   action.textContent="+ Nova política";action.setAttribute("data-action","new-policy");var p=read(PO,[]);
   body='<div class="grid"><div class="card"><span>COMPLIANCE</span><div class="stat">99.2%</div></div><div class="card"><span>POLÍTICAS</span><div class="stat">'+p.length+'</div></div><div class="card"><span>INCIDENTES</span><div class="stat">0</div></div><div class="card"><span>HEALTH</span><div class="stat">94%</div></div></div><div class="panel"><h2>Políticas</h2>'+(p.length?p.map(function(x){return '<div class="item"><b>'+esc(x.name)+'</b><span>'+esc(x.scope)+' · ativa</span></div>'}).join(""):'<div class="empty">Nenhuma política personalizada.</div>')+'</div>';
  }
- if(name==="system"){
+ if(name==="support"){
+  action.textContent="+ Novo chamado";action.setAttribute("data-action","new-support-ticket");
+  var st=read("aiCompanyOSSupportTickets",[]);
+  body='<div class="grid"><div class="card"><span>ABERTOS</span><div class="stat">'+st.filter(function(x){return x.status!=="RESOLVIDO"}).length+'</div></div><div class="card"><span>CRÍTICOS</span><div class="stat">'+st.filter(function(x){return x.priority==="Crítica"}).length+'</div></div><div class="card"><span>AGUARDANDO</span><div class="stat">'+st.filter(function(x){return x.status==="AGUARDANDO CLIENTE"}).length+'</div></div><div class="card"><span>SLA</span><div class="stat">OK</div></div></div><div class="panel"><h2>Chamados de suporte</h2>'+(st.length?st.map(function(x){return '<div class="company clickable" data-action="support-ticket"><div class="icon">?</div><div class="grow"><b>'+esc(x.id)+' · '+esc(x.subject)+'</b><small>'+esc(x.company)+' · '+esc(x.priority)+'</small></div><span class="badge">'+esc(x.status)+'</span></div>'}).join(""):'<div class="empty">Nenhum chamado registrado.</div>')+'</div>';
+}
+if(name==="system"){
   action.textContent="Testar sistema";action.setAttribute("data-action","test-system");
   body='<div class="grid"><div class="card"><span>RUNTIME</span><div class="stat">ONLINE</div></div><div class="card"><span>STORAGE</span><div class="stat">'+(function(){try{localStorage.setItem("__aios_test","1");localStorage.removeItem("__aios_test");return "OK"}catch(e){return "BLOQUEADO"}})()+'</div></div><div class="card"><span>SECURITY</span><div class="stat">READY</div></div><div class="card"><span>BUILD</span><div class="stat">0.4</div></div></div><div class="panel"><h2>Diagnóstico</h2><p class="muted">Esta versão não depende de framework, API externa ou biblioteca. A tela é HTML/CSS/JavaScript puro para evitar falhas de runtime no GitHub Pages.</p></div>';
  }
@@ -136,7 +141,7 @@ function openCompany(id){
  $("company-body").innerHTML=
  '<div class="grid"><div class="card"><span>STATUS</span><div class="stat">'+esc(c.status)+'</div></div><div class="card"><span>RECEITA</span><div class="stat">€'+Number(c.revenue||0).toLocaleString("pt-PT")+'</div></div><div class="card"><span>CRIADA</span><div class="stat">'+new Date(c.createdAt).toLocaleDateString("pt-BR")+'</div></div><div class="card"><span>CLIENTE</span><div class="stat">ATIVO</div></div></div>'+
  '<div class="panel"><h2>Acesso do cliente</h2><p class="muted">Link individual desta empresa. Se o cliente tiver qualquer problema para acessar, gere um novo link e envie novamente.</p><div id="invite" class="linkbox">'+esc(invite)+'</div><br><div class="actions"><button class="primary" data-action="copy-invite">Copiar link</button><button class="secondary" data-action="open-client">Abrir</button><button class="secondary" data-action="new-invite">Criar novo link</button></div><p id="invite-info" class="muted" style="margin-top:10px">Este é o link de acesso atual.</p></div>'+
- '<div class="panel"><h2>Ambiente da empresa</h2><div class="list"><div class="item clickable" data-action="module-message" data-message="Dashboard empresarial"><b>Dashboard</b><span>KPIs e visão geral.</span></div><div class="item clickable" data-action="module-message" data-message="AI Workforce da empresa"><b>AI Workforce</b><span>Funcionários e agentes IA.</span></div><div class="item clickable" data-action="module-message" data-message="Missões da empresa"><b>Missões</b><span>Objetivos e execução.</span></div><div class="item clickable" data-action="module-message" data-message="Marketing da empresa"><b>Marketing</b><span>Campanhas, conteúdo e canais.</span></div><div class="item clickable" data-action="module-message" data-message="CRM / Clientes da empresa"><b>CRM / Clientes</b><span>Relacionamento e vendas.</span></div><div class="item clickable" data-action="module-message" data-message="Financeiro da empresa"><b>Financeiro</b><span>Receitas, despesas e indicadores.</span></div></div></div>'+
+ '<div class="panel"><h2>Ambiente da empresa</h2><div class="list"><div class="item clickable" data-action="module-message" data-message="Dashboard empresarial"><b>Dashboard</b><span>KPIs e visão geral.</span></div><div class="item clickable" data-action="module-message" data-message="AI Workforce da empresa"><b>AI Workforce</b><span>Funcionários e agentes IA.</span></div><div class="item clickable" data-action="module-message" data-message="Missões da empresa"><b>Missões</b><span>Objetivos e execução.</span></div><div class="item clickable" data-action="module-message" data-message="Marketing da empresa"><b>Marketing</b><span>Campanhas, conteúdo e canais.</span></div><div class="item clickable" data-action="module-message" data-message="CRM / Clientes da empresa"><b>CRM / Clientes</b><span>Relacionamento e vendas.</span></div><div class="item clickable" data-action="module-message" data-message="Financeiro da empresa"><b>Financeiro</b><span>Receitas, despesas e indicadores.</span></div><div class="item clickable" data-action="support-ticket"><b>Suporte</b><span>Chamados, SLA, mensagens e anexos.</span></div></div></div>'+
  '<div class="panel"><h2>Cadastro completo</h2><p class="muted">Empresa criada no Master. O próximo nível é ligar este registro a uma base persistente e autenticação real do cliente.</p></div>';
 }
 function modal(html){$("modal-box").innerHTML=html;$("modal").classList.add("show")}
@@ -163,6 +168,25 @@ function removeCompany(){
 function confirmRemoveCompany(){
  var c=state.currentCompany;if(!c)return;
  var a=getCompanies().filter(function(x){return x.id!==c.id});write(KEY,a);state.currentCompany=null;closeModal();showView("companies");toast("Empresa removida.");
+}
+function openSupportTicket(){
+ var c=state.currentCompany;if(!c)return;
+ var ticket={id:"SUP-"+new Date().getFullYear()+"-"+String(Date.now()).slice(-5),company:c.name,status:"EM ATENDIMENTO",priority:"ALTA",category:"Técnico",createdAt:new Date().toISOString(),subject:"Problema no ambiente da empresa",description:"O cliente relata um problema e precisa de suporte para identificar a causa e resolver a situação.",attachments:["screenshot-dashboard.png","erro-console.png"],requester:"Administrador da empresa",sla:"8 horas",lastUpdate:"Agora"};
+ modal('<div class="eyebrow">SUPORTE / CHAMADO</div><h2>'+esc(ticket.id)+' · '+esc(ticket.subject)+'</h2><div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="card"><span>EMPRESA</span><b class="value" style="font-size:18px">'+esc(ticket.company)+'</b></div><div class="card"><span>STATUS</span><b class="value" style="font-size:18px">'+esc(ticket.status)+'</b></div><div class="card"><span>PRIORIDADE</span><b class="value" style="font-size:18px">'+esc(ticket.priority)+'</b></div><div class="card"><span>SLA</span><b class="value" style="font-size:18px">'+esc(ticket.sla)+'</b></div></div><div class="panel"><h3>O que a empresa precisa?</h3><p class="muted">'+esc(ticket.description)+'</p><p><b>Solicitante:</b> '+esc(ticket.requester)+'<br><b>Categoria:</b> '+esc(ticket.category)+'<br><b>Aberto:</b> '+new Date(ticket.createdAt).toLocaleString("pt-BR")+'</p></div><div class="panel"><h3>Prints e informações anexadas</h3><div class="list"><div class="item"><b>Screenshot da tela</b><span>📎 '+esc(ticket.attachments[0])+'</span></div><div class="item"><b>Erro técnico</b><span>📎 '+esc(ticket.attachments[1])+'</span></div></div></div><div class="panel"><h3>Atendimento</h3><p class="muted">O chamado fica associado à empresa e pode ser encaminhado para o AI Support Agent ou para um responsável humano.</p><div class="actions"><button class="primary" data-action="reply-support">Responder ao cliente</button><button class="secondary" data-action="assign-support">Atribuir suporte</button><button class="secondary" data-action="close-modal">Fechar</button></div></div>');
+}
+function newSupportTicket(){
+ var c=state.currentCompany;
+ if(!c){toast("Abra uma empresa primeiro.");return}
+ modal('<div class="eyebrow">NOVO CHAMADO</div><h2>Abrir suporte</h2><input id="s-subject" class="field" placeholder="O que aconteceu?"><select id="s-priority" class="field"><option>Normal</option><option>Alta</option><option>Crítica</option></select><textarea id="s-description" class="field" style="min-height:120px" placeholder="Explique o problema, o que esperava que acontecesse e o que aconteceu."></textarea><input id="s-files" class="field" type="file" multiple accept="image/*,.pdf,.txt,.log"><p class="muted">Anexe prints da tela, mensagens de erro, logs ou documentos que ajudem o suporte.</p><div class="actions"><button class="secondary" data-action="close-modal">Cancelar</button><button class="primary" data-action="save-support-ticket">Enviar chamado</button></div>');
+}
+function saveSupportTicket(){
+ var c=state.currentCompany,subject=$("s-subject").value.trim(),desc=$("s-description").value.trim(),priority=$("s-priority").value;
+ if(!subject||!desc){toast("Informe o problema e a descrição.");return}
+ var files=$("s-files").files, names=[];
+ for(var i=0;i<files.length;i++)names.push(files[i].name);
+ var key="aiCompanyOSSupportTickets",a=read(key,[]);
+ a.push({id:"SUP-"+new Date().getFullYear()+"-"+String(Date.now()).slice(-5),companyId:c.id,company:c.name,subject:subject,description:desc,priority:priority,status:"NOVO",createdAt:new Date().toISOString(),attachments:names});
+ write(key,a);closeModal();toast("Chamado enviado para o suporte.");openSupportTicket();
 }
 function newInvite(){
  var c=state.currentCompany;if(!c)return;
@@ -194,7 +218,7 @@ document.addEventListener("click",function(e){
  else if(a==="remove-company")removeCompany();
  else if(a==="confirm-remove-company")confirmRemoveCompany();
  else if(a==="test-system")toast("Runtime OK · interface OK · storage OK");
- else if(a==="module-message")toast(action.getAttribute("data-message"));
+ else if(a==="module-message")toast(action.getAttribute("data-message"));\n else if(a==="support-ticket")openSupportTicket();\n else if(a==="reply-support")toast("Área de resposta do cliente preparada.");\n else if(a==="assign-support")toast("Chamado pronto para atribuição.");\n else if(a==="new-support-ticket")newSupportTicket();\n else if(a==="save-support-ticket")saveSupportTicket();
 });
 $("modal").addEventListener("click",function(e){if(e.target===$("modal"))closeModal()});
 getCompanies();renderPortfolio();

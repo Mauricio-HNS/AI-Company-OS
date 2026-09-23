@@ -71,7 +71,7 @@ app.post("/api/auth/master", async (req,res)=>{
   if(!u) {
     const t=now(), hash=await bcrypt.hash(MASTER_PASSWORD,12);
     u={id:id(),company_id:null,name:"Master Administrator",email:MASTER_EMAIL,password_hash:hash,role:"MASTER",active:1,created_at:t};
-    db.prepare("INSERT INTO users VALUES (?,?,?,?,?,?,?,?)").run(u.id,null,u.name,u.email,u.password_hash,u.role,1,t);
+    db.prepare("INSERT INTO users (id,company_id,name,email,password_hash,role,active,token_version,created_at) VALUES (?,?,?,?,?,?,?,?,?)").run(u.id,null,u.name,u.email,u.password_hash,u.role,1,0,t);
   }
   audit(u.id,"MASTER_LOGIN","user",u.id);
   res.json({token:sign(u),user:{id:u.id,name:u.name,email:u.email,role:u.role}});
@@ -86,7 +86,7 @@ app.post("/api/auth/client/signup", async (req,res)=>{
   if(!company || company.status==="CONGELADA" || company.status==="ENCERRADA") return res.status(403).json({error:"COMPANY_ACCESS_BLOCKED"});
   if(db.prepare("SELECT id FROM users WHERE email=?").get(email)) return res.status(409).json({error:"EMAIL_ALREADY_EXISTS"});
   const u={id:id(),company_id:company.id,name,email,password_hash:await bcrypt.hash(password,12),role:"CLIENT",active:1,created_at:now()};
-  db.prepare("INSERT INTO users VALUES (?,?,?,?,?,?,?,?)").run(u.id,u.company_id,u.name,u.email,u.password_hash,u.role,1,u.created_at);
+  db.prepare("INSERT INTO users (id,company_id,name,email,password_hash,role,active,token_version,created_at) VALUES (?,?,?,?,?,?,?,?,?)").run(u.id,u.company_id,u.name,u.email,u.password_hash,u.role,1,0,u.created_at);
   audit(u.id,"CLIENT_SIGNUP","company",company.id);
   res.json({token:sign(u),user:{id:u.id,name:u.name,email:u.email,role:u.role},company});
 });

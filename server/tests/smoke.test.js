@@ -32,5 +32,8 @@ test("backend boots with the canonical database schema", async (t) => {
   const { port } = server.address();
   const response = await fetch(`http://127.0.0.1:${port}/api/health`);
   assert.equal(response.status, 200);
-  assert.equal((await response.json()).status, "ok");
+  assert.ok(response.headers.get("x-request-id"));
+  const body = await response.json();
+  assert.equal(body.ok, true);
+  assert.equal(body.service, "ai-company-os-server");
 });

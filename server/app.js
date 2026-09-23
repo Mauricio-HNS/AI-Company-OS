@@ -27,6 +27,12 @@ app.use((req,res,next)=>{
 app.use(express.json({limit:"2mb"}));
 
 app.get("/api/health", (_req,res)=>res.json({ok:true,service:"ai-company-os-server",time:now()}));
+app.get("/api/master/jobs",master,(req,res)=>res.json(listJobs(req.query.companyId || null, req.query.limit)));
+app.get("/api/master/jobs/:id",master,(req,res)=>{
+  const job=getJob(req.params.id);
+  if(!job) return res.status(404).json({error:"JOB_NOT_FOUND"});
+  res.json(job);
+});
 
 app.post("/api/auth/master", async (req,res)=>{
   const {email,password}=req.body||{};

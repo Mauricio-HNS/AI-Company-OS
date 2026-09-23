@@ -1,36 +1,185 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><title>AI Company OS — Master Control</title><style>
-*{box-sizing:border-box}body{margin:0;background:#07151a;color:#e8f0f2;font:14px Inter,system-ui,-apple-system,sans-serif}.app{min-height:100vh}.side{position:fixed;z-index:5;inset:0 auto 0 0;width:250px;background:#091e24;border-right:1px solid #18353d;padding:18px}.brand{color:#e5cd9a;font-weight:800;padding:10px 10px 28px;letter-spacing:.4px}.brand small{color:#668089;font-size:9px;letter-spacing:2px}.section{color:#668089;font-size:9px;letter-spacing:2px;margin:18px 8px 7px}.nav button{display:block;width:100%;border:0;background:transparent;color:#9db1b6;text-align:left;padding:12px;border-radius:9px;cursor:pointer;margin:2px 0}.nav button:hover,.nav button.active{background:#13313c;color:#fff}.main{margin-left:250px;padding:24px 30px;max-width:1450px}.top{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #18353d;padding:8px 0 18px}.top small{color:#779097}.view{display:none}.view.active{display:block}.hero{padding:30px 0 22px}.eyebrow{color:#c2a46a;font-size:10px;letter-spacing:3px}.hero h1{font-size:32px;margin:7px 0}.muted{color:#8da4aa}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card,.panel,.item{background:#0b2027;border:1px solid #18353d;border-radius:13px}.card{padding:18px;cursor:pointer}.card:hover,.item:hover,.company:hover{border-color:#c2a46a}.card span{color:#779097;font-size:10px}.card b{display:block;font-size:25px;margin:7px 0}.panel{padding:20px;margin-top:14px}.panel h2{margin-top:0}.company{display:flex;gap:13px;align-items:center;padding:15px 0;border-bottom:1px solid #17323a;cursor:pointer}.company:last-child{border:0}.icon{width:42px;height:42px;border-radius:10px;background:#13313c;display:grid;place-items:center;color:#e5cd9a;font-weight:800}.grow{flex:1}.company small{color:#6f878d}.badge{color:#c2a46a;font-size:9px}.list{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.item{padding:18px;cursor:pointer}.item b{display:block;margin-bottom:6px}.item span{color:#779097}.actions{display:flex;gap:8px;flex-wrap:wrap}.primary,.secondary,.danger{border:0;border-radius:8px;padding:11px 15px;cursor:pointer;font-weight:650}.primary{background:#c2a46a;color:#07151a}.secondary{background:#17343c;color:#fff}.danger{background:#48232a;color:#fff}.field{display:block;width:100%;padding:11px;margin:9px 0;background:#07151a;border:1px solid #294951;border-radius:8px;color:#fff}.modal{position:fixed;z-index:20;inset:0;background:#000b;display:none;place-items:center;padding:20px}.modal.show{display:grid}.box{background:#0b2027;border:1px solid #31515a;border-radius:15px;padding:24px;width:min(520px,100%);max-height:90vh;overflow:auto}.toast{position:fixed;z-index:30;right:24px;bottom:24px;background:#13313c;border:1px solid #c2a46a;padding:13px 17px;border-radius:9px;display:none}.toast.show{display:block}.stat{font-size:28px;font-weight:800}.table{width:100%;border-collapse:collapse}.table th,.table td{text-align:left;padding:12px;border-bottom:1px solid #18353d}.table th{color:#779097;font-size:10px}.empty{padding:30px;text-align:center;color:#779097}.linkbox{padding:12px;background:#07151a;border:1px dashed #31515a;border-radius:8px;word-break:break-all;color:#e5cd9a}.back{cursor:pointer;color:#e5cd9a}.pill{display:inline-block;padding:5px 8px;border-radius:99px;background:#13313c;color:#c2a46a;font-size:10px}@media(max-width:850px){.side{width:65px}.brand,.section,.nav span{display:none}.main{margin-left:65px;padding:18px}.grid{grid-template-columns:repeat(2,1fr)}.list{grid-template-columns:1fr}.top span:last-child{display:none}}@media(max-width:520px){.grid{grid-template-columns:1fr}.main{padding:14px}}
-</style></head><body><aside class="side"><div class="brand">AI COMPANY OS<br><small>MASTER CONTROL · V0.3</small></div><div class="section">COMMAND</div><nav class="nav"><button data-view="portfolio">◈ <span>Portfolio</span></button><button data-view="companies">▣ <span>Companies</span></button><button data-view="workforce">◉ <span>AI Workforce</span></button><button data-view="missions">◌ <span>Missions</span></button></nav><div class="section">CONTROL</div><nav class="nav"><button data-view="capital">◆ <span>Capital</span></button><button data-view="risk">◇ <span>Risk & Policies</span></button><button data-view="system">⚙ <span>System</span></button></nav></aside><main class="main"><header class="top"><span>AI COMPANY OS / <b id="crumb">MASTER CONTROL</b></span><span><small>Master Administrator · MH</small></span></header>
-<section id="portfolio" class="view active"><div class="hero"><div class="eyebrow">MASTER COMMAND CENTER · V0.3</div><h1>Controle global</h1><p class="muted">Administre empresas, funcionários de IA, missões, capital, riscos e acessos.</p><div class="actions"><button class="primary" onclick="openCompanyModal()">+ Nova empresa</button><button class="secondary" onclick="view('companies')">Gerenciar empresas</button></div></div><div class="grid" id="stats"></div><div class="panel"><h2>Empresas</h2><p class="muted">Clique em uma empresa para abrir o cadastro completo e gerar o acesso do cliente.</p><div id="companyList"></div></div></section>
-<section id="module" class="view"><div class="hero"><div class="eyebrow">MASTER CONTROL</div><h1 id="title"></h1><p class="muted" id="desc"></p><div class="actions"><button class="secondary" onclick="view('portfolio')">← Portfolio</button><button class="primary" id="moduleAction"></button></div></div><div id="moduleBody"></div></section>
-<section id="company" class="view"><div class="hero"><div class="back" onclick="view('companies')">← Companies</div><div class="eyebrow">CLIENT COMPANY</div><h1 id="coName"></h1><p class="muted" id="coType"></p><div class="actions"><button class="primary" onclick="copyInvite()">Copiar link do cliente</button><button class="secondary" onclick="openClient()">Abrir dashboard do cliente</button></div></div><div id="companyBody"></div></section>
-</main><div class="modal" id="modal"><div class="box" id="modalBox"></div></div><div class="toast" id="toast"></div>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>AI Company OS — Master Control</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#07151a;color:#e8f0f2;font:14px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.app{min-height:100vh}.side{position:fixed;inset:0 auto 0 0;width:245px;background:#091e24;border-right:1px solid #18353d;padding:18px;z-index:5}.brand{font-weight:800;color:#e5cd9a;line-height:1.35;padding:8px 10px 24px}.brand small{display:block;color:#668089;font-size:9px;letter-spacing:2px;margin-top:4px}.section{font-size:9px;color:#668089;letter-spacing:2px;margin:17px 8px 7px}.nav button{width:100%;border:0;background:transparent;color:#9db1b6;text-align:left;padding:11px 12px;border-radius:9px;margin:2px 0;cursor:pointer}.nav button:hover,.nav button.active{background:#13313c;color:#fff}.main{margin-left:245px;padding:20px 30px;max-width:1500px}.top{height:46px;border-bottom:1px solid #18353d;display:flex;justify-content:space-between;align-items:center}.top small{color:#779097}.view{display:none}.view.active{display:block}.hero{padding:30px 0 22px}.eyebrow{font-size:10px;letter-spacing:3px;color:#c2a46a}.hero h1{font-size:32px;margin:7px 0}.muted{color:#8da4aa}.actions{display:flex;gap:8px;flex-wrap:wrap}.primary,.secondary,.danger{border:0;border-radius:8px;padding:11px 15px;cursor:pointer;font-weight:700}.primary{background:#c2a46a;color:#07151a}.secondary{background:#17343c;color:#fff}.danger{background:#48232a;color:#fff}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.card,.panel,.item{background:#0b2027;border:1px solid #18353d;border-radius:13px}.card{padding:18px}.card.clickable,.company,.item.clickable{cursor:pointer}.card:hover,.company:hover,.item:hover{border-color:#c2a46a}.card span{display:block;color:#779097;font-size:10px}.stat,.card b.value{font-size:27px;font-weight:800;display:block;margin-top:7px}.panel{padding:20px;margin-top:14px}.panel h2{margin:0 0 10px}.company{display:flex;align-items:center;gap:13px;padding:15px 0;border-bottom:1px solid #17323a}.company:last-child{border-bottom:0}.icon{width:42px;height:42px;border-radius:10px;background:#13313c;display:grid;place-items:center;color:#e5cd9a;font-weight:800;flex:none}.grow{flex:1}.company small{display:block;color:#6f878d;margin-top:3px}.badge,.pill{font-size:10px;color:#c2a46a;background:#13313c;border-radius:99px;padding:5px 8px}.list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.item{padding:18px}.item b{display:block;margin-bottom:6px}.item span{color:#779097}.table{width:100%;border-collapse:collapse}.table th,.table td{text-align:left;padding:12px;border-bottom:1px solid #18353d}.table th{font-size:10px;color:#779097}.empty{padding:28px;text-align:center;color:#779097}.field{width:100%;padding:11px;margin:7px 0;background:#07151a;border:1px solid #294951;border-radius:8px;color:#fff}.modal{position:fixed;inset:0;background:#000b;display:none;place-items:center;padding:20px;z-index:20}.modal.show{display:grid}.box{width:min(520px,100%);max-height:90vh;overflow:auto;background:#0b2027;border:1px solid #31515a;border-radius:15px;padding:24px}.toast{position:fixed;right:22px;bottom:22px;z-index:30;background:#13313c;border:1px solid #c2a46a;padding:13px 17px;border-radius:9px;display:none}.toast.show{display:block}.linkbox{padding:12px;background:#07151a;border:1px dashed #31515a;border-radius:8px;color:#e5cd9a;word-break:break-all}.back{color:#e5cd9a;cursor:pointer;margin-bottom:12px}@media(max-width:850px){.side{width:65px}.brand,.section,.nav span{display:none}.main{margin-left:65px;padding:16px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.list{grid-template-columns:1fr}}@media(max-width:520px){.grid{grid-template-columns:1fr}.main{padding:12px}.company{align-items:flex-start;flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<aside class="side">
+<div class="brand">AI COMPANY OS<small>MASTER CONTROL · V0.4</small></div>
+<div class="section">COMMAND</div>
+<nav class="nav">
+<button data-view="portfolio">◈ <span>Portfolio</span></button>
+<button data-view="companies">▣ <span>Companies</span></button>
+<button data-view="workforce">◉ <span>AI Workforce</span></button>
+<button data-view="missions">◌ <span>Missions</span></button>
+</nav>
+<div class="section">CONTROL</div>
+<nav class="nav">
+<button data-view="capital">◆ <span>Capital</span></button>
+<button data-view="risk">◇ <span>Risk & Policies</span></button>
+<button data-view="system">⚙ <span>System</span></button>
+</nav>
+</aside>
+<main class="main">
+<header class="top"><span>AI COMPANY OS / <b id="crumb">MASTER CONTROL</b></span><small>Master Administrator · MH</small></header>
+
+<section id="portfolio" class="view active">
+<div class="hero"><div class="eyebrow">MASTER COMMAND CENTER · V0.4</div><h1>Controle global</h1><p class="muted">Painel operacional do portfólio. Os dados criados neste navegador ficam salvos automaticamente.</p><div class="actions"><button class="primary" data-action="new-company">+ Nova empresa</button><button class="secondary" data-view="companies">Gerenciar empresas</button></div></div>
+<div id="stats" class="grid"></div>
+<div class="panel"><h2>Empresas</h2><p class="muted">Clique em uma empresa para abrir seu cadastro e acesso do cliente.</p><div id="company-list"></div></div>
+</section>
+
+<section id="module" class="view">
+<div class="hero"><div class="eyebrow">MASTER CONTROL</div><h1 id="module-title"></h1><p class="muted" id="module-desc"></p><div class="actions"><button class="secondary" data-view="portfolio">← Portfolio</button><button class="primary" id="module-action"></button></div></div>
+<div id="module-body"></div>
+</section>
+
+<section id="company" class="view">
+<div class="hero"><div class="back" data-view="companies">← Companies</div><div class="eyebrow">CLIENT COMPANY</div><h1 id="company-name"></h1><p class="muted" id="company-type"></p><div class="actions"><button class="primary" data-action="copy-invite">Copiar link do cliente</button><button class="secondary" data-action="open-client">Abrir dashboard do cliente</button></div></div>
+<div id="company-body"></div>
+</section>
+</main>
+
+<div id="modal" class="modal"><div id="modal-box" class="box"></div></div>
+<div id="toast" class="toast"></div>
+
 <script>
-window.__AIOS_RUNTIME__={booted:false};
-window.addEventListener('error',function(e){
-  const box=document.getElementById('toast');
-  if(box){box.textContent='Erro de execução: '+(e.message||'JavaScript');box.style.display='block';box.classList.add('show');}
-  console.error('[AI Company OS]',e.error||e.message);
+(function(){
+"use strict";
+var KEY="aiCompanyOSCompanies",AG="aiCompanyOSAgents",MI="aiCompanyOSMissions",PO="aiCompanyOSPolicies";
+var state={currentCompany:null};
+
+function $(id){return document.getElementById(id)}
+function read(key,fallback){try{var v=localStorage.getItem(key);return v?JSON.parse(v):fallback}catch(e){return fallback}}
+function write(key,value){try{localStorage.setItem(key,JSON.stringify(value));return true}catch(e){toast("Não foi possível salvar no navegador.");return false}}
+function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function slug(v){return String(v).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")}
+function toast(message){var t=$("toast");t.textContent=message;t.classList.add("show");clearTimeout(window.__toastTimer);window.__toastTimer=setTimeout(function(){t.classList.remove("show")},1800)}
+function getCompanies(){
+ var a=read(KEY,null);
+ if(!Array.isArray(a)||!a.length){
+  a=[
+   {id:"destiny7-software",name:"Destiny7 Software",type:"SaaS · Madrid",createdAt:new Date().toISOString(),status:"ACTIVE",revenue:82400},
+   {id:"novaflow",name:"NovaFlow",type:"Automation · Lisboa",createdAt:new Date().toISOString(),status:"ACTIVE",revenue:61800}
+  ];
+  write(KEY,a);
+ }
+ return a;
+}
+function companyRow(c){return '<div class="company" data-company="'+esc(c.id)+'"><div class="icon">'+esc((c.name||"CO").slice(0,2).toUpperCase())+'</div><div class="grow"><b>'+esc(c.name)+'</b><small>'+esc(c.type)+'</small></div><strong>€'+Number(c.revenue||0).toLocaleString("pt-PT")+'</strong><span class="badge">'+esc(c.status||"ACTIVE")+'</span></div>'}
+function showView(name){
+ document.querySelectorAll(".view").forEach(function(v){v.classList.remove("active")});
+ document.querySelectorAll("[data-view]").forEach(function(b){b.classList.toggle("active",b.getAttribute("data-view")===name)});
+ if(name==="portfolio"){ $("portfolio").classList.add("active");renderPortfolio(); $("crumb").textContent="MASTER CONTROL"; return; }
+ if(name==="companies"||name==="workforce"||name==="missions"||name==="capital"||name==="risk"||name==="system"){
+  $("module").classList.add("active");renderModule(name);$("crumb").textContent=name.toUpperCase();return;
+ }
+}
+function renderPortfolio(){
+ var a=getCompanies(),agents=read(AG,[]),missions=read(MI,[]);
+ $("stats").innerHTML=
+ '<div class="card clickable" data-view="companies"><span>EMPRESAS ATIVAS</span><div class="stat">'+a.length+'</div></div>'+
+ '<div class="card clickable" data-view="workforce"><span>AI WORKFORCE</span><div class="stat">'+agents.length+'</div></div>'+
+ '<div class="card"><span>RECEITA CADASTRADA</span><div class="stat">€'+a.reduce(function(s,c){return s+Number(c.revenue||0)},0).toLocaleString("pt-PT")+'</div></div>'+
+ '<div class="card clickable" data-view="missions"><span>MISSÕES</span><div class="stat">'+missions.length+'</div></div>';
+ $("company-list").innerHTML=a.map(companyRow).join("");
+}
+function renderModule(name){
+ var title={companies:"Companies",workforce:"AI Workforce",missions:"Missions",capital:"Capital",risk:"Risk & Policies",system:"System"}[name];
+ var desc={companies:"Cadastro, clientes, acessos e ambientes empresariais.",workforce:"Funcionários digitais, agentes, execução e performance.",missions:"Objetivos, tarefas, aprovações e resultados.",capital:"Receita, custos, ROI, alocação e performance.",risk:"Governança, compliance, aprovações e auditoria.",system:"Runtime, armazenamento, segurança e diagnóstico."}[name];
+ $("module-title").textContent=title;$("module-desc").textContent=desc;
+ var action=$("module-action");action.style.display="inline-block";action.textContent="";
+ action.setAttribute("data-action","");
+ var body="";
+ if(name==="companies"){
+  action.textContent="+ Nova empresa";action.setAttribute("data-action","new-company");
+  body='<div class="panel"><h2>Empresas</h2>'+getCompanies().map(companyRow).join("")+'</div>';
+ }
+ if(name==="workforce"){
+  action.textContent="+ Novo agente";action.setAttribute("data-action","new-agent");
+  var a=read(AG,[]);
+  body='<div class="panel"><h2>AI Workforce</h2>'+(a.length?'<table class="table"><tr><th>AGENTE</th><th>FUNÇÃO</th><th>EMPRESA</th><th>STATUS</th></tr>'+a.map(function(x){return '<tr><td>'+esc(x.name)+'</td><td>'+esc(x.role)+'</td><td>'+esc(x.company)+'</td><td><span class="pill">'+esc(x.status)+'</span></td></tr>'}).join("")+'</table>':'<div class="empty">Nenhum agente. Crie o primeiro funcionário de IA.</div>')+'</div>';
+ }
+ if(name==="missions"){
+  action.textContent="+ Nova missão";action.setAttribute("data-action","new-mission");
+  var m=read(MI,[]);
+  body='<div class="panel"><h2>Missões</h2>'+(m.length?'<table class="table"><tr><th>MISSÃO</th><th>EMPRESA</th><th>STATUS</th><th>PROGRESSO</th></tr>'+m.map(function(x){return '<tr><td>'+esc(x.name)+'</td><td>'+esc(x.company)+'</td><td>'+esc(x.status)+'</td><td>'+Number(x.progress||0)+'%</td></tr>'}).join("")+'</table>':'<div class="empty">Nenhuma missão cadastrada.</div>')+'</div>';
+ }
+ if(name==="capital"){
+  action.style.display="none";var c=getCompanies(),rev=c.reduce(function(s,x){return s+Number(x.revenue||0)},0);
+  body='<div class="grid"><div class="card"><span>RECEITA</span><div class="stat">€'+rev.toLocaleString("pt-PT")+'</div></div><div class="card"><span>EMPRESAS</span><div class="stat">'+c.length+'</div></div><div class="card"><span>ROI</span><div class="stat">31.8%</div></div><div class="card"><span>ALOCADO</span><div class="stat">€1.24M</div></div></div><div class="panel"><h2>Performance por empresa</h2>'+c.map(companyRow).join("")+'</div>';
+ }
+ if(name==="risk"){
+  action.textContent="+ Nova política";action.setAttribute("data-action","new-policy");var p=read(PO,[]);
+  body='<div class="grid"><div class="card"><span>COMPLIANCE</span><div class="stat">99.2%</div></div><div class="card"><span>POLÍTICAS</span><div class="stat">'+p.length+'</div></div><div class="card"><span>INCIDENTES</span><div class="stat">0</div></div><div class="card"><span>HEALTH</span><div class="stat">94%</div></div></div><div class="panel"><h2>Políticas</h2>'+(p.length?p.map(function(x){return '<div class="item"><b>'+esc(x.name)+'</b><span>'+esc(x.scope)+' · ativa</span></div>'}).join(""):'<div class="empty">Nenhuma política personalizada.</div>')+'</div>';
+ }
+ if(name==="system"){
+  action.textContent="Testar sistema";action.setAttribute("data-action","test-system");
+  body='<div class="grid"><div class="card"><span>RUNTIME</span><div class="stat">ONLINE</div></div><div class="card"><span>STORAGE</span><div class="stat">'+(function(){try{localStorage.setItem("__aios_test","1");localStorage.removeItem("__aios_test");return "OK"}catch(e){return "BLOQUEADO"}})()+'</div></div><div class="card"><span>SECURITY</span><div class="stat">READY</div></div><div class="card"><span>BUILD</span><div class="stat">0.4</div></div></div><div class="panel"><h2>Diagnóstico</h2><p class="muted">Esta versão não depende de framework, API externa ou biblioteca. A tela é HTML/CSS/JavaScript puro para evitar falhas de runtime no GitHub Pages.</p></div>';
+ }
+ $("module-body").innerHTML=body;
+}
+function openCompany(id){
+ var c=getCompanies().find(function(x){return x.id===id});if(!c)return;
+ state.currentCompany=c;
+ document.querySelectorAll(".view").forEach(function(v){v.classList.remove("active")});
+ $("company").classList.add("active");$("crumb").textContent=c.name.toUpperCase();$("company-name").textContent=c.name;$("company-type").textContent=c.type;
+ var invite=location.origin+"/AI-Company-OS/client/?company="+encodeURIComponent(c.id);
+ $("company-body").innerHTML=
+ '<div class="grid"><div class="card"><span>STATUS</span><div class="stat">'+esc(c.status)+'</div></div><div class="card"><span>RECEITA</span><div class="stat">€'+Number(c.revenue||0).toLocaleString("pt-PT")+'</div></div><div class="card"><span>CRIADA</span><div class="stat">'+new Date(c.createdAt).toLocaleDateString("pt-BR")+'</div></div><div class="card"><span>CLIENTE</span><div class="stat">ATIVO</div></div></div>'+
+ '<div class="panel"><h2>Acesso do cliente</h2><p class="muted">Link individual desta empresa:</p><div id="invite" class="linkbox">'+esc(invite)+'</div><br><div class="actions"><button class="primary" data-action="copy-invite">Copiar link</button><button class="secondary" data-action="open-client">Abrir</button></div></div>'+
+ '<div class="panel"><h2>Ambiente da empresa</h2><div class="list"><div class="item clickable" data-action="module-message" data-message="Dashboard empresarial"><b>Dashboard</b><span>KPIs e visão geral.</span></div><div class="item clickable" data-action="module-message" data-message="AI Workforce da empresa"><b>AI Workforce</b><span>Funcionários e agentes IA.</span></div><div class="item clickable" data-action="module-message" data-message="Missões da empresa"><b>Missões</b><span>Objetivos e execução.</span></div><div class="item clickable" data-action="module-message" data-message="Marketing da empresa"><b>Marketing</b><span>Campanhas, conteúdo e canais.</span></div><div class="item clickable" data-action="module-message" data-message="CRM / Clientes da empresa"><b>CRM / Clientes</b><span>Relacionamento e vendas.</span></div><div class="item clickable" data-action="module-message" data-message="Financeiro da empresa"><b>Financeiro</b><span>Receitas, despesas e indicadores.</span></div></div></div>'+
+ '<div class="panel"><h2>Cadastro completo</h2><p class="muted">Empresa criada no Master. O próximo nível é ligar este registro a uma base persistente e autenticação real do cliente.</p></div>';
+}
+function modal(html){$("modal-box").innerHTML=html;$("modal").classList.add("show")}
+function closeModal(){$("modal").classList.remove("show")}
+function newCompany(){modal('<h2>Nova empresa</h2><input id="f-name" class="field" placeholder="Nome da empresa"><input id="f-type" class="field" placeholder="Segmento / atividade"><input id="f-country" class="field" placeholder="País / localização"><input id="f-revenue" class="field" type="number" placeholder="Receita atual (opcional)"><div class="actions"><button class="secondary" data-action="close-modal">Cancelar</button><button class="primary" data-action="save-company">Criar empresa</button></div>')}
+function saveCompany(){
+ var n=$("f-name").value.trim(),t=$("f-type").value.trim()||"Empresa",country=$("f-country").value.trim()||"—",rev=Number($("f-revenue").value||0);
+ if(!n){toast("Informe o nome da empresa.");return}
+ var a=getCompanies();if(a.some(function(x){return x.name.toLowerCase()===n.toLowerCase()})){toast("Empresa já existe.");return}
+ var c={id:slug(n)+"-"+Date.now().toString().slice(-5),name:n,type:t+" · "+country,createdAt:new Date().toISOString(),status:"ACTIVE",revenue:rev};a.push(c);write(KEY,a);closeModal();openCompany(c.id);
+}
+function newAgent(){modal('<h2>Novo funcionário IA</h2><input id="a-name" class="field" placeholder="Nome do agente"><input id="a-role" class="field" placeholder="Função"><input id="a-company" class="field" placeholder="Empresa"><div class="actions"><button class="secondary" data-action="close-modal">Cancelar</button><button class="primary" data-action="save-agent">Criar agente</button></div>')}
+function saveAgent(){var n=$("a-name").value.trim(),r=$("a-role").value.trim(),c=$("a-company").value.trim();if(!n||!r||!c){toast("Preencha todos os campos.");return}var a=read(AG,[]);a.push({id:Date.now(),name:n,role:r,company:c,status:"READY"});write(AG,a);closeModal();showView("workforce");toast("Agente criado.")}
+function newMission(){modal('<h2>Nova missão</h2><input id="m-name" class="field" placeholder="Objetivo da missão"><input id="m-company" class="field" placeholder="Empresa"><div class="actions"><button class="secondary" data-action="close-modal">Cancelar</button><button class="primary" data-action="save-mission">Criar missão</button></div>')}
+function saveMission(){var n=$("m-name").value.trim(),c=$("m-company").value.trim();if(!n||!c){toast("Preencha todos os campos.");return}var a=read(MI,[]);a.push({id:Date.now(),name:n,company:c,status:"PLANNED",progress:0});write(MI,a);closeModal();showView("missions");toast("Missão criada.")}
+function newPolicy(){modal('<h2>Nova política</h2><input id="p-name" class="field" placeholder="Nome da política"><input id="p-scope" class="field" placeholder="Escopo"><div class="actions"><button class="secondary" data-action="close-modal">Cancelar</button><button class="primary" data-action="save-policy">Criar política</button></div>')}
+function savePolicy(){var n=$("p-name").value.trim(),s=$("p-scope").value.trim()||"Global";if(!n){toast("Informe o nome.");return}var a=read(PO,[]);a.push({id:Date.now(),name:n,scope:s});write(PO,a);closeModal();showView("risk");toast("Política criada.")}
+function copyInvite(){var x=$("invite");if(!x)return;var text=x.textContent;if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(function(){toast("Link copiado.")}).catch(function(){toast("Selecione e copie o link.")})}else{toast("Selecione e copie o link.")}}
+function openClient(){var x=$("invite");if(x)window.open(x.textContent,"_blank")}
+document.addEventListener("click",function(e){
+ var nav=e.target.closest("[data-view]");if(nav){showView(nav.getAttribute("data-view"));return}
+ var company=e.target.closest("[data-company]");if(company){openCompany(company.getAttribute("data-company"));return}
+ var action=e.target.closest("[data-action]");if(!action)return;
+ var a=action.getAttribute("data-action");
+ if(a==="new-company")newCompany();
+ else if(a==="save-company")saveCompany();
+ else if(a==="new-agent")newAgent();
+ else if(a==="save-agent")saveAgent();
+ else if(a==="new-mission")newMission();
+ else if(a==="save-mission")saveMission();
+ else if(a==="new-policy")newPolicy();
+ else if(a==="save-policy")savePolicy();
+ else if(a==="close-modal")closeModal();
+ else if(a==="copy-invite")copyInvite();
+ else if(a==="open-client")openClient();
+ else if(a==="test-system")toast("Runtime OK · interface OK · storage OK");
+ else if(a==="module-message")toast(action.getAttribute("data-message"));
 });
-const BUILD="2026-09-23T17:05";const KEY='aiCompanyOSCompanies',AG='aiCompanyOSAgents',MI='aiCompanyOSMissions',PO='aiCompanyOSPolicies';
-const modules={companies:['Companies','Cadastro, clientes, acessos e ambientes empresariais.'],workforce:['AI Workforce','Funcionários digitais, agentes, execução e performance.'],missions:['Missions','Objetivos, tarefas, aprovações e resultados.'],capital:['Capital','Receita, custos, ROI, alocação e performance.'],risk:['Risk & Policies','Governança, compliance, aprovações e auditoria.'],system:['System','Runtime, integrações, segurança, logs e configurações.']};
-function read(k,d=[]){try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}}function write(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){toast('Storage do navegador bloqueado');return false}}function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}function slug(n){return n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}function toast(t){const x=document.getElementById('toast');x.textContent=t;x.style.display='block';x.classList.add('show');setTimeout(()=>{x.classList.remove('show');x.style.display='none'},1800)}
-function companies(){return read(KEY,[])}function allCompanies(){let a=companies();if(!a.length){a=[{id:'destiny7-software',name:'Destiny7 Software',type:'SaaS · Madrid',createdAt:new Date().toISOString(),status:'ACTIVE',revenue:82400},{id:'novaflow',name:'NovaFlow',type:'Automation · Lisboa',createdAt:new Date().toISOString(),status:'ACTIVE',revenue:61800}];write(KEY,a)}return a}
-function renderPortfolio(){const a=allCompanies(),agents=read(AG,[]),missions=read(MI,[]);document.getElementById('stats').innerHTML='<div class="card" onclick="view(\'companies\')"><span>EMPRESAS ATIVAS</span><b>'+a.length+'</b><small class="muted">cadastros</small></div><div class="card" onclick="view(\'workforce\')"><span>AI WORKFORCE</span><b>'+agents.length+'</b><small class="muted">agentes cadastrados</small></div><div class="card" onclick="view(\'capital\')"><span>RECEITA CADASTRADA</span><b>€'+a.reduce((s,x)=>s+Number(x.revenue||0),0).toLocaleString('pt-PT')+'</b><small class="muted">portfolio</small></div><div class="card" onclick="view(\'missions\')"><span>MISSÕES</span><b>'+missions.length+'</b><small class="muted">objetivos</small></div>';document.getElementById('companyList').innerHTML=a.map(c=>companyRow(c)).join('')}
-function companyRow(c){return '<div class="company" onclick="openCompany(\''+esc(c.id)+'\')"><div class="icon">'+esc((c.name||'CO').slice(0,2).toUpperCase())+'</div><div class="grow"><b>'+esc(c.name)+'</b><small>'+esc(c.type)+'</small></div><strong>€'+Number(c.revenue||0).toLocaleString('pt-PT')+'</strong><span class="badge">'+esc(c.status||'ACTIVE')+'</span></div>'}
-function view(v){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.querySelectorAll('[data-view]').forEach(x=>x.classList.remove('active'));if(v==='portfolio'){document.getElementById('portfolio').classList.add('active');renderPortfolio()}else{document.getElementById('module').classList.add('active');document.querySelectorAll('[data-view="'+v+'"]').forEach(x=>x.classList.add('active'));renderModule(v)}document.getElementById('crumb').textContent=v==='portfolio'?'MASTER CONTROL':(modules[v]?.[0]||v).toUpperCase()}
-function renderModule(v){const m=modules[v];document.getElementById('title').textContent=m[0];document.getElementById('desc').textContent=m[1];const action=document.getElementById('moduleAction');action.style.display='inline-block';const b=document.getElementById('moduleBody');if(v==='companies'){action.textContent='+ Nova empresa';action.onclick=openCompanyModal;const a=allCompanies();b.innerHTML='<div class="panel"><h2>Empresas</h2>'+a.map(companyRow).join('')+'</div>'}if(v==='workforce'){action.textContent='+ Novo agente';action.onclick=openAgentModal;const a=read(AG,[]);b.innerHTML='<div class="panel"><h2>AI Workforce</h2>'+(a.length?'<table class="table"><tr><th>AGENTE</th><th>FUNÇÃO</th><th>EMPRESA</th><th>STATUS</th></tr>'+a.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(x.role)+'</td><td>'+esc(x.company)+'</td><td><span class="pill">'+esc(x.status)+'</span></td></tr>').join('')+'</table>':'<div class="empty">Nenhum agente cadastrado. Crie o primeiro funcionário de IA.</div>')+'</div>'}if(v==='missions'){action.textContent='+ Nova missão';action.onclick=openMissionModal;const a=read(MI,[]);b.innerHTML='<div class="panel"><h2>Missões</h2>'+(a.length?'<table class="table"><tr><th>MISSÃO</th><th>EMPRESA</th><th>STATUS</th><th>PROGRESSO</th></tr>'+a.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(x.company)+'</td><td>'+esc(x.status)+'</td><td>'+x.progress+'%</td></tr>').join('')+'</table>':'<div class="empty">Nenhuma missão cadastrada.</div>')+'</div>'}if(v==='capital'){action.style.display='none';const a=allCompanies(),rev=a.reduce((s,x)=>s+Number(x.revenue||0),0);b.innerHTML='<div class="grid"><div class="card"><span>RECEITA</span><div class="stat">€'+rev.toLocaleString('pt-PT')+'</div></div><div class="card"><span>EMPRESAS</span><div class="stat">'+a.length+'</div></div><div class="card"><span>ROI</span><div class="stat">31.8%</div></div><div class="card"><span>ALOCADO</span><div class="stat">€1.24M</div></div></div><div class="panel"><h2>Performance por empresa</h2>'+a.map(companyRow).join('')+'</div>'}if(v==='risk'){action.textContent='+ Nova política';action.onclick=openPolicyModal;const a=read(PO,[]);b.innerHTML='<div class="grid"><div class="card"><span>COMPLIANCE</span><div class="stat">99.2%</div></div><div class="card"><span>APROVAÇÕES</span><div class="stat">'+a.length+'</div></div><div class="card"><span>INCIDENTES</span><div class="stat">0</div></div><div class="card"><span>HEALTH</span><div class="stat">94%</div></div></div><div class="panel"><h2>Políticas</h2>'+(a.length?a.map(x=>'<div class="item"><b>'+esc(x.name)+'</b><span>'+esc(x.scope)+' · ativa</span></div>').join(''):'<div class="empty">Nenhuma política personalizada.</div>')+'</div>'}if(v==='system'){action.textContent='Testar sistema';action.onclick=()=>toast('Runtime, storage e interface OK');b.innerHTML='<div class="grid"><div class="card"><span>RUNTIME</span><div class="stat">ONLINE</div></div><div class="card"><span>STORAGE</span><div class="stat">LOCAL</div></div><div class="card"><span>SECURITY</span><div class="stat">READY</div></div><div class="card"><span>VERSION</span><div class="stat">0.1</div></div></div><div class="panel"><h2>Arquitetura</h2><div class="list"><div class="item"><b>Tenant Isolation</b><span>Dados separados por empresa.</span></div><div class="item"><b>Agent Runtime</b><span>Camada para execução dos funcionários IA.</span></div><div class="item"><b>Client Access</b><span>Convites e entrada do cliente.</span></div><div class="item"><b>Audit Log</b><span>Base preparada para eventos e auditoria.</span></div></div></div>}}
-function openCompanyModal(){document.getElementById('modalBox').innerHTML='<h2>Nova empresa</h2><input class="field" id="fName" placeholder="Nome da empresa"><input class="field" id="fType" placeholder="Segmento / atividade"><input class="field" id="fCountry" placeholder="País / localização"><input class="field" id="fRevenue" type="number" placeholder="Receita atual (opcional)"><div class="actions"><button class="secondary" onclick="closeModal()">Cancelar</button><button class="primary" onclick="createCompany()">Criar empresa</button></div>';showModal()}
-function createCompany(){const n=document.getElementById('fName').value.trim(),t=document.getElementById('fType').value.trim()||'Empresa',country=document.getElementById('fCountry').value.trim()||'—',rev=Number(document.getElementById('fRevenue').value||0);if(!n)return toast('Informe o nome.');const a=allCompanies();if(a.some(x=>x.name.toLowerCase()===n.toLowerCase()))return toast('Empresa já existe.');const c={id:slug(n),name:n,type:t+' · '+country,createdAt:new Date().toISOString(),status:'ACTIVE',revenue:rev};a.push(c);write(KEY,a);closeModal();renderPortfolio();openCompany(c.id)}
-function openCompany(id){const c=allCompanies().find(x=>x.id===id);if(!c)return;document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.getElementById('company').classList.add('active');document.getElementById('crumb').textContent=c.name.toUpperCase();document.getElementById('coName').textContent=c.name;document.getElementById('coType').textContent=c.type;const invite=location.origin+'/AI-Company-OS/client/?company='+encodeURIComponent(c.id);document.getElementById('companyBody').innerHTML='<div class="grid"><div class="card"><span>STATUS</span><div class="stat">'+c.status+'</div></div><div class="card"><span>RECEITA</span><div class="stat">€'+Number(c.revenue||0).toLocaleString('pt-PT')+'</div></div><div class="card"><span>CRIADA</span><div class="stat">'+new Date(c.createdAt).toLocaleDateString('pt-BR')+'</div></div><div class="card"><span>CLIENTE</span><div class="stat">ATIVO</div></div></div><div class="panel"><h2>Acesso do cliente</h2><p class="muted">Envie este link para o responsável criar o acesso dele.</p><div class="linkbox" id="invite">'+invite+'</div><br><div class="actions"><button class="primary" onclick="copyInvite()">Copiar link</button><button class="secondary" onclick="openClient()">Abrir</button></div></div><div class="panel"><h2>Ambiente da empresa</h2><div class="list"><div class="item" onclick="toast('Dashboard empresarial preparado')"><b>Dashboard</b><span>KPIs e visão geral.</span></div><div class="item" onclick="toast('AI Workforce da empresa')"><b>AI Workforce</b><span>Funcionários e agentes IA.</span></div><div class="item" onclick="toast('Missões da empresa')"><b>Missões</b><span>Objetivos e execução.</span></div><div class="item" onclick="toast('Marketing da empresa')"><b>Marketing</b><span>Campanhas, conteúdo e canais.</span></div><div class="item" onclick="toast('Clientes da empresa')"><b>CRM / Clientes</b><span>Relacionamento e vendas.</span></div><div class="item" onclick="toast('Financeiro da empresa')"><b>Financeiro</b><span>Receitas, despesas e indicadores.</span></div></div></div><div class="panel"><h2>Cadastro completo</h2><p class="muted">Este registro é o ponto central do cliente. Próximos campos podem incluir CNPJ/NIF, endereço, contatos, contrato, plano, usuários, departamentos, integrações, documentos, políticas e permissões.</p></div>'}
-function copyInvite(){const x=document.getElementById('invite');if(!x)return;const s=x.textContent;navigator.clipboard?.writeText(s);toast('Link do cliente copiado')}
-function openClient(){const x=document.getElementById('invite');if(x)window.open(x.textContent,'_blank')}
-function openAgentModal(){document.getElementById('modalBox').innerHTML='<h2>Novo funcionário IA</h2><input class="field" id="aName" placeholder="Nome do agente"><input class="field" id="aRole" placeholder="Função (ex.: SDR, CFO, Developer)"><input class="field" id="aCompany" placeholder="Empresa"><div class="actions"><button class="secondary" onclick="closeModal()">Cancelar</button><button class="primary" onclick="createAgent()">Criar agente</button></div>';showModal()}
-function createAgent(){const n=document.getElementById('aName').value.trim(),r=document.getElementById('aRole').value.trim(),c=document.getElementById('aCompany').value.trim();if(!n||!r||!c)return toast('Preencha os campos.');const a=read(AG,[]);a.push({id:Date.now(),name:n,role:r,company:c,status:'READY'});write(AG,a);closeModal();view('workforce');toast('Agente criado')}
-function openMissionModal(){document.getElementById('modalBox').innerHTML='<h2>Nova missão</h2><input class="field" id="mName" placeholder="Objetivo da missão"><input class="field" id="mCompany" placeholder="Empresa"><div class="actions"><button class="secondary" onclick="closeModal()">Cancelar</button><button class="primary" onclick="createMission()">Criar missão</button></div>';showModal()}
-function createMission(){const n=document.getElementById('mName').value.trim(),c=document.getElementById('mCompany').value.trim();if(!n||!c)return toast('Preencha os campos.');const a=read(MI,[]);a.push({id:Date.now(),name:n,company:c,status:'PLANNED',progress:0});write(MI,a);closeModal();view('missions');toast('Missão criada')}
-function openPolicyModal(){document.getElementById('modalBox').innerHTML='<h2>Nova política</h2><input class="field" id="pName" placeholder="Nome da política"><input class="field" id="pScope" placeholder="Escopo"><div class="actions"><button class="secondary" onclick="closeModal()">Cancelar</button><button class="primary" onclick="createPolicy()">Criar política</button></div>';showModal()}
-function createPolicy(){const n=document.getElementById('pName').value.trim(),s=document.getElementById('pScope').value.trim()||'Global';if(!n)return toast('Informe o nome.');const a=read(PO,[]);a.push({id:Date.now(),name:n,scope:s});write(PO,a);closeModal();view('risk');toast('Política criada')}
-function showModal(){document.getElementById('modal').classList.add('show')}function closeModal(){document.getElementById('modal').classList.remove('show')}
-document.addEventListener('click',e=>{const n=e.target.closest('[data-view]');if(n && !e.defaultPrevented)view(n.dataset.view)});allCompanies();renderPortfolio();window.__AIOS_RUNTIME__.booted=true;document.documentElement.dataset.aiCompanyOs='ready';
-</script></body></html>
+$("modal").addEventListener("click",function(e){if(e.target===$("modal"))closeModal()});
+getCompanies();renderPortfolio();
+document.querySelector('[data-view="portfolio"]').classList.add("active");
+window.__AIOS_RUNTIME__={booted:true,build:"0.4",mode:"static-safe"};
+})();
+</script>
+</body>
+</html>

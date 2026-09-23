@@ -13,7 +13,7 @@
 </head>
 <body>
 <aside class="side">
-<div class="brand">AI COMPANY OS<small>MASTER CONTROL · V0.4</small></div>
+<div class="brand">AI COMPANY OS<small>MASTER CONTROL · V0.5</small></div>
 <div class="section">COMMAND</div>
 <nav class="nav">
 <button data-view="portfolio">◈ <span>Portfolio</span></button>
@@ -32,7 +32,7 @@
 <header class="top"><span>AI COMPANY OS / <b id="crumb">MASTER CONTROL</b></span><small>Master Administrator · MH</small></header>
 
 <section id="portfolio" class="view active">
-<div class="hero"><div class="eyebrow">MASTER COMMAND CENTER · V0.4</div><h1>Controle global</h1><p class="muted">Painel operacional do portfólio. Os dados criados neste navegador ficam salvos automaticamente.</p><div class="actions"><button class="primary" data-action="new-company">+ Nova empresa</button><button class="secondary" data-view="companies">Gerenciar empresas</button></div></div>
+<div class="hero"><div class="eyebrow">MASTER COMMAND CENTER · V0.5</div><h1>Controle global</h1><p class="muted">Painel operacional do portfólio. Empresas e operações usam o backend quando conectado; o navegador é apenas o fallback local.</p><div class="actions"><button class="primary" data-action="new-company">+ Nova empresa</button><button class="secondary" data-view="companies">Gerenciar empresas</button></div></div>
 <div id="stats" class="grid"></div>
 <div class="panel"><h2>Empresas</h2><p class="muted">Clique em uma empresa para abrir seu cadastro e acesso do cliente.</p><div id="company-list"></div></div>
 </section>
@@ -43,7 +43,7 @@
 </section>
 
 <section id="company" class="view">
-<div class="hero"><div class="back" data-view="companies">← Companies</div><div class="eyebrow">CLIENT COMPANY</div><h1 id="company-name"></h1><p class="muted" id="company-type"></p><div class="actions"><button class="primary" data-action="copy-invite">Copiar link do cliente</button><button class="secondary" data-action="open-client">Abrir dashboard do cliente</button><button class="danger" data-action="remove-company">Remover empresa</button></div></div>
+<div class="hero"><div class="back" data-view="companies">← Companies</div><div class="eyebrow">CLIENT COMPANY</div><h1 id="company-name"></h1><p class="muted" id="company-type"></p><div class="actions"><button class="primary" data-action="copy-invite">Copiar link do cliente</button><button class="secondary" data-action="open-client">Abrir dashboard do cliente</button><button class="danger" data-status="ARQUIVADA">Arquivar empresa</button></div></div>
 <div id="company-body"></div>
 </section>
 </main>

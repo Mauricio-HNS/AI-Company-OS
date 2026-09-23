@@ -12,6 +12,7 @@ import { erpRouter } from "./erp/index.js";
 import { executeMission, executePlan } from "./missions/engine.js";
 import { ensureOrchestrator, seedCapabilities, analyzeCompany, runSuperAgent } from "./super-agent/index.js";
 import { now, id, hashToken, safeJson } from "./core/utils.js";
+import { enqueueJob, getJob, listJobs } from "./jobs/queue.js";
 
 const app = express();
 
